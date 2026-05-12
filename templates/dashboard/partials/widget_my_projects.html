@@ -1,0 +1,10 @@
+{% load static %}
+<div class="kpi-card"
+     hx-get="{% url 'dashboard:widget-my-projects' %}"
+     hx-trigger="every 60s"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="kpi-label">My projects</div>
+    <div class="kpi-value">{{ count }}</div>
+    <a href="{% url 'projects:project-list' %}" class="kpi-link">View all →</a>
+</div>

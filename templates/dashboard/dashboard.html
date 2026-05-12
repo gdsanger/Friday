@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Row 1: KPI strip -->
+<div class="row g-3 mb-4">
+    <!-- My open tasks -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-my-tasks' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
+        </div>
+    </div>
+
+    <!-- Overdue -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-overdue' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
+        </div>
+    </div>
+
+    <!-- Due this week (7 days) -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-due-week' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
+        </div>
+    </div>
+
+    <!-- My projects -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-my-projects' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Main content + sidebar -->
+<div class="row g-3">
+    <!-- Main content (8 cols) -->
+    <div class="col-12 col-lg-8">
+        <!-- Due Soon widget -->
+        <div id="widget-due-soon"
+             class="dashboard-widget mb-3"
+             hx-get="{% url 'dashboard:widget-due-soon' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="widget-skeleton"></div>
+        </div>
+
+        <!-- Project Status widget -->
+        <div id="widget-project-status"
+             class="dashboard-widget"
+             hx-get="{% url 'dashboard:widget-project-status' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="widget-skeleton"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar (4 cols) -->
+    <div class="col-12 col-lg-4">
+        <!-- Team Load widget -->
+        <div id="widget-team-load"
+             class="dashboard-widget mb-3"
+             hx-get="{% url 'dashboard:widget-team-load' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="widget-skeleton"></div>
+        </div>
+
+        <!-- Activity Feed widget -->
+        <div id="widget-activity"
+             class="dashboard-widget"
+             hx-get="{% url 'dashboard:widget-activity' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="widget-skeleton"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

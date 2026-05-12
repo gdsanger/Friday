@@ -9,11 +9,11 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a href="{% url 'dashboard:index' %}" class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+        <a href="{% url 'dashboard:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
             <i class="bi bi-speedometer2"></i>
             <span>Dashboard</span>
         </a>
-        <a href="#" class="nav-item">
+        <a href="{% url 'kanban:kanban-board' %}" class="nav-item {% if request.resolver_match.app_name == 'kanban' %}active{% endif %}">
             <i class="bi bi-kanban"></i>
             <span>Kanban</span>
         </a>
