@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Users & Teams - Friday{% endblock %}
+
+{% block content %}
+{% if not request.user.is_staff %}
+<div class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> You do not have permission to access this page.
+</div>
+{% else %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'teams:team-list' %}">Teams</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Users & Teams</li>
+            </ol>
+        </nav>
+        <h2>Users & Teams</h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="mb-3">
+            <input type="search"
+                   name="q"
+                   value="{{ q }}"
+                   placeholder="Search users..."
+                   class="form-control"
+                   hx-get="{% url 'teams:team-user-list' %}"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#user-table"
+                   hx-push-url="true">
+        </div>
+
+        <div id="user-table">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">User</th>
+                            <th style="width: 70%;">Teams</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                         style="width: 36px; height: 36px; font-size: 14px;">
+                                        {{ u.initials }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ u.full_name }}</div>
+                                        <div class="small text-muted">{{ u.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td id="user-teams-{{ u.pk }}">
+                                {% include 'teams/partials/user_team_badges_content.html' with user=u memberships=u.team_memberships.all %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted py-4">
+                                <i class="bi bi-people fs-1 d-block mb-2"></i>
+                                No users found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endblock %}

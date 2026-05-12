@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Team - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'teams:team-list' %}">Teams</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create Team</li>
+            </ol>
+        </nav>
+        <h2>Create Team</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Team Name <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               id="name"
+                               name="name"
+                               value="{{ post.name }}"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control"
+                                  id="description"
+                                  name="description"
+                                  rows="4">{{ post.description }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Team Color</label>
+                        <div class="d-flex gap-2 mb-2">
+                            {% for preset in color_presets %}
+                            <div class="color-swatch"
+                                 data-color="{{ preset }}"
+                                 style="background-color: {{ preset }}; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; border: 3px solid transparent;"
+                                 onclick="selectColor('{{ preset }}')">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-2">
+                            <label for="custom-color" class="form-label small">Custom color:</label>
+                            <input type="color"
+                                   class="form-control form-control-color"
+                                   id="custom-color"
+                                   value="{{ post.color|default:'#6366f1' }}"
+                                   title="Choose custom color"
+                                   onchange="selectColor(this.value)">
+                        </div>
+                        <input type="hidden" id="color" name="color" value="{{ post.color|default:'#6366f1' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="icon" class="form-label">Icon (Bootstrap Icon Name)</label>
+                        <input type="text"
+                               class="form-control"
+                               id="icon"
+                               name="icon"
+                               value="{{ post.icon|default:'people-fill' }}"
+                               placeholder="e.g., people-fill, star, rocket"
+                               oninput="updateIconPreview(this.value)">
+                        <div class="form-text">
+                            Enter a Bootstrap Icon name.
+                            <a href="https://icons.getbootstrap.com/" target="_blank">Browse icons</a>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Preview:</strong>
+                            <i id="icon-preview" class="bi bi-{{ post.icon|default:'people-fill' }}" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'teams:team-list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Create Team</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectColor(color) {
+    document.getElementById('color').value = color;
+    document.getElementById('custom-color').value = color;
+
+    // Update visual feedback on swatches
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+        if (swatch.dataset.color === color) {
+            swatch.style.border = '3px solid #fff';
+            swatch.style.boxShadow = '0 0 0 2px #000';
+        } else {
+            swatch.style.border = '3px solid transparent';
+            swatch.style.boxShadow = 'none';
+        }
+    });
+}
+
+function updateIconPreview(iconName) {
+    const preview = document.getElementById('icon-preview');
+    preview.className = 'bi bi-' + (iconName || 'question-circle');
+}
+
+// Set initial color selection
+document.addEventListener('DOMContentLoaded', function() {
+    const initialColor = document.getElementById('color').value;
+    selectColor(initialColor);
+});
+</script>
+{% endblock %}

@@ -4,7 +4,9 @@ Team views for Friday project.
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db import models
 from django.db.models import Count
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.text import slugify
 from django.views import View
@@ -13,6 +15,14 @@ from django.views.generic import ListView, DetailView
 from .models import Team, TeamMembership
 
 User = get_user_model()
+
+
+class StaffRequiredMixin(LoginRequiredMixin):
+    """Restrict view to staff users only."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 class TeamListView(LoginRequiredMixin, ListView):
@@ -126,3 +136,125 @@ class TeamEditView(LoginRequiredMixin, View):
 
         team.save()
         return redirect('teams:team-detail', slug=team.slug)
+
+
+class TeamCreateView(StaffRequiredMixin, View):
+    """
+    GET  → render create form
+    POST → create team, redirect to team detail
+    """
+    def get(self, request):
+        return render(request, 'teams/create.html', {
+            'color_presets': [
+                '#6366f1', '#2d6a4f', '#e07c24', '#2980b9',
+                '#8e44ad', '#c0392b', '#16a085', '#d35400',
+            ]
+        })
+
+    def post(self, request):
+        name        = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        color       = request.POST.get('color', '#6366f1').strip()
+        icon        = request.POST.get('icon', 'people-fill').strip()
+
+        if not name:
+            return render(request, 'teams/create.html', {
+                'error': 'Team name is required.',
+                'post':  request.POST,
+                'color_presets': [
+                    '#6366f1', '#2d6a4f', '#e07c24', '#2980b9',
+                    '#8e44ad', '#c0392b', '#16a085', '#d35400',
+                ]
+            })
+
+        slug = slugify(name)
+
+        # Ensure unique slug
+        base_slug, counter = slug, 1
+        while Team.objects.filter(slug=slug).exists():
+            slug = f'{base_slug}-{counter}'
+            counter += 1
+
+        team = Team.objects.create(
+            name=name, slug=slug,
+            description=description,
+            color=color, icon=icon,
+        )
+
+        # Auto-add creator as team lead
+        TeamMembership.objects.create(
+            team=team, user=request.user, role='lead'
+        )
+
+        return redirect('teams:team-detail', slug=team.slug)
+
+
+class TeamUserListView(StaffRequiredMixin, ListView):
+    """
+    Staff-only view: all users with their current team memberships.
+    Allows assigning users to teams inline via HTMX.
+    """
+    template_name    = 'teams/user_list.html'
+    context_object_name = 'users'
+
+    def get_queryset(self):
+        qs = User.objects.filter(is_active=True).prefetch_related(
+            'team_memberships__team'
+        ).order_by('display_name', 'username')
+
+        if q := self.request.GET.get('q', '').strip():
+            qs = qs.filter(
+                models.Q(display_name__icontains=q) |
+                models.Q(email__icontains=q) |
+                models.Q(username__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['all_teams'] = Team.objects.filter(is_active=True).order_by('name')
+        ctx['q']         = self.request.GET.get('q', '')
+        return ctx
+
+
+class TeamUserAssignView(StaffRequiredMixin, View):
+    """
+    HTMX — assign a user to a team with a role.
+    Returns updated team membership row for that user.
+    """
+    def post(self, request, user_pk):
+        user    = get_object_or_404(User, pk=user_pk)
+        team_id = request.POST.get('team_id')
+        role    = request.POST.get('role', 'member')
+
+        if not team_id:
+            return HttpResponseBadRequest('team_id is required.')
+
+        team = get_object_or_404(Team, pk=team_id)
+        TeamMembership.objects.get_or_create(
+            user=user, team=team,
+            defaults={'role': role}
+        )
+
+        return render(request, 'teams/partials/user_team_badges.html', {
+            'u': user,
+            'memberships': user.team_memberships.select_related('team').all(),
+            'all_teams':   Team.objects.filter(is_active=True).order_by('name'),
+        })
+
+
+class TeamUserRemoveView(StaffRequiredMixin, View):
+    """
+    HTMX — remove a user from a specific team.
+    Returns updated team membership badges for that user.
+    """
+    def post(self, request, user_pk, slug):
+        team = get_object_or_404(Team, slug=slug)
+        TeamMembership.objects.filter(user_id=user_pk, team=team).delete()
+
+        user = get_object_or_404(User, pk=user_pk)
+        return render(request, 'teams/partials/user_team_badges.html', {
+            'u':           user,
+            'memberships': user.team_memberships.select_related('team').all(),
+            'all_teams':   Team.objects.filter(is_active=True).order_by('name'),
+        })

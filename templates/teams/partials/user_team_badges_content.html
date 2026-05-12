@@ -1,0 +1,53 @@
+{% load static %}
+
+{% for m in memberships %}
+<span class="badge me-1 mb-1"
+      style="background-color: {{ m.team.color }}; font-size: 11px; padding: 4px 8px;">
+    <i class="bi bi-{{ m.team.icon|default:'people-fill' }}"></i>
+    {{ m.team.name }}
+    <button hx-post="{% url 'teams:team-user-remove' user.pk m.team.slug %}"
+            hx-target="#user-teams-{{ user.pk }}"
+            hx-swap="outerHTML"
+            hx-confirm="Remove {{ user.full_name }} from {{ m.team.name }}?"
+            class="btn-close btn-close-white ms-1"
+            style="font-size: 8px;"
+            aria-label="Remove"
+            type="button">
+    </button>
+</span>
+{% empty %}
+<span class="text-muted">—</span>
+{% endfor %}
+
+<!-- Inline assign form -->
+<div class="d-inline-block ms-1">
+    <form hx-post="{% url 'teams:team-user-assign' user.pk %}"
+          hx-target="#user-teams-{{ user.pk }}"
+          hx-swap="outerHTML"
+          class="d-inline-flex gap-1 align-items-center">
+        {% csrf_token %}
+        <select name="team_id" class="form-select form-select-sm" style="width:auto; font-size:11px;">
+            <option value="">+ Add to team</option>
+            {% for team in all_teams %}
+                {% with is_member=False %}
+                    {% for m in memberships %}
+                        {% if m.team.pk == team.pk %}
+                            {% with is_member=True %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if not is_member %}
+                        <option value="{{ team.pk }}">{{ team.name }}</option>
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+        </select>
+        <select name="role" class="form-select form-select-sm" style="width:auto; font-size:11px;">
+            <option value="member">Member</option>
+            <option value="lead">Lead</option>
+            <option value="guest">Guest</option>
+        </select>
+        <button type="submit" class="btn btn-outline-primary btn-sm" style="font-size:11px;">
+            Add
+        </button>
+    </form>
+</div>
