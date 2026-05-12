@@ -145,6 +145,7 @@ AZURE_REDIRECT_URI = env('AZURE_REDIRECT_URI', default='http://localhost:8000/ac
 
 # Graph API
 GRAPH_WEBHOOK_URL = env('GRAPH_WEBHOOK_URL', default='')
+MSAL_SCOPES = ['User.Read', 'Mail.ReadWrite', 'Mail.Send']
 
 # AI Configuration (used for initial seeding only)
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
