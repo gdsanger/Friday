@@ -1,0 +1,27 @@
+<!-- Quick add form for Kanban columns -->
+<form hx-post="{% url 'tasks:task-create' %}"
+      hx-target="#col-{{ selected_status }} .kanban-cards"
+      hx-swap="beforeend"
+      hx-on::after-request="if(event.detail.successful) this.reset()">
+    {% csrf_token %}
+    <input type="hidden" name="project_id" value="{{ selected_project.pk }}">
+    <input type="hidden" name="status" value="{{ selected_status }}">
+
+    <div class="mb-2">
+        <input type="text"
+               name="title"
+               class="form-control form-control-sm"
+               placeholder="Task title..."
+               required
+               autofocus>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm"
+                onclick="this.closest('#quick-add-{{ selected_status }}').innerHTML=''">
+            Cancel
+        </button>
+    </div>
+</form>
