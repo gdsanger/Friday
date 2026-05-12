@@ -7,6 +7,7 @@ import logging
 from datetime import date
 from django.core.cache import cache
 from django.conf import settings
+from asgiref.sync import sync_to_async
 import openai
 import anthropic
 
@@ -28,32 +29,32 @@ class GlobalAIService:
 
     async def summarize_task(self, task, user) -> str:
         """Summarize a task based on its content and comments."""
-        prompt = build_prompt('summarize_task', task=task)
+        prompt = await sync_to_async(build_prompt)('summarize_task', task=task)
         return await self._dispatch(prompt, action='summarize_task',
                                      user=user, obj=task, max_tokens=300)
 
     async def suggest_subtasks(self, task, user) -> list[str]:
         """Suggest subtasks for a given task."""
-        prompt = build_prompt('suggest_subtasks', task=task)
+        prompt = await sync_to_async(build_prompt)('suggest_subtasks', task=task)
         result = await self._dispatch(prompt, action='suggest_subtasks',
                                        user=user, obj=task, max_tokens=600)
         return self._parse_list(result)
 
     async def generate_task_description(self, title: str, user) -> str:
         """Generate a task description from a title."""
-        prompt = build_prompt('task_description', title=title)
+        prompt = await sync_to_async(build_prompt)('task_description', title=title)
         return await self._dispatch(prompt, action='task_description',
                                      user=user, max_tokens=400)
 
     async def generate_project_report(self, project, user) -> str:
         """Generate a project status report."""
-        prompt = build_prompt('project_report', project=project)
+        prompt = await sync_to_async(build_prompt)('project_report', project=project)
         return await self._dispatch(prompt, action='project_report',
                                      user=user, obj=project, max_tokens=1500)
 
     async def draft_mail_reply(self, mail_body: str, task_context: str, user) -> str:
         """Draft an email reply in the context of a task."""
-        prompt = build_prompt('mail_reply', body=mail_body, context=task_context)
+        prompt = await sync_to_async(build_prompt)('mail_reply', body=mail_body, context=task_context)
         return await self._dispatch(prompt, action='mail_reply',
                                      user=user, max_tokens=500)
 

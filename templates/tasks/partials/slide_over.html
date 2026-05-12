@@ -90,7 +90,7 @@
                         <option value="">— Select Team —</option>
                         {% for team in project_teams %}
                         <option value="{{ team.id }}" {% if task.assigned_to_team.id == team.id %}selected{% endif %}>
-                            {{ team.name }}
+                            {{ team.name }}{% if team.is_global %} 🌐{% endif %}
                         </option>
                         {% endfor %}
                     </select>
