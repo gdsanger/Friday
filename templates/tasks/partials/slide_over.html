@@ -2,7 +2,7 @@
 <div class="slide-over-panel" style="position: fixed; top: 0; right: 0; width: 600px; height: 100vh; background: var(--bs-body-bg); box-shadow: -4px 0 24px rgba(0,0,0,0.15); overflow-y: auto; z-index: 1050; padding: 2rem;">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-start mb-3">
-        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('slide-over').innerHTML='';">
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeSlideOver();">
             <i class="bi bi-arrow-left"></i> Back
         </button>
         <div class="dropdown">
@@ -15,7 +15,7 @@
                     <a class="dropdown-item text-danger"
                        hx-post="{% url 'tasks:task-delete' task.pk %}"
                        hx-confirm="Delete this task?"
-                       onclick="document.getElementById('slide-over').innerHTML='';">
+                       onclick="closeSlideOver();">
                         <i class="bi bi-trash"></i> Delete Task
                     </a>
                 </li>
