@@ -342,3 +342,19 @@ body {
 [data-bs-theme="dark"] .form-select:focus {
     background-color: var(--friday-surface-alt);
 }
+
+/* ============================================
+   Avatar Circle
+   ============================================ */
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
