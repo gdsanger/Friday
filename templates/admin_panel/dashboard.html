@@ -1,0 +1,192 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block admin_content %}
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Active Users</h6>
+                        <h2 class="card-title mb-0">{{ user_count }}</h2>
+                    </div>
+                    <div class="fs-1 text-primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Active Teams</h6>
+                        <h2 class="card-title mb-0">{{ team_count }}</h2>
+                    </div>
+                    <div class="fs-1 text-success">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Active Projects</h6>
+                        <h2 class="card-title mb-0">{{ project_count }}</h2>
+                    </div>
+                    <div class="fs-1 text-info">
+                        <i class="bi bi-folder"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2 text-muted">Open Tasks</h6>
+                        <h2 class="card-title mb-0">{{ task_count }}</h2>
+                    </div>
+                    <div class="fs-1 text-warning">
+                        <i class="bi bi-check2-square"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Status Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">AI Service Status</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if ai_enabled %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-check-circle"></i> Enabled
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger fs-6">
+                                    <i class="bi bi-x-circle"></i> Disabled
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted mb-1">Tokens Today</h6>
+                        <p class="mb-0 fs-4 font-monospace">{{ ai_tokens_today|default:"0" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted mb-1">Recent Errors</h6>
+                        <p class="mb-0 fs-4">{{ recent_errors|length }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'admin_panel:admin-ai' %}" class="btn btn-primary w-100">
+                            <i class="bi bi-graph-up"></i> View AI Monitor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-people-fill text-primary"></i>
+                    User Management
+                </h5>
+                <p class="card-text">Manage user accounts, invitations, and permissions.</p>
+                <a href="{% url 'admin_panel:admin-users' %}" class="btn btn-outline-primary">
+                    Manage Users <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-diagram-3-fill text-success"></i>
+                    Team Management
+                </h5>
+                <p class="card-text">Create and manage teams, assign members.</p>
+                <a href="{% url 'admin_panel:admin-teams' %}" class="btn btn-outline-success">
+                    Manage Teams <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-gear-fill text-secondary"></i>
+                    System Settings
+                </h5>
+                <p class="card-text">Configure organisation and platform settings.</p>
+                <a href="{% url 'admin_panel:admin-settings' %}" class="btn btn-outline-secondary">
+                    Settings <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent AI Errors (if any) -->
+{% if recent_errors %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Recent AI Errors
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    {% for error in recent_errors %}
+                    <li class="mb-2 pb-2 border-bottom">
+                        <strong>{{ error.created_at|date:"Y-m-d H:i" }}</strong> -
+                        {{ error.provider|upper }} -
+                        {{ error.action }} -
+                        <span class="text-muted">{{ error.error_message|truncatewords:20 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <a href="{% url 'admin_panel:admin-ai' %}" class="btn btn-sm btn-danger mt-2">
+                    View All Errors
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

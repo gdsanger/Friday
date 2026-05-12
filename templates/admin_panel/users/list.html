@@ -1,0 +1,87 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block page_title %}User Management{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>User Management</h2>
+        <p class="text-muted">Manage user accounts and permissions</p>
+    </div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteUserModal">
+        <i class="bi bi-person-plus"></i> Invite User
+    </button>
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" hx-get="{% url 'admin_panel:admin-users' %}" hx-target="#user-table" hx-trigger="keyup changed delay:500ms from:input[name='q']">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="q" placeholder="Search users by name, email, or username..." value="{{ request.GET.q }}">
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-body">
+        <div id="user-table">
+            {% include 'admin_panel/users/partials/user_table.html' %}
+        </div>
+    </div>
+</div>
+
+<!-- Invite User Modal -->
+<div class="modal fade" id="inviteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invite New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'admin_panel:admin-user-invite' %}" hx-post="{% url 'admin_panel:admin-user-invite' %}" hx-target="#user-table">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" name="email" required>
+                        <div class="form-text">User will receive an invitation email</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Display Name</label>
+                        <input type="text" class="form-control" name="display_name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Initial Team (Optional)</label>
+                        <select class="form-select" name="team_id">
+                            <option value="">No team</option>
+                            {% for team in all_teams %}
+                            <option value="{{ team.id }}">{{ team.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Close modal on successful HTMX response
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'user-table') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('inviteUserModal'));
+            if (modal) {
+                modal.hide();
+            }
+        }
+    });
+</script>
+{% endblock %}

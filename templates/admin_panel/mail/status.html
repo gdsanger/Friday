@@ -1,0 +1,107 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block page_title %}Mail & Webhook Status{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2>Mail & Webhook Status</h2>
+    <p class="text-muted">Monitor webhook subscriptions and email threads</p>
+</div>
+
+<!-- Webhook Subscriptions -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Active Webhook Subscriptions</h5>
+    </div>
+    <div class="card-body">
+        {% if subscriptions %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Resource</th>
+                        <th>Expiration</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in subscriptions %}
+                    <tr>
+                        <td>{{ sub.user.full_name }}</td>
+                        <td><small class="font-monospace">{{ sub.resource|truncatewords:3 }}</small></td>
+                        <td>{{ sub.expiration|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {% now "U" as current_time %}
+                            {% if sub.expiration.timestamp > current_time|floatformat:0|add:0 %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ sub.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No webhook subscriptions found.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Mail Threads -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Mail Threads</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_threads %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Direction</th>
+                        <th>Subject</th>
+                        <th>Sender</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for thread in recent_threads %}
+                    <tr>
+                        <td>
+                            {% if thread.task %}
+                            <a href="/tasks/{{ thread.task.pk }}/detail/">{{ thread.task.title|truncatewords:5 }}</a>
+                            {% else %}
+                            <span class="text-muted">No task</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if thread.direction == 'in' %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-arrow-down"></i> Incoming
+                            </span>
+                            {% else %}
+                            <span class="badge bg-primary">
+                                <i class="bi bi-arrow-up"></i> Outgoing
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ thread.subject|truncatewords:8 }}</td>
+                        <td>{{ thread.sender_name|default:thread.sender_email|truncatewords:3 }}</td>
+                        <td>{{ thread.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No mail threads found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

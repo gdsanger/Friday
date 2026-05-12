@@ -1,0 +1,157 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block page_title %}User Details - {{ user_obj.full_name }}{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <a href="{% url 'admin_panel:admin-users' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Users
+    </a>
+</div>
+
+<!-- User Profile Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2 text-center">
+                {% if user_obj.avatar %}
+                <img src="{{ user_obj.avatar.url }}" class="rounded-circle" width="100" height="100" alt="{{ user_obj.full_name }}">
+                {% else %}
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto"
+                     style="width: 100px; height: 100px; font-size: 2rem;">
+                    {{ user_obj.initials }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-10">
+                <h3>{{ user_obj.full_name }}</h3>
+                <p class="text-muted">@{{ user_obj.username }}</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p><strong>Email:</strong> {{ user_obj.email }}</p>
+                        <p><strong>Job Title:</strong> {{ user_obj.job_title|default:"Not set" }}</p>
+                        <p><strong>Phone:</strong> {{ user_obj.phone|default:"Not set" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong>
+                            {% if user_obj.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Staff:</strong>
+                            {% if user_obj.is_staff %}
+                            <span class="badge bg-warning">Yes</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Joined:</strong> {{ user_obj.date_joined|date:"Y-m-d" }}</p>
+                        <p><strong>Last Login:</strong>
+                            {% if user_obj.last_login %}
+                            {{ user_obj.last_login|date:"Y-m-d H:i" }}
+                            {% else %}
+                            Never
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teams -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Team Memberships</h5>
+    </div>
+    <div class="card-body">
+        {% if teams %}
+        <div class="row">
+            {% for team in teams %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ team.name }}</h6>
+                        <p class="card-text text-muted small">{{ team.description|truncatewords:10 }}</p>
+                        <a href="{% url 'teams:detail' team.slug %}" class="btn btn-sm btn-outline-primary">View Team</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Not a member of any team.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Projects -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Projects</h5>
+    </div>
+    <div class="card-body">
+        {% if projects %}
+        <ul class="list-group list-group-flush">
+            {% for project in projects %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ project.name }}
+                <span class="badge bg-secondary">{{ project.get_status_display }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No projects.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tasks -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Created Tasks (Latest 10)</h5>
+            </div>
+            <div class="card-body">
+                {% if created_tasks %}
+                <ul class="list-group list-group-flush">
+                    {% for task in created_tasks %}
+                    <li class="list-group-item">
+                        <a href="/tasks/{{ task.pk }}/detail/">{{ task.title }}</a>
+                        <small class="text-muted d-block">{{ task.created_at|date:"Y-m-d" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No tasks created.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Assigned Tasks (Latest 10)</h5>
+            </div>
+            <div class="card-body">
+                {% if assigned_tasks %}
+                <ul class="list-group list-group-flush">
+                    {% for task in assigned_tasks %}
+                    <li class="list-group-item">
+                        <a href="/tasks/{{ task.pk }}/detail/">{{ task.title }}</a>
+                        <small class="text-muted d-block">{{ task.status|upper }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No assigned tasks.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

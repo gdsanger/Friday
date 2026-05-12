@@ -1,0 +1,57 @@
+<tr id="user-{{ u.id }}">
+    <td>
+        <div class="d-flex align-items-center">
+            {% if u.avatar %}
+            <img src="{{ u.avatar.url }}" class="rounded-circle me-2" width="32" height="32" alt="{{ u.full_name }}">
+            {% else %}
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+                 style="width: 32px; height: 32px; font-size: 0.8rem;">
+                {{ u.initials }}
+            </div>
+            {% endif %}
+            <div>
+                <div class="fw-medium">{{ u.full_name }}</div>
+                <small class="text-muted">@{{ u.username }}</small>
+            </div>
+        </div>
+    </td>
+    <td>{{ u.email }}</td>
+    <td>
+        {% for membership in u.team_memberships.all %}
+        <span class="badge" style="background-color: {{ membership.team.color }};">
+            {{ membership.team.name }}
+        </span>
+        {% empty %}
+        <span class="text-muted">No teams</span>
+        {% endfor %}
+    </td>
+    <td>
+        {% if u.is_active %}
+        <span class="badge bg-success">Active</span>
+        {% else %}
+        <span class="badge bg-secondary">Inactive</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if u.last_login %}
+        {{ u.last_login|date:"Y-m-d H:i" }}
+        {% else %}
+        <span class="text-muted">Never</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'admin_panel:admin-user-detail' u.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-eye"></i>
+            </a>
+            <button type="button"
+                    class="btn btn-outline-{% if u.is_active %}warning{% else %}success{% endif %}"
+                    hx-post="{% url 'admin_panel:admin-user-toggle' u.pk %}"
+                    hx-target="#user-{{ u.id }}"
+                    hx-swap="outerHTML"
+                    {% if u == request.user %}disabled title="Cannot toggle your own status"{% endif %}>
+                <i class="bi bi-{% if u.is_active %}pause{% else %}play{% endif %}-circle"></i>
+            </button>
+        </div>
+    </td>
+</tr>

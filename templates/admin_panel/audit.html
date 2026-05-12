@@ -1,0 +1,26 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block page_title %}Audit Log{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h2>Audit Log</h2>
+    <p class="text-muted">Track system changes and user actions</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Coming Soon:</strong> Audit logging is not yet implemented. This feature will track:
+            <ul class="mb-0 mt-2">
+                <li>User login/logout events</li>
+                <li>Permission changes</li>
+                <li>Team and project modifications</li>
+                <li>System configuration updates</li>
+                <li>Critical data changes</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
