@@ -28,7 +28,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="friday-layout">
         <!-- Sidebar -->
         {% include 'partials/sidebar.html' %}
