@@ -225,3 +225,4 @@ __marimo__/
 # Temporary test files
 test_reserved_scope_fix.py
 test_scope_logic.py
+test_db.sqlite3
