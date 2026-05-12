@@ -1,0 +1,32 @@
+{% if mode == 'edit' %}
+<form hx-post="{% url 'tasks:task-edit-field' task.pk %}"
+      hx-target="this"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+  <input type="hidden" name="field" value="description">
+  <textarea name="value"
+            class="form-control"
+            rows="4"
+            autofocus>{{ task.description }}</textarea>
+  <div class="d-flex gap-2 mt-2">
+    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+    <button type="button"
+            class="btn btn-outline-secondary btn-sm"
+            hx-get="{% url 'tasks:task-edit-field' task.pk %}?mode=view&field=description"
+            hx-target="closest form"
+            hx-swap="outerHTML">Cancel</button>
+  </div>
+</form>
+{% else %}
+<div class="task-description"
+     hx-get="{% url 'tasks:task-edit-field' task.pk %}?mode=edit&field=description"
+     hx-target="this"
+     hx-swap="outerHTML"
+     style="cursor: pointer; min-height: 60px;">
+  {% if task.description %}
+    {{ task.description|linebreaks }}
+  {% else %}
+    <span class="text-muted fst-italic">Click to add a description...</span>
+  {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,56 @@
+{% load friday_tags %}
+<div id="attachment-list">
+
+  <!-- Upload form -->
+  <form hx-post="{% url 'tasks:attachment-upload' task.pk %}"
+        hx-target="#attachment-list"
+        hx-swap="outerHTML"
+        hx-encoding="multipart/form-data">
+    {% csrf_token %}
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <input type="file"
+             name="file"
+             class="form-control form-control-sm"
+             accept="*/*">
+      <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">
+        <i class="bi bi-upload"></i> Upload
+      </button>
+    </div>
+  </form>
+
+  <!-- File list -->
+  {% for att in attachments %}
+  <div class="attachment-row d-flex align-items-center gap-2 py-2
+              border-bottom border-opacity-25">
+    <i class="bi {{ att.filename|file_icon }} text-muted"></i>
+    <a href="{% url 'tasks:attachment-download' att.pk %}"
+       class="text-truncate flex-grow-1"
+       style="max-width: 200px;"
+       title="{{ att.filename }}">
+      {{ att.filename }}
+    </a>
+    <small class="text-muted text-nowrap">
+      {{ att.size_bytes|filesizeformat }}
+    </small>
+    {% if att.uploaded_by %}
+    <small class="text-muted">
+      <div class="avatar-circle bg-primary text-white" style="width: 24px; height: 24px; font-size: 0.6rem;" title="{{ att.uploaded_by.full_name }}">
+        {{ att.uploaded_by.initials }}
+      </div>
+    </small>
+    {% endif %}
+    {% if att.uploaded_by == request.user or user_role == 'manager' %}
+    <button hx-post="{% url 'tasks:attachment-delete' att.pk %}"
+            hx-target="#attachment-list"
+            hx-swap="outerHTML"
+            hx-confirm="Delete {{ att.filename }}?"
+            class="btn btn-link btn-sm text-danger p-0">
+      <i class="bi bi-trash3"></i>
+    </button>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="text-muted fst-italic" style="font-size:13px;">No attachments yet.</p>
+  {% endfor %}
+
+</div>

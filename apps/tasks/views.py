@@ -6,11 +6,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Sum
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, FileResponse
 from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 
-from .models import Task, Comment
+from .models import Task, Comment, Attachment, TimeEntry
 
 User = get_user_model()
 
@@ -318,3 +320,188 @@ class CommentDeleteView(LoginRequiredMixin, View):
         comments = task.comments.select_related('author').order_by('created_at')
         return render(request, 'tasks/partials/comment_list.html',
                       {'task': task, 'comments': comments})
+
+
+class TaskEditFieldView(LoginRequiredMixin, View):
+    """
+    HTMX inline field editor.
+    Accepts: title, description, due_date, priority, status
+    Returns: updated field partial
+    """
+    EDITABLE_FIELDS = ['title', 'description', 'due_date', 'priority', 'status']
+
+    def get(self, request, pk):
+        """Return edit or view mode partial based on ?mode= parameter."""
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        mode = request.GET.get('mode', 'view')
+        field = request.GET.get('field', 'title')
+
+        if field not in self.EDITABLE_FIELDS:
+            return HttpResponseBadRequest(f'Field "{field}" is not editable.')
+
+        template_name = f'tasks/partials/field_{field}.html'
+        return render(request, template_name, {'task': task, 'mode': mode})
+
+    def post(self, request, pk):
+        """Update field value and return view mode partial."""
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        field = request.POST.get('field')
+        value = request.POST.get('value', '').strip()
+
+        if field not in self.EDITABLE_FIELDS:
+            return HttpResponseBadRequest(f'Field "{field}" is not editable.')
+
+        if field == 'title' and not value:
+            return HttpResponseBadRequest('Title cannot be empty.')
+
+        setattr(task, field, value or None)
+        task.save(update_fields=[field])
+
+        return render(request, f'tasks/partials/field_{field}.html', {'task': task, 'mode': 'view'})
+
+
+class TaskDetailFullView(LoginRequiredMixin, View):
+    """
+    Full-page task detail — renders in the main content area.
+    Same data as slide-over but uses a different template with more space.
+    """
+    def get(self, request, pk):
+        task = get_object_or_404(
+            Task.objects.select_related(
+                'project', 'created_by',
+                'assigned_to_user', 'assigned_to_team', 'parent_task',
+            ).prefetch_related(
+                'subtasks', 'labels', 'comments__author',
+                'attachments__uploaded_by',
+                'watching_users', 'watching_teams',
+                'time_entries__user',
+            ),
+            pk=pk
+        )
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        return render(request, 'tasks/detail_full.html', {
+            'task':            task,
+            'project_members': task.project.get_all_members(),
+            'project_teams':   task.project.team_members.all(),
+            'is_watching':     request.user in task.get_all_watchers(),
+            'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
+            'user_role':       task.project.get_effective_role(request.user),
+            'breadcrumb': [
+                {'label': 'Projects',      'url': reverse('projects:project-list')},
+                {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},
+                {'label': task.title,      'url': None},
+            ]
+        })
+
+
+class AttachmentUploadView(LoginRequiredMixin, View):
+    """
+    HTMX file upload — returns updated attachment list partial.
+    Accepts multipart/form-data.
+    """
+    MAX_SIZE_MB = 25
+
+    def post(self, request, pk):
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        file = request.FILES.get('file')
+        if not file:
+            return HttpResponseBadRequest('No file provided.')
+
+        # Size check
+        if file.size > self.MAX_SIZE_MB * 1024 * 1024:
+            return HttpResponseBadRequest(f'File exceeds {self.MAX_SIZE_MB}MB limit.')
+
+        attachment = Attachment.objects.create(
+            task        = task,
+            uploaded_by = request.user,
+            file        = file,
+            filename    = file.name,
+            size_bytes  = file.size,
+        )
+
+        attachments = task.attachments.select_related('uploaded_by').order_by('-created_at')
+        return render(request, 'tasks/partials/attachment_list.html',
+                      {'task': task, 'attachments': attachments})
+
+
+class AttachmentDeleteView(LoginRequiredMixin, View):
+    """
+    HTMX — delete attachment (uploader or project manager only).
+    Returns updated attachment list.
+    """
+    def post(self, request, att_pk):
+        att = get_object_or_404(Attachment, pk=att_pk)
+
+        is_uploader = att.uploaded_by == request.user
+        is_manager  = att.task.project.get_effective_role(request.user) == 'manager'
+
+        if not (is_uploader or is_manager):
+            raise PermissionDenied
+
+        att.file.delete(save=False)  # delete from filesystem
+        att.delete()
+
+        attachments = att.task.attachments.select_related('uploaded_by').order_by('-created_at')
+        return render(request, 'tasks/partials/attachment_list.html',
+                      {'task': att.task, 'attachments': attachments})
+
+
+class AttachmentDownloadView(LoginRequiredMixin, View):
+    """Serve file as download (respects project membership)."""
+    def get(self, request, att_pk):
+        att = get_object_or_404(Attachment, pk=att_pk)
+        if not att.task.project.is_member(request.user):
+            raise PermissionDenied
+        return FileResponse(att.file.open('rb'),
+                            as_attachment=True,
+                            filename=att.filename)
+
+
+class TimeEntryLogView(LoginRequiredMixin, View):
+    """HTMX — log time on a task, return updated time entry list."""
+    def post(self, request, pk):
+        task       = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        duration_m = int(request.POST.get('duration_m', 0))
+        note       = request.POST.get('note', '').strip()
+
+        if duration_m > 0:
+            TimeEntry.objects.create(
+                task       = task,
+                user       = request.user,
+                started_at = timezone.now(),
+                duration_m = duration_m,
+                note       = note,
+            )
+
+        entries    = task.time_entries.select_related('user').order_by('-started_at')
+        total_m    = entries.aggregate(t=Sum('duration_m'))['t'] or 0
+        return render(request, 'tasks/partials/time_entry_list.html',
+                      {'task': task, 'entries': entries, 'total_m': total_m})
+
+
+class TimeEntryDeleteView(LoginRequiredMixin, View):
+    """HTMX — delete own time entry, return updated list."""
+    def post(self, request, entry_pk):
+        entry = get_object_or_404(TimeEntry, pk=entry_pk, user=request.user)
+        task  = entry.task
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+        entry.delete()
+        entries = task.time_entries.select_related('user').order_by('-started_at')
+        total_m = entries.aggregate(t=Sum('duration_m'))['t'] or 0
+        return render(request, 'tasks/partials/time_entry_list.html',
+                      {'task': task, 'entries': entries, 'total_m': total_m})
