@@ -13,5 +13,5 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Profile', {'fields': ('avatar', 'display_name', 'job_title', 'phone')}),
         ('Azure SSO', {'fields': ('azure_oid', 'azure_upn')}),
-        ('Preferences', {'fields': ('notify_email', 'notify_inapp', 'theme', 'timezone')}),
+        ('Preferences', {'fields': ('notify_email', 'notify_inapp', 'timezone')}),
     )
