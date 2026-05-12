@@ -38,10 +38,17 @@ class TaskDetailView(LoginRequiredMixin, View):
         if not task.project.is_member(request.user):
             raise PermissionDenied
 
+        # Import Team model for global teams query
+        from apps.teams.models import Team
+
         ctx = {
             'task': task,
             'project_members': task.project.get_all_members(),
-            'project_teams':   task.project.team_members.all(),
+            'project_teams':   Team.objects.filter(
+                models.Q(projectteammembership__project=task.project) |
+                models.Q(is_global=True),
+                is_active=True
+            ).distinct().order_by('name'),
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(
                                    t=Sum('duration_m'))['t'] or 0,
@@ -70,10 +77,11 @@ class TaskCreateView(LoginRequiredMixin, View):
         status     = request.GET.get('status', Task.STATUS_BACKLOG)
         slide_over = request.GET.get('slide_over')
 
-        # Only show projects the user is a member of
+        # Only show projects the user is a member of (including via global teams)
         accessible_projects = Project.objects.filter(
             models.Q(user_members=request.user) |
-            models.Q(team_members__in=request.user.teams)
+            models.Q(team_members__in=request.user.teams) |
+            models.Q(visibility='organisation')  # Org-visible projects are also accessible
         ).distinct().order_by('name')
 
         selected_project = None

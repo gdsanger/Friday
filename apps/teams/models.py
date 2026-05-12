@@ -14,6 +14,11 @@ class Team(TimeStampedModel):
     color       = models.CharField(max_length=7, default='#6366f1')
     icon        = models.CharField(max_length=50, blank=True)  # Bootstrap icon name
     is_active   = models.BooleanField(default=True)
+    is_global   = models.BooleanField(
+        default=False,
+        help_text='Global teams are automatically members of every project '
+                  'and can be assigned tasks without explicit project membership.'
+    )
 
     class Meta:
         ordering = ['name']

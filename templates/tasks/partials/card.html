@@ -32,7 +32,12 @@
                 </div>
                 <span class="small text-muted">{{ task.assigned_to_user.full_name }}</span>
             {% elif task.assigned_to_team %}
-                <span class="badge bg-secondary small">{{ task.assigned_to_team.name }}</span>
+                <span class="badge bg-secondary small">
+                    {{ task.assigned_to_team.name }}
+                    {% if task.assigned_to_team.is_global %}
+                    <i class="bi bi-globe2 ms-1" title="Global team" style="font-size: 10px;"></i>
+                    {% endif %}
+                </span>
             {% endif %}
         </div>
         {% endif %}
