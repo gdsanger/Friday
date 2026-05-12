@@ -66,8 +66,8 @@
                         <div class="progress ms-2" style="width: 100px; height: 6px;">
                             <div class="progress-bar bg-success"
                                  role="progressbar"
-                                 style="width: {% widthratio project.task_count|add:'-'|add:project.open_task_count project.task_count 100 %}%"
-                                 aria-valuenow="{% widthratio project.task_count|add:'-'|add:project.open_task_count project.task_count 100 %}"
+                                 style="width: {% widthratio project.done_task_count project.task_count 100 %}%"
+                                 aria-valuenow="{% widthratio project.done_task_count project.task_count 100 %}"
                                  aria-valuemin="0"
                                  aria-valuemax="100"></div>
                         </div>

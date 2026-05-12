@@ -33,6 +33,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         ).distinct().annotate(
             task_count=Count('tasks'),
             open_task_count=Count('tasks', filter=~models.Q(tasks__status='done')),
+            done_task_count=Count('tasks', filter=models.Q(tasks__status='done')),
         ).order_by('-updated_at')
 
         # Filter by status if provided
