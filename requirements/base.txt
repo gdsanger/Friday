@@ -1,0 +1,9 @@
+Django>=5.1,<6.0
+psycopg[binary]>=3.2
+django-environ>=0.11
+django-htmx>=1.17
+whitenoise>=6.7
+Pillow>=10.0
+celery[redis]>=5.3
+django-celery-beat>=2.6
+django-encrypted-model-fields>=0.6

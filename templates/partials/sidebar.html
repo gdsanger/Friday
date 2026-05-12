@@ -1,0 +1,58 @@
+<!-- Sidebar Navigation -->
+<aside class="friday-sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span class="logo-text">Friday</span>
+        </div>
+        <div class="tagline">Project Management</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{% url 'dashboard:index' %}" class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="bi bi-kanban"></i>
+            <span>Kanban</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="bi bi-folder"></i>
+            <span>Projects</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="bi bi-check2-square"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="bi bi-people"></i>
+            <span>Teams</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="bi bi-bell"></i>
+            <span>Notifications</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        {% if user.is_authenticated %}
+        <div class="user-section">
+            <div class="user-avatar">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.full_name }}">
+                {% else %}
+                    <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ user.full_name }}</div>
+                <a href="{% url 'accounts:logout' %}" class="user-action">Logout</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Theme Toggle -->
+        {% include 'partials/theme_toggle.html' %}
+    </div>
+</aside>
