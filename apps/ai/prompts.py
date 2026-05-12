@@ -1,6 +1,6 @@
 """
 All AI prompt templates in one place.
-Prompts are written in English for best model performance.
+Prompts are written in German for best model performance.
 """
 
 
@@ -20,67 +20,72 @@ def build_prompt(action: str, **kwargs) -> str:
 
 
 def _summarize_task(task) -> str:
-    """Generate prompt for task summarization."""
     comments = '\n'.join(
         f'- {c.author.full_name}: {c.body[:200]}'
         for c in task.comments.order_by('-created_at')[:5]
     )
-    return f"""Summarize the following project task in 2-3 concise sentences.
-Focus on: what needs to be done, current status, and any blockers mentioned in comments.
-End with a suggested priority (None/Low/Medium/High/Critical) on a new line prefixed with "Priority: ".
+    return f"""Fasse die folgende Projektaufgabe in 2-3 prägnanten Sätzen zusammen.
+Fokus auf: Was muss erledigt werden, aktueller Status, und etwaige Blocker aus den Kommentaren.
+Schließe mit einem Prioritätsvorschlag ab (Keine/Niedrig/Mittel/Hoch/Kritisch) auf einer neuen Zeile mit dem Präfix "Priorität: ".
 
-Task: {task.title}
-Description: {task.description or 'No description.'}
+Aufgabe: {task.title}
+Beschreibung: {task.description or 'Keine Beschreibung.'}
 Status: {task.get_status_display()}
-Due: {task.due_date or 'Not set'}
-Recent comments:
-{comments or 'No comments yet.'}"""
+Fällig: {task.due_date or 'Nicht gesetzt'}
+Aktuelle Kommentare:
+{comments or 'Noch keine Kommentare.'}
+
+Antworte ausschließlich auf Deutsch."""
 
 
 def _suggest_subtasks(task) -> str:
-    """Generate prompt for subtask suggestions."""
-    return f"""Break down the following task into 3-6 concrete, actionable subtasks.
-Return a numbered list only. Each subtask should be 1 sentence, starting with a verb.
-Do not add any introduction or closing remarks.
+    return f"""Teile die folgende Aufgabe in 3-6 konkrete, umsetzbare Teilaufgaben auf.
+Gib ausschließlich eine nummerierte Liste zurück. Jede Teilaufgabe in einem Satz, beginnend mit einem Verb.
+Keine Einleitung, kein abschließender Kommentar.
 
-Task: {task.title}
-Description: {task.description or 'No description provided.'}"""
+Aufgabe: {task.title}
+Beschreibung: {task.description or 'Keine Beschreibung vorhanden.'}
+
+Antworte ausschließlich auf Deutsch."""
 
 
 def _task_description(title: str) -> str:
-    """Generate prompt for task description creation."""
-    return f"""Write a clear, concise task description (3-5 sentences) for a project management task with this title:
+    return f"""Schreibe eine klare, prägnante Aufgabenbeschreibung (3-5 Sätze) für eine Projektmanagement-Aufgabe mit folgendem Titel:
 "{title}"
 
-Include: what needs to be done, why it matters, and any obvious success criteria.
-Write in a professional, neutral tone. Do not use markdown headers."""
+Beschreibe: Was muss getan werden, warum ist es wichtig, und welche offensichtlichen Erfolgskriterien gibt es.
+Schreibe in einem professionellen, sachlichen Ton. Keine Markdown-Überschriften verwenden.
+
+Antworte ausschließlich auf Deutsch."""
 
 
 def _project_report(project) -> str:
-    """Generate prompt for project status report."""
-    tasks        = project.tasks.all()
-    total        = tasks.count()
-    done         = tasks.filter(status='done').count()
-    in_progress  = tasks.filter(status='in_progress').count()
-    overdue      = [t for t in tasks if t.is_overdue]
+    tasks       = project.tasks.all()
+    total       = tasks.count()
+    done        = tasks.filter(status='done').count()
+    in_progress = tasks.filter(status='in_progress').count()
+    overdue     = [t for t in tasks if t.is_overdue]
 
-    return f"""Write a brief project status report (max 200 words) for the following project.
-Use a professional tone suitable for a team update email.
+    return f"""Schreibe einen kurzen Projektstatusbericht (max. 200 Wörter) für das folgende Projekt.
+Verwende einen professionellen Ton, geeignet für ein Team-Update per E-Mail.
 
-Project: {project.name}
+Projekt: {project.name}
 Status: {project.get_status_display()}
-Due date: {project.due_date or 'Not set'}
-Progress: {done}/{total} tasks completed, {in_progress} in progress
-Overdue tasks: {len(overdue)}
-Description: {project.description or 'No description.'}"""
+Fälligkeitsdatum: {project.due_date or 'Nicht gesetzt'}
+Fortschritt: {done}/{total} Aufgaben abgeschlossen, {in_progress} in Bearbeitung
+Überfällige Aufgaben: {len(overdue)}
+Beschreibung: {project.description or 'Keine Beschreibung.'}
+
+Antworte ausschließlich auf Deutsch."""
 
 
 def _mail_reply(body: str, context: str) -> str:
-    """Generate prompt for email reply drafting."""
-    return f"""Draft a professional reply to the following email in the context of a project task.
-Keep it concise (3-5 sentences). Do not use placeholders like [Name].
+    return f"""Verfasse eine professionelle Antwort auf die folgende E-Mail im Kontext einer Projektaufgabe.
+Halte die Antwort kurz (3-5 Sätze). Keine Platzhalter wie [Name] verwenden.
 
-Task context: {context}
+Aufgabenkontext: {context}
 
-Original email:
-{body[:1500]}"""
+Ursprüngliche E-Mail:
+{body[:1500]}
+
+Antworte ausschließlich auf Deutsch."""
