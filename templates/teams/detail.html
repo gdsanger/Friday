@@ -42,40 +42,55 @@
                     {% include 'teams/partials/member_list.html' %}
                 </div>
             </div>
+            {% if is_lead or request.user.is_staff %}
+            <div class="card-footer">
+                <h6 class="text-muted mb-2" style="font-size:12px; text-transform:uppercase; letter-spacing:.5px;">
+                    Add Member
+                </h6>
+                <form hx-post="{% url 'teams:team-member-add' team.slug %}"
+                      hx-target="#member-list"
+                      hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <select name="user_id" class="form-select form-select-sm" required>
+                            <option value="">— Select user —</option>
+                            {% for user in all_users %}
+                            <option value="{{ user.pk }}">
+                                {{ user.full_name }} ({{ user.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select name="role" class="form-select form-select-sm" style="max-width:130px;">
+                            <option value="member">Member</option>
+                            <option value="lead">Lead</option>
+                            <option value="guest">Guest</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm text-nowrap">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Projects -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Projects</h5>
+                <h5 class="mb-0">Projects
+                    <span class="badge bg-secondary">{{ projects.count }}</span>
+                </h5>
             </div>
             <div class="card-body">
-                {% if projects %}
-                <div class="list-group list-group-flush">
-                    {% for project in projects %}
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge" style="background-color: {{ project.color }};">&nbsp;</span>
-                                <strong>{{ project.name }}</strong>
-                                <span class="badge bg-secondary ms-2">{{ project.get_status_display }}</span>
-                            </div>
-                            <small class="text-muted">{{ project.updated_at|date:"M d, Y" }}</small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted mb-0">No active projects.</p>
-                {% endif %}
+                {% include 'teams/partials/project_list.html' with team=team projects=projects available_projects=available_projects is_lead=is_lead %}
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Team Info & Add Member -->
+    <!-- Right Column: Team Info -->
     <div class="col-lg-4">
         <!-- Team Info -->
-        <div class="card mb-4">
+        <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Team Info</h5>
             </div>
@@ -96,42 +111,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Add Member Form -->
-        {% if is_lead %}
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Add Member</h5>
-            </div>
-            <div class="card-body">
-                <form hx-post="{% url 'teams:team-member-add' team.slug %}"
-                      hx-target="#member-list"
-                      hx-swap="innerHTML">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="user_id" class="form-label">User</label>
-                        <select name="user_id" id="user_id" class="form-select" required>
-                            <option value="">Select a user...</option>
-                            {% for user in all_users %}
-                            <option value="{{ user.id }}">{{ user.full_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role</label>
-                        <select name="role" id="role" class="form-select">
-                            <option value="member">Member</option>
-                            <option value="lead">Lead</option>
-                            <option value="guest">Guest</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-plus-circle"></i> Add Member
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

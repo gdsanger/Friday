@@ -16,4 +16,6 @@ urlpatterns = [
     path('<slug:slug>/members/add/', views.TeamMemberAddView.as_view(), name='team-member-add'),
     path('<slug:slug>/members/<int:user_id>/remove/', views.TeamMemberRemoveView.as_view(), name='team-member-remove'),
     path('<slug:slug>/members/<int:user_id>/role/', views.TeamMemberRoleView.as_view(), name='team-member-role'),
+    path('<slug:slug>/projects/add/', views.TeamProjectAddView.as_view(), name='team-project-add'),
+    path('<slug:slug>/projects/<int:project_pk>/remove/', views.TeamProjectRemoveView.as_view(), name='team-project-remove'),
 ]

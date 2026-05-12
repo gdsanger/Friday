@@ -49,9 +49,20 @@ class TeamDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['memberships'] = self.object.memberships.select_related('user').order_by('role', 'user__display_name')
-        ctx['projects'] = self.object.member_projects.filter(
-            status__in=['planning', 'active', 'on_hold']
-        ).order_by('-updated_at')[:10]
+
+        # Active projects this team is already assigned to
+        ctx['projects'] = self.object.member_projects.exclude(
+            status='archived'
+        ).order_by('-updated_at')
+
+        # Projects this team is NOT yet assigned to (for the assign form)
+        from apps.projects.models import Project
+        ctx['available_projects'] = Project.objects.exclude(
+            status='archived'
+        ).exclude(
+            team_members=self.object
+        ).order_by('name')
+
         ctx['all_users'] = User.objects.filter(is_active=True).exclude(
             team_memberships__team=self.object
         ).order_by('display_name')
@@ -257,4 +268,73 @@ class TeamUserRemoveView(StaffRequiredMixin, View):
             'u':           user,
             'memberships': user.team_memberships.select_related('team').all(),
             'all_teams':   Team.objects.filter(is_active=True).order_by('name'),
+        })
+
+
+class TeamProjectAddView(LoginRequiredMixin, View):
+    """
+    HTMX — assign this team to a project.
+    Only leads and staff can do this.
+    Returns updated project list partial.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        self.team   = get_object_or_404(Team, slug=kwargs['slug'])
+        is_lead     = self.team.memberships.filter(user=request.user, role='lead').exists()
+        if not (is_lead or request.user.is_staff):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, slug):
+        from apps.projects.models import Project, ProjectTeamMembership
+        project_id = request.POST.get('project_id')
+        role       = request.POST.get('role', 'contributor')
+        project    = get_object_or_404(Project, pk=project_id)
+
+        ProjectTeamMembership.objects.get_or_create(
+            project=project,
+            team=self.team,
+            defaults={'role': role}
+        )
+
+        return render(request, 'teams/partials/project_list.html',
+                      self._ctx())
+
+    def _ctx(self):
+        from apps.projects.models import Project
+        return {
+            'team':               self.team,
+            'projects':           self.team.member_projects.exclude(status='archived').order_by('-updated_at'),
+            'available_projects': Project.objects.exclude(status='archived').exclude(
+                                      team_members=self.team
+                                  ).order_by('name'),
+            'is_lead':            self.team.memberships.filter(user=self.request.user, role='lead').exists(),
+        }
+
+
+class TeamProjectRemoveView(LoginRequiredMixin, View):
+    """
+    HTMX — remove this team from a project.
+    Only leads and staff can do this.
+    Returns updated project list partial.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        self.team = get_object_or_404(Team, slug=kwargs['slug'])
+        is_lead   = self.team.memberships.filter(user=request.user, role='lead').exists()
+        if not (is_lead or request.user.is_staff):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, slug, project_pk):
+        from apps.projects.models import ProjectTeamMembership, Project
+        ProjectTeamMembership.objects.filter(
+            team=self.team, project_id=project_pk
+        ).delete()
+
+        return render(request, 'teams/partials/project_list.html', {
+            'team':               self.team,
+            'projects':           self.team.member_projects.exclude(status='archived').order_by('-updated_at'),
+            'available_projects': Project.objects.exclude(status='archived').exclude(
+                                      team_members=self.team
+                                  ).order_by('name'),
+            'is_lead':            self.team.memberships.filter(user=self.request.user, role='lead').exists(),
         })
