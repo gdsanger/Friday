@@ -221,3 +221,7 @@ __marimo__/
 # Django media and static files
 /media/
 /staticfiles/
+
+# Temporary test files
+test_reserved_scope_fix.py
+test_scope_logic.py

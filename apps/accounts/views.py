@@ -25,11 +25,24 @@ def _build_msal_app() -> msal.ConfidentialClientApplication:
         authority=f'https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}',
     )
 
-def _msal_request_scopes() -> list[str]:
-    # Ensure we get an id_token with stable identity claims.
+def _msal_authorization_scopes() -> list[str]:
+    """
+    Scopes for the authorization URL (step 1 of OAuth flow).
+    Includes reserved OIDC scopes to ensure we get an id_token with stable identity claims.
+    """
     scopes = ['openid', 'profile', 'email'] + list(settings.MSAL_SCOPES)
     # Deduplicate while preserving order.
     return list(dict.fromkeys(scopes))
+
+def _msal_token_scopes() -> list[str]:
+    """
+    Scopes for token acquisition (step 2 of OAuth flow).
+    Excludes reserved scopes (openid, profile, offline_access) as MSAL validates against these.
+    Reserved scopes are automatically handled by MSAL when present in authorization URL.
+    """
+    reserved_scopes = {'openid', 'profile', 'offline_access', 'email'}
+    scopes = [s for s in settings.MSAL_SCOPES if s not in reserved_scopes]
+    return scopes
 
 
 class AzureLoginView(View):
@@ -45,7 +58,7 @@ class AzureLoginView(View):
             'response_type': 'code',
             'redirect_uri': settings.AZURE_REDIRECT_URI,
             'response_mode': 'query',
-            'scope': ' '.join(_msal_request_scopes()),
+            'scope': ' '.join(_msal_authorization_scopes()),
             'state': state,
             'nonce': state,
         }
@@ -76,7 +89,7 @@ class AzureCallbackView(View):
         msal_app = _build_msal_app()
         result = msal_app.acquire_token_by_authorization_code(
             code=code,
-            scopes=_msal_request_scopes(),
+            scopes=_msal_token_scopes(),
             redirect_uri=settings.AZURE_REDIRECT_URI,
         )
 
