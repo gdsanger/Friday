@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}New Task{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Create New Task</h4>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="title"
+                                   name="title"
+                                   required
+                                   autofocus>
+                        </div>
+
+                        <!-- Project -->
+                        <div class="mb-3">
+                            <label for="project" class="form-label">Project <span class="text-danger">*</span></label>
+                            <select class="form-select" id="project" name="project" required>
+                                <option value="">Select a project...</option>
+                                {% for project in accessible_projects %}
+                                <option value="{{ project.pk }}"
+                                        {% if selected_project and selected_project.pk == project.pk %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control"
+                                      id="description"
+                                      name="description"
+                                      rows="4"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <!-- Status -->
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    {% for value, label in status_choices %}
+                                    <option value="{{ value }}"
+                                            {% if selected_status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Priority -->
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    {% for value, label in priority_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Assign to User -->
+                            <div class="col-md-6 mb-3">
+                                <label for="assigned_to_user" class="form-label">Assign to User</label>
+                                <select class="form-select" id="assigned_to_user" name="assigned_to_user">
+                                    <option value="">Unassigned</option>
+                                    {% if selected_project %}
+                                        {% for member in selected_project.get_all_members %}
+                                        <option value="{{ member.pk }}">{{ member.full_name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <div class="form-text">Leave both user and team blank for unassigned tasks</div>
+                            </div>
+
+                            <!-- Assign to Team -->
+                            <div class="col-md-6 mb-3">
+                                <label for="assigned_to_team" class="form-label">Or Assign to Team</label>
+                                <select class="form-select" id="assigned_to_team" name="assigned_to_team">
+                                    <option value="">No team</option>
+                                    {% if selected_project %}
+                                        {% for team in selected_project.team_members.all %}
+                                        <option value="{{ team.pk }}">{{ team.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="mb-4">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date">
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'kanban:kanban-board' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update assignee options when project changes
+document.getElementById('project').addEventListener('change', function() {
+    const projectId = this.value;
+    if (projectId) {
+        // Reload the page with the selected project to get proper member lists
+        window.location.href = '{% url "tasks:task-create" %}?project=' + projectId + '&status={{ selected_status }}';
+    }
+});
+
+// Ensure only one assignment type is selected
+document.getElementById('assigned_to_user').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('assigned_to_team').value = '';
+    }
+});
+
+document.getElementById('assigned_to_team').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('assigned_to_user').value = '';
+    }
+});
+</script>
+{% endblock %}

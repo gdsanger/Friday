@@ -4,9 +4,10 @@ Task views for Friday project.
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db import models
 from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, render, redirect
 from django.views import View
 
 from .models import Task, Comment
@@ -50,23 +51,102 @@ class TaskDetailView(LoginRequiredMixin, View):
 
 class TaskCreateView(LoginRequiredMixin, View):
     """
-    HTMX — inline quick-create form within a Kanban column or project view.
-    Returns new task card partial on success.
+    Full task creation form and HTMX inline quick-create.
+    GET: Returns task creation form page.
+    POST: Creates task and returns card partial (HTMX) or redirects (full form).
     """
-    def post(self, request):
+    def get(self, request):
+        """
+        Full task creation form page.
+        Optional: ?project=<id> pre-selects the project.
+        Optional: ?status=<status> pre-selects the status column.
+        """
         from apps.projects.models import Project
-        project_id = request.POST.get('project_id')
-        project    = get_object_or_404(Project, pk=project_id)
+
+        project_id = request.GET.get('project_id') or request.GET.get('project')
+        status     = request.GET.get('status', Task.STATUS_BACKLOG)
+
+        # Only show projects the user is a member of
+        accessible_projects = Project.objects.filter(
+            models.Q(user_members=request.user) |
+            models.Q(team_members__in=request.user.teams)
+        ).distinct().order_by('name')
+
+        selected_project = None
+        if project_id:
+            selected_project = accessible_projects.filter(pk=project_id).first()
+
+        ctx = {
+            'accessible_projects': accessible_projects,
+            'selected_project':    selected_project,
+            'selected_status':     status,
+            'status_choices':      Task.STATUS_CHOICES,
+            'priority_choices':    Task.PRIORITY_CHOICES,
+            'teams':               request.user.teams,
+        }
+
+        # Return quick-add form for HTMX, full form for regular requests
+        if request.htmx:
+            return render(request, 'tasks/partials/quick_add_form.html', ctx)
+        return render(request, 'tasks/create.html', ctx)
+
+    def post(self, request):
+        """
+        Handles both:
+        - Full page form submission (non-HTMX) → redirect to task detail
+        - HTMX quick-add from Kanban column → return card partial
+        """
+        from apps.projects.models import Project
+
+        project_id = request.POST.get('project_id') or request.POST.get('project')
+        if not project_id:
+            return HttpResponseBadRequest('project_id is required')
+
+        project = get_object_or_404(Project, pk=project_id)
         if not project.is_member(request.user):
             raise PermissionDenied
 
+        title = request.POST.get('title', '').strip()
+        if not title:
+            if request.htmx:
+                return HttpResponseBadRequest('Title is required')
+            return render(request, 'tasks/create.html', {
+                'error': 'Title is required',
+                'accessible_projects': Project.objects.filter(
+                    models.Q(user_members=request.user) |
+                    models.Q(team_members__in=request.user.teams)
+                ).distinct(),
+                'status_choices':      Task.STATUS_CHOICES,
+                'priority_choices':    Task.PRIORITY_CHOICES,
+                'teams':               request.user.teams,
+            })
+
         task = Task.objects.create(
-            title      = request.POST.get('title', '').strip(),
-            project    = project,
-            status     = request.POST.get('status', Task.STATUS_BACKLOG),
-            created_by = request.user,
+            title       = title,
+            description = request.POST.get('description', ''),
+            project     = project,
+            status      = request.POST.get('status', Task.STATUS_BACKLOG),
+            priority    = int(request.POST.get('priority', Task.PRIORITY_NONE)),
+            created_by  = request.user,
+            due_date    = request.POST.get('due_date') or None,
         )
-        return render(request, 'tasks/partials/card.html', {'task': task})
+
+        # Optional: assign immediately
+        user_id = request.POST.get('assigned_to_user')
+        team_id = request.POST.get('assigned_to_team')
+        if user_id:
+            task.assigned_to_user_id = user_id
+            task.save(update_fields=['assigned_to_user'])
+        elif team_id:
+            task.assigned_to_team_id = team_id
+            task.save(update_fields=['assigned_to_team'])
+
+        # HTMX quick-add from Kanban → return card partial
+        if request.htmx:
+            return render(request, 'tasks/partials/card.html', {'task': task})
+
+        # Full page form → redirect to task detail
+        return redirect('tasks:task-detail', pk=task.pk)
 
 
 class TaskEditView(LoginRequiredMixin, View):

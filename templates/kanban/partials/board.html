@@ -19,12 +19,18 @@
 
         <!-- Quick add form at bottom of column -->
         <div class="kanban-quick-add mt-2">
+            {% if active_filters.project %}
             <button class="btn btn-sm btn-outline-secondary w-100"
-                    hx-get="{% url 'tasks:task-create' %}?status={{ status }}{% if active_filters.project %}&project_id={{ active_filters.project }}{% endif %}"
+                    hx-get="{% url 'tasks:task-create' %}?status={{ status }}&project_id={{ active_filters.project }}"
                     hx-target="#quick-add-{{ status }}"
                     hx-swap="innerHTML">
                 <i class="bi bi-plus"></i> Add task
             </button>
+            {% else %}
+            <button class="btn btn-sm btn-outline-secondary w-100" disabled title="Select a project to add tasks">
+                <i class="bi bi-plus"></i> Add task
+            </button>
+            {% endif %}
             <div id="quick-add-{{ status }}"></div>
         </div>
 
