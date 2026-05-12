@@ -1,0 +1,19 @@
+<table class="table table-hover mb-0">
+    <thead>
+        <tr>
+            <th>Member</th>
+            <th>Job Title</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for membership in memberships %}
+        {% include 'teams/partials/member_row.html' %}
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center text-muted">No members yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

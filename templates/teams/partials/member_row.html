@@ -1,0 +1,41 @@
+<tr>
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-primary text-white me-2">
+                {{ membership.user.initials }}
+            </div>
+            <div>
+                <strong>{{ membership.user.full_name }}</strong><br>
+                <small class="text-muted">{{ membership.user.username }}</small>
+            </div>
+        </div>
+    </td>
+    <td>
+        {% if membership.user.job_title %}
+        {{ membership.user.job_title }}
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    <td>
+        <select class="form-select form-select-sm role-select"
+                name="role"
+                hx-post="{% url 'teams:team-member-role' team.slug membership.user.id %}"
+                hx-target="closest tr"
+                hx-swap="outerHTML">
+            <option value="lead" {% if membership.role == 'lead' %}selected{% endif %}>Lead</option>
+            <option value="member" {% if membership.role == 'member' %}selected{% endif %}>Member</option>
+            <option value="guest" {% if membership.role == 'guest' %}selected{% endif %}>Guest</option>
+        </select>
+    </td>
+    <td>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-post="{% url 'teams:team-member-remove' team.slug membership.user.id %}"
+                hx-target="#member-list"
+                hx-swap="innerHTML"
+                hx-confirm="Are you sure you want to remove {{ membership.user.full_name }} from this team?">
+            <i class="bi bi-trash"></i>
+        </button>
+    </td>
+</tr>
