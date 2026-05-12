@@ -4,7 +4,6 @@ HTMX AI Action Endpoints.
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from .service import ai_service
 from .exceptions import AIServiceDisabledError, AIBudgetExceededError, AIProviderError
@@ -19,10 +18,18 @@ class TaskAIActionView(LoginRequiredMixin, View):
     async def post(self, request, task_id, action):
         """Handle POST request for AI actions."""
         from apps.tasks.models import Task
-        task = get_object_or_404(Task, pk=task_id)
+        from django.core.exceptions import ObjectDoesNotExist
+
+        # Fetch task with related project in a single query
+        try:
+            task = await Task.objects.select_related('project').aget(pk=task_id)
+        except ObjectDoesNotExist:
+            return TemplateResponse(request, 'ai/partials/error.html',
+                                    {'error': 'Task not found.'}, status=404)
 
         # Permission: user must be project member
-        if not task.project.is_member(request.user):
+        is_member = await task.project.get_all_members().filter(pk=request.user.pk).aexists()
+        if not is_member:
             return TemplateResponse(request, 'ai/partials/error.html',
                                     {'error': 'Access denied.'}, status=403)
         try:
