@@ -1,0 +1,344 @@
+/**
+ * Friday Design System
+ * Bootstrap 5.3 Light/Dark Mode
+ */
+
+/* ============================================
+   Typography
+   ============================================ */
+
+body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 400;
+}
+
+.dm-mono {
+    font-family: 'DM Mono', 'Courier New', monospace;
+}
+
+/* ============================================
+   Color Tokens - Light Mode
+   ============================================ */
+
+:root,
+[data-bs-theme="light"] {
+    --friday-bg: #f5f4f0;
+    --friday-surface: #ffffff;
+    --friday-surface-alt: #f0efe9;
+    --friday-border: #e2e0d8;
+    --friday-text: #1a1917;
+    --friday-text-muted: #6b6960;
+    --friday-accent: #2d6a4f;
+    --friday-accent-light: #d8f3dc;
+    --sidebar-bg: #1a1917;
+}
+
+/* ============================================
+   Color Tokens - Dark Mode
+   ============================================ */
+
+[data-bs-theme="dark"] {
+    --friday-bg: #141412;
+    --friday-surface: #1e1d1a;
+    --friday-surface-alt: #252420;
+    --friday-border: #2e2d28;
+    --friday-text: #eae8e0;
+    --friday-text-muted: #7a7870;
+    --friday-accent: #40916c;
+    --friday-accent-light: #1b3a2d;
+    --sidebar-bg: #0f0f0d;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+body {
+    background-color: var(--friday-bg);
+    color: var(--friday-text);
+    margin: 0;
+    padding: 0;
+}
+
+/* ============================================
+   Layout Structure
+   ============================================ */
+
+.friday-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar - 240px fixed width */
+.friday-sidebar {
+    width: 240px;
+    background-color: var(--sidebar-bg);
+    color: #eae8e0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.sidebar-header .logo i {
+    font-size: 1.5rem;
+    color: var(--friday-accent);
+}
+
+.sidebar-header .tagline {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--friday-text-muted);
+    padding-left: 36px;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+}
+
+.sidebar-nav .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #d0cfc8;
+    text-decoration: none;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+}
+
+.sidebar-nav .nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.sidebar-nav .nav-item.active {
+    background-color: var(--friday-accent);
+    color: #fff;
+}
+
+.sidebar-nav .nav-item i {
+    font-size: 1.125rem;
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--friday-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+}
+
+.user-action {
+    font-size: 0.75rem;
+    color: var(--friday-text-muted);
+    text-decoration: none;
+}
+
+.user-action:hover {
+    color: #fff;
+}
+
+/* Main Content Area */
+.friday-main {
+    flex: 1;
+    margin-left: 240px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* Topbar - 56px height, sticky */
+.friday-topbar {
+    height: 56px;
+    background-color: var(--friday-surface);
+    border-bottom: 1px solid var(--friday-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.page-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--friday-text);
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Content Area */
+.friday-content {
+    flex: 1;
+    padding: 24px;
+}
+
+/* ============================================
+   Messages
+   ============================================ */
+
+.friday-messages {
+    margin: 16px 24px 0;
+}
+
+.friday-messages .alert {
+    border-radius: 8px;
+}
+
+/* ============================================
+   Auth Layout
+   ============================================ */
+
+.friday-auth-layout {
+    min-height: 100vh;
+    background-color: var(--friday-bg);
+}
+
+.friday-auth-layout .card {
+    border: 1px solid var(--friday-border);
+    background-color: var(--friday-surface);
+}
+
+/* ============================================
+   Theme Toggle
+   ============================================ */
+
+.theme-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+#theme-toggle {
+    border-color: var(--friday-border);
+    color: var(--friday-text);
+}
+
+#theme-toggle:hover {
+    background-color: var(--friday-surface-alt);
+}
+
+/* ============================================
+   Error Pages
+   ============================================ */
+
+.error-page {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-code {
+    font-size: 6rem;
+    line-height: 1;
+}
+
+/* ============================================
+   Bootstrap Overrides
+   ============================================ */
+
+.card {
+    background-color: var(--friday-surface);
+    border-color: var(--friday-border);
+}
+
+.btn-primary {
+    background-color: var(--friday-accent);
+    border-color: var(--friday-accent);
+}
+
+.btn-primary:hover {
+    background-color: var(--friday-accent);
+    border-color: var(--friday-accent);
+    opacity: 0.9;
+}
+
+.form-control,
+.form-select {
+    background-color: var(--friday-surface);
+    border-color: var(--friday-border);
+    color: var(--friday-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--friday-surface);
+    border-color: var(--friday-accent);
+    color: var(--friday-text);
+}
+
+/* Dark mode specific overrides */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--friday-surface-alt);
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--friday-surface-alt);
+}
