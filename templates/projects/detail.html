@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load friday_tags %}
 
 {% block title %}{{ project.name }} - Projects - Friday{% endblock %}
 
@@ -165,14 +166,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if task.priority == 4 %}
-                                    <span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Critical</span>
-                                    {% elif task.priority == 3 %}
-                                    <span class="text-warning"><i class="bi bi-exclamation-circle-fill"></i> High</span>
-                                    {% elif task.priority == 2 %}
-                                    <span class="text-info"><i class="bi bi-dash-circle"></i> Medium</span>
-                                    {% elif task.priority == 1 %}
-                                    <span class="text-muted"><i class="bi bi-circle"></i> Low</span>
+                                    {% if task.priority > 0 %}
+                                    <i class="bi {{ task.priority|priority_icon }}"
+                                       style="color: {{ task.priority|priority_color }}; font-size: 14px;"
+                                       title="{{ task.get_priority_display }}"></i>
+                                    <span>{{ task.get_priority_display }}</span>
                                     {% else %}
                                     <span class="text-muted">—</span>
                                     {% endif %}

@@ -45,3 +45,35 @@ def status_color(project):
         'archived':  '#374151',
     }
     return colors.get(project.status, '#4b5563')
+
+
+@register.filter
+def priority_icon(priority):
+    """Return Bootstrap icon name for a priority value."""
+    icons = {
+        4: 'bi-exclamation-circle-fill',
+        3: 'bi-exclamation-triangle-fill',
+        2: 'bi-dash-circle-fill',
+        1: 'bi-arrow-down-circle',
+        0: '',
+    }
+    try:
+        return icons.get(int(priority), '')
+    except (ValueError, TypeError):
+        return ''
+
+
+@register.filter
+def priority_color(priority):
+    """Return CSS color for a priority value."""
+    colors = {
+        4: '#e55039',
+        3: '#f4a261',
+        2: '#6b7280',
+        1: '#6b7280',
+        0: '',
+    }
+    try:
+        return colors.get(int(priority), '')
+    except (ValueError, TypeError):
+        return ''
