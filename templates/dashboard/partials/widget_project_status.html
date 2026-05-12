@@ -1,0 +1,54 @@
+{% load static %}
+<div class="dashboard-widget"
+     id="widget-project-status"
+     hx-get="{% url 'dashboard:widget-project-status' %}"
+     hx-trigger="every 60s"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="widget-header">
+        <h5 class="widget-title">Project Status</h5>
+    </div>
+    <div class="widget-body">
+        {% if projects %}
+            <div class="project-list">
+                {% for project in projects %}
+                    <div class="project-item mb-3 position-relative">
+                        <div class="d-flex align-items-start justify-content-between mb-1">
+                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                <span class="project-dot" style="background-color: {{ project.color }};"></span>
+                                <a href="{% url 'projects:project-detail' project.pk %}" class="project-name stretched-link">
+                                    {{ project.name }}
+                                </a>
+                            </div>
+                            <span class="badge
+                                {% if project.status == 'planning' %}bg-secondary
+                                {% elif project.status == 'active' %}bg-success
+                                {% elif project.status == 'on_hold' %}bg-warning
+                                {% elif project.status == 'done' %}bg-primary
+                                {% else %}bg-dark{% endif %}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                        {% if project.total_tasks > 0 %}
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-success"
+                                     role="progressbar"
+                                     style="width: {% widthratio project.done_tasks project.total_tasks 100 %}%"
+                                     aria-valuenow="{{ project.done_tasks }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="{{ project.total_tasks }}"></div>
+                            </div>
+                            <small class="text-muted">{{ project.done_tasks }} / {{ project.total_tasks }} tasks completed</small>
+                        {% else %}
+                            <small class="text-muted">No tasks yet</small>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p class="text-muted mb-0">You are not a member of any projects yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>

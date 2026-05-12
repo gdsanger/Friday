@@ -1,0 +1,47 @@
+{% load static %}
+<div class="dashboard-widget"
+     id="widget-activity"
+     hx-get="{% url 'dashboard:widget-activity' %}"
+     hx-trigger="every 60s"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="widget-header">
+        <h5 class="widget-title">Activity Feed</h5>
+    </div>
+    <div class="widget-body">
+        {% if notifications %}
+            <div class="notification-list">
+                {% for notif in notifications %}
+                    <div class="notification-item {% if not notif.is_read %}notification-unread{% endif %}">
+                        <div class="d-flex gap-2">
+                            {% if notif.actor %}
+                                <div class="avatar-circle avatar-sm">
+                                    {{ notif.actor.initials }}
+                                </div>
+                            {% else %}
+                                <div class="avatar-circle avatar-sm bg-secondary">
+                                    <i class="bi bi-bell-fill"></i>
+                                </div>
+                            {% endif %}
+                            <div class="notification-content flex-grow-1">
+                                <div class="notification-text">
+                                    {% if notif.actor %}
+                                        <strong>{{ notif.actor.full_name }}</strong>
+                                    {% else %}
+                                        <strong>System</strong>
+                                    {% endif %}
+                                    {{ notif.verb }}
+                                </div>
+                                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p class="text-muted mb-0">No recent activity</p>
+            </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,10 @@
+{% load static %}
+<div class="kpi-card"
+     hx-get="{% url 'dashboard:widget-my-tasks' %}"
+     hx-trigger="every 60s"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="kpi-label">My open tasks</div>
+    <div class="kpi-value">{{ count }}</div>
+    <a href="{% url 'kanban:kanban-board' %}?view=mine_assigned" class="kpi-link">View all →</a>
+</div>
