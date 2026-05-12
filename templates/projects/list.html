@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static friday_tags %}
 
 {% block title %}Projects - Friday{% endblock %}
 
@@ -36,64 +36,80 @@
 </ul>
 
 <!-- Project list -->
-<div class="list-group">
-    {% for project in projects %}
-    <a href="{% url 'projects:project-detail' project.pk %}"
-       class="list-group-item list-group-item-action"
+{% for project in projects %}
+<a href="{% url 'projects:project-detail' project.pk %}"
+   class="project-row text-decoration-none d-block mb-2">
+  <div class="d-flex align-items-center gap-3 p-3"
        style="border-left: 4px solid {{ project.color }};">
-        <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-2">
-                    <h5 class="mb-0 me-3">{{ project.name }}</h5>
-                    {% include 'projects/partials/status_badge.html' %}
-                </div>
-                {% if project.description %}
-                <p class="text-muted mb-2">{{ project.description|truncatewords:20 }}</p>
-                {% endif %}
-                <div class="d-flex align-items-center gap-3 text-muted small">
-                    <!-- Owner -->
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-circle bg-primary text-white me-2" style="width: 24px; height: 24px; font-size: 0.625rem;">
-                            {{ project.owner.initials }}
-                        </div>
-                        <span>{{ project.owner.full_name }}</span>
-                    </div>
-                    <!-- Task progress -->
-                    {% if project.task_count > 0 %}
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-list-check me-1"></i>
-                        <span>{{ project.open_task_count }} / {{ project.task_count }} tasks</span>
-                        <div class="progress ms-2" style="width: 100px; height: 6px;">
-                            <div class="progress-bar bg-success"
-                                 role="progressbar"
-                                 style="width: {% widthratio project.done_task_count project.task_count 100 %}%"
-                                 aria-valuenow="{% widthratio project.done_task_count project.task_count 100 %}"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100"></div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    <!-- Due date -->
-                    {% if project.due_date %}
-                    <div>
-                        <i class="bi bi-calendar me-1"></i>
-                        <span>Due {{ project.due_date|date:"M d, Y" }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+
+    <!-- Left: Name + Status -->
+    <div class="flex-grow-1 min-width-0">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="project-name">{{ project.name }}</span>
+        <span class="badge" style="background-color: {{ project|status_color }}; color: white; font-size: 10px; padding: 3px 8px;">
+          {{ project.get_status_display }}
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      {% with total=project.task_count open=project.open_task_count %}
+      {% if total > 0 %}
+      {% widthratio total|subtract:open total 100 as pct %}
+      <div class="progress mt-1" style="height:4px; background:var(--friday-border);">
+        <div class="progress-bar"
+             style="width:{{ pct }}%; background:{{ project.color }};">
         </div>
-    </a>
-    {% empty %}
-    <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            <i class="bi bi-folder fs-1 mb-3 d-block"></i>
-            <p class="mb-0">No projects found.</p>
-            <a href="{% url 'projects:project-create' %}" class="btn btn-outline-primary mt-3">
-                <i class="bi bi-plus-circle"></i> Create your first project
-            </a>
-        </div>
+      </div>
+      <div class="d-flex justify-content-between mt-1">
+        <small class="text-muted">
+          {{ total|subtract:open }} / {{ total }} tasks done
+        </small>
+      </div>
+      {% else %}
+      <small class="text-muted">No tasks yet</small>
+      {% endif %}
+      {% endwith %}
     </div>
-    {% endfor %}
+
+    <!-- Right: Owner + Due date -->
+    <div class="d-flex align-items-center gap-3 flex-shrink-0 text-end">
+
+      <!-- Owner avatar -->
+      {% if project.owner %}
+      <div class="d-flex align-items-center gap-2">
+        <div class="user-avatar user-avatar-sm"
+             title="{{ project.owner.full_name }}">
+          {{ project.owner.initials }}
+        </div>
+        <small class="d-none d-md-inline text-muted">
+          {{ project.owner.full_name }}
+        </small>
+      </div>
+      {% endif %}
+
+      <!-- Due date -->
+      {% if project.due_date %}
+      <div class="d-flex align-items-center gap-1
+                  {% if project.due_date < today %}text-danger{% else %}text-muted{% endif %}"
+           style="font-size:12px; font-family:var(--font-mono);">
+        <i class="bi bi-calendar3"></i>
+        {{ project.due_date|date:"d.m.Y" }}
+      </div>
+      {% endif %}
+
+      <!-- Chevron -->
+      <i class="bi bi-chevron-right text-muted" style="font-size:12px;"></i>
+
+    </div>
+  </div>
+</a>
+{% empty %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-folder2-open" style="font-size:40px; opacity:.3;"></i>
+  <p class="mt-3">No projects found.</p>
+  <a href="{% url 'projects:project-create' %}" class="btn btn-primary btn-sm">
+    Create your first project
+  </a>
 </div>
+{% endfor %}
 {% endblock %}

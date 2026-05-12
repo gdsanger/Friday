@@ -55,10 +55,12 @@ class ProjectListView(LoginRequiredMixin, ListView):
         return queryset
 
     def get_context_data(self, **kwargs):
+        from django.utils import timezone
         ctx = super().get_context_data(**kwargs)
         # Filter by status tab
         ctx['status_filter'] = self.request.GET.get('status', 'active')
         ctx['status_choices'] = Project.STATUS_CHOICES
+        ctx['today'] = timezone.now().date()
         return ctx
 
 

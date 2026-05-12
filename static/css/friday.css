@@ -685,5 +685,46 @@ body {
 /* Shadow utility */
 :root {
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+}
+
+/* ── Project List ── */
+.project-row {
+  background: var(--friday-surface);
+  border-radius: 8px;
+  border: 1px solid var(--friday-border);
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.1s, border-color 0.15s;
+  color: var(--friday-text);
+}
+
+.project-row:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  border-color: var(--friday-accent);
+  color: var(--friday-text);
+}
+
+.project-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--friday-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Progress bar in dark mode needs explicit track color */
+.progress {
+  background-color: var(--friday-border) !important;
+}
+
+/* User avatar — small variant */
+.user-avatar-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
