@@ -15,6 +15,10 @@ def friday_context(request):
 
     # Add user teams if authenticated
     if request.user.is_authenticated:
-        context['user_teams'] = request.user.teams.all() if hasattr(request.user, 'teams') else []
+        try:
+            context['user_teams'] = list(request.user.teams.all()) if hasattr(request.user, 'teams') else []
+        except Exception:
+            # Teams model may not be available yet
+            context['user_teams'] = []
 
     return context
