@@ -15,16 +15,12 @@
         </a>
         <a href="{% url 'kanban:kanban-board' %}" class="nav-item {% if request.resolver_match.app_name == 'kanban' %}active{% endif %}">
             <i class="bi bi-kanban"></i>
-            <span>Kanban</span>
+            <span>Tasks</span>
         </a>
         <a href="{% url 'projects:project-list' %}" class="nav-item {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
             <i class="bi bi-folder"></i>
             <span>Projects</span>
-        </a>
-        <a href="{% url 'kanban:kanban-board' %}" class="nav-item {% if request.resolver_match.app_name == 'kanban' or request.resolver_match.app_name == 'tasks' %}active{% endif %}">
-            <i class="bi bi-check2-square"></i>
-            <span>Tasks</span>
-        </a>
+        </a>        
         <a href="{% url 'teams:team-list' %}" class="nav-item {% if request.resolver_match.app_name == 'teams' %}active{% endif %}">
             <i class="bi bi-people"></i>
             <span>Teams</span>
