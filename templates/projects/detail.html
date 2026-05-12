@@ -44,7 +44,7 @@
                hx-swap="innerHTML">
                 <i class="bi bi-plus-lg"></i> New Task
             </a>
-            {% if user_role == 'manager' %}
+            {% if user_role == 'manager' or request.user.is_staff %}
             <a href="{% url 'projects:project-edit' project.pk %}" class="btn btn-outline-primary">
                 <i class="bi bi-pencil"></i> Edit
             </a>
