@@ -1,0 +1,35 @@
+{% load static %}
+<div class="list-group-item {% if not notification.is_read %}notification-unread{% endif %}"
+     style="{% if not notification.is_read %}border-left: 3px solid var(--bs-primary);{% endif %}">
+    <div class="d-flex w-100 align-items-start">
+        <div class="me-3">
+            {% if notification.actor %}
+                {% if notification.actor.avatar %}
+                    <img src="{{ notification.actor.avatar.url }}"
+                         class="rounded-circle"
+                         width="40"
+                         height="40"
+                         alt="{{ notification.actor.full_name }}">
+                {% else %}
+                    <div class="avatar-placeholder rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 40px; height: 40px; background-color: #e0e0e0;">
+                        {{ notification.actor.username|first|upper }}
+                    </div>
+                {% endif %}
+            {% else %}
+                <i class="bi bi-bell-fill" style="font-size: 2rem; opacity: 0.5;"></i>
+            {% endif %}
+        </div>
+        <div class="flex-grow-1">
+            <div class="mb-1">
+                {% if notification.actor %}
+                    <strong>{{ notification.actor.full_name }}</strong>
+                {% else %}
+                    <strong>System</strong>
+                {% endif %}
+                {{ notification.verb }}
+            </div>
+            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+        </div>
+    </div>
+</div>
