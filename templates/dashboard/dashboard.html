@@ -30,29 +30,23 @@
 
     <!-- Due this week (7 days) -->
     <div class="col-12 col-sm-6 col-lg-3">
-        <div class="kpi-card kpi-card-mini"
-             hx-get="{% url 'dashboard:widget-due-soon' %}"
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-due-week' %}"
              hx-trigger="load, every 60s"
-             hx-target="#widget-due-soon"
-             hx-swap="innerHTML">
-            <div class="kpi-label">Due this week</div>
-            <div class="kpi-value" id="due-week-count">
-                <div class="kpi-skeleton"></div>
-            </div>
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
         </div>
     </div>
 
     <!-- My projects -->
     <div class="col-12 col-sm-6 col-lg-3">
-        <div class="kpi-card kpi-card-mini"
-             hx-get="{% url 'dashboard:widget-project-status' %}"
+        <div class="kpi-card"
+             hx-get="{% url 'dashboard:widget-my-projects' %}"
              hx-trigger="load, every 60s"
-             hx-target="#widget-project-status"
-             hx-swap="innerHTML">
-            <div class="kpi-label">My projects</div>
-            <div class="kpi-value" id="project-count">
-                <div class="kpi-skeleton"></div>
-            </div>
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="kpi-skeleton"></div>
         </div>
     </div>
 </div>

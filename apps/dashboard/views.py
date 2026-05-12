@@ -124,3 +124,36 @@ class WidgetActivityView(LoginRequiredMixin, View):
         return render(request, 'dashboard/partials/widget_activity.html', {
             'notifications': notifications,
         })
+
+
+class WidgetDueWeekView(LoginRequiredMixin, View):
+    """KPI widget showing count of tasks due this week (7 days)."""
+    def get(self, request):
+        today = timezone.now().date()
+        in_7days = today + timedelta(days=7)
+        user = request.user
+        my_teams = user.teams
+
+        count = Task.objects.filter(
+            Q(assigned_to_user=user) | Q(assigned_to_team__in=my_teams),
+            due_date__range=(today, in_7days),
+        ).exclude(status='done').count()
+
+        return render(request, 'dashboard/partials/widget_due_week.html', {
+            'count': count,
+        })
+
+
+class WidgetMyProjectsView(LoginRequiredMixin, View):
+    """KPI widget showing count of user's active projects."""
+    def get(self, request):
+        user = request.user
+        my_teams = user.teams
+
+        count = Project.objects.filter(
+            Q(user_members=user) | Q(team_members__in=my_teams)
+        ).exclude(status='archived').distinct().count()
+
+        return render(request, 'dashboard/partials/widget_my_projects.html', {
+            'count': count,
+        })

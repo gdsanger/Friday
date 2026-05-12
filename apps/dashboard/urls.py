@@ -16,4 +16,6 @@ urlpatterns = [
     path('widgets/due-soon/', views.WidgetDueSoonView.as_view(), name='widget-due-soon'),
     path('widgets/project-status/', views.WidgetProjectStatusView.as_view(), name='widget-project-status'),
     path('widgets/activity/', views.WidgetActivityView.as_view(), name='widget-activity'),
+    path('widgets/due-week/', views.WidgetDueWeekView.as_view(), name='widget-due-week'),
+    path('widgets/my-projects/', views.WidgetMyProjectsView.as_view(), name='widget-my-projects'),
 ]
