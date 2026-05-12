@@ -226,3 +226,4 @@ __marimo__/
 test_reserved_scope_fix.py
 test_scope_logic.py
 test_db.sqlite3
+.env
