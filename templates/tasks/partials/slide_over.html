@@ -1,0 +1,274 @@
+{% load static %}
+<div class="slide-over-panel" style="position: fixed; top: 0; right: 0; width: 600px; height: 100vh; background: var(--bs-body-bg); box-shadow: -4px 0 24px rgba(0,0,0,0.15); overflow-y: auto; z-index: 1050; padding: 2rem;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('slide-over').innerHTML='';">
+            <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu">
+                {% if user_role == 'manager' or task.created_by == request.user %}
+                <li>
+                    <a class="dropdown-item text-danger"
+                       hx-post="{% url 'tasks:task-delete' task.pk %}"
+                       hx-confirm="Delete this task?"
+                       onclick="document.getElementById('slide-over').innerHTML='';">
+                        <i class="bi bi-trash"></i> Delete Task
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Title -->
+    <h3 class="mb-3">{{ task.title }}</h3>
+
+    <!-- Project & Status -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="{% url 'projects:project-detail' task.project.pk %}" class="text-decoration-none">
+            <span style="display: inline-block; width: 4px; height: 16px; background-color: {{ task.project.color }}; border-radius: 2px; margin-right: 8px;"></span>
+            {{ task.project.name }}
+        </a>
+        <select class="form-select form-select-sm" style="width: auto;"
+                name="status"
+                hx-post="{% url 'tasks:task-status' task.pk %}"
+                hx-trigger="change"
+                hx-include="this">
+            {% for value, label in task.STATUS_CHOICES %}
+            <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Description -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">Description</h6>
+        </div>
+        <div class="card-body">
+            {% if task.description %}
+                <div class="text-break">{{ task.description|linebreaks }}</div>
+            {% else %}
+                <p class="text-muted mb-0">No description provided</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Task Details -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Assigned To -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Assigned to:</div>
+                <div class="col-8">
+                    <select class="form-select form-select-sm"
+                            name="user_id"
+                            hx-post="{% url 'tasks:task-assign' task.pk %}"
+                            hx-target="#task-assignee"
+                            hx-swap="innerHTML"
+                            hx-include="[name='team_id']">
+                        <option value="">— Select User —</option>
+                        {% for member in project_members %}
+                        <option value="{{ member.id }}" {% if task.assigned_to_user.id == member.id %}selected{% endif %}>
+                            {{ member.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select form-select-sm mt-2"
+                            name="team_id"
+                            hx-post="{% url 'tasks:task-assign' task.pk %}"
+                            hx-target="#task-assignee"
+                            hx-swap="innerHTML"
+                            hx-include="[name='user_id']">
+                        <option value="">— Select Team —</option>
+                        {% for team in project_teams %}
+                        <option value="{{ team.id }}" {% if task.assigned_to_team.id == team.id %}selected{% endif %}>
+                            {{ team.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-2">
+                        {% include 'tasks/partials/assignee.html' %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Due Date -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Due date:</div>
+                <div class="col-8">
+                    <input type="date"
+                           class="form-control form-control-sm"
+                           name="due_date"
+                           value="{% if task.due_date %}{{ task.due_date|date:'Y-m-d' }}{% endif %}"
+                           hx-post="{% url 'tasks:task-edit' task.pk %}"
+                           hx-trigger="change"
+                           hx-include="this">
+                    {% if task.is_overdue %}
+                    <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Overdue</small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Priority:</div>
+                <div class="col-8">
+                    <select class="form-select form-select-sm"
+                            name="priority"
+                            hx-post="{% url 'tasks:task-edit' task.pk %}"
+                            hx-trigger="change"
+                            hx-include="this">
+                        {% for value, label in task.PRIORITY_CHOICES %}
+                        <option value="{{ value }}" {% if task.priority == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Watchers -->
+            <div class="row">
+                <div class="col-4 fw-semibold">Watchers:</div>
+                <div class="col-8">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex">
+                            {% for watcher in task.watching_users.all|slice:":5" %}
+                            <div class="avatar-circle bg-primary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;" title="{{ watcher.full_name }}">
+                                {{ watcher.initials }}
+                            </div>
+                            {% endfor %}
+                            {% if task.watching_users.count > 5 %}
+                            <div class="avatar-circle bg-secondary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;">
+                                +{{ task.watching_users.count|add:"-5" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% include 'tasks/partials/watch_button.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subtasks -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Subtasks</h6>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#subtask-form">
+                <i class="bi bi-plus"></i> Add
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="collapse mb-3" id="subtask-form">
+                <form hx-post="{% url 'tasks:subtask-create' task.pk %}"
+                      hx-target="#subtask-list"
+                      hx-swap="innerHTML"
+                      hx-on::after-request="this.reset(); bootstrap.Collapse.getInstance(document.getElementById('subtask-form')).hide();">
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="title" class="form-control" placeholder="Subtask title" required>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+            {% include 'tasks/partials/subtask_list.html' with subtasks=task.subtasks.all %}
+        </div>
+    </div>
+
+    <!-- AI Actions -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-robot"></i> AI Actions</h6>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-post="{% url 'ai:task-ai-action' task.pk 'summarize' %}"
+                        hx-target="#ai-result"
+                        hx-indicator="#ai-spinner">
+                    <i class="bi bi-card-text"></i> Summarize
+                </button>
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-post="{% url 'ai:task-ai-action' task.pk 'subtasks' %}"
+                        hx-target="#ai-result"
+                        hx-indicator="#ai-spinner">
+                    <i class="bi bi-list-check"></i> Suggest Subtasks
+                </button>
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-post="{% url 'ai:task-ai-action' task.pk 'description' %}"
+                        hx-target="#ai-result"
+                        hx-indicator="#ai-spinner">
+                    <i class="bi bi-file-text"></i> Draft Description
+                </button>
+            </div>
+            <div id="ai-spinner" class="htmx-indicator text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div id="ai-result"></div>
+        </div>
+    </div>
+
+    <!-- Comments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">Comments</h6>
+        </div>
+        <div class="card-body">
+            {% include 'tasks/partials/comment_list.html' with comments=task.comments.all %}
+
+            <form hx-post="{% url 'tasks:task-comment' task.pk %}"
+                  hx-target="#comment-list"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="this.reset();"
+                  class="mt-3">
+                {% csrf_token %}
+                <div class="input-group">
+                    <textarea name="body" class="form-control" rows="2" placeholder="Write a comment..." required></textarea>
+                    <button type="submit" class="btn btn-primary">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Time Entries -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Time Entries</h6>
+            <span class="badge bg-primary">Total: {{ total_time_m|floatformat:0 }}m</span>
+        </div>
+        <div class="card-body">
+            {% if task.time_entries.all %}
+            <div class="list-group list-group-flush">
+                {% for entry in task.time_entries.all %}
+                <div class="list-group-item px-0">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ entry.user.full_name }}</strong>
+                            <div class="text-muted small">{{ entry.note|default:"No note" }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-semibold">{{ entry.duration_m }}m</div>
+                            <div class="text-muted small">{{ entry.started_at|date:"M d, Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-3 mb-0">No time entries logged</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="text-muted small">
+        <div>Created by {{ task.created_by.full_name }} on {{ task.created_at|date:"M d, Y" }}</div>
+        <div>Last updated {{ task.updated_at|timesince }} ago</div>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ task.title }} - Tasks - Friday{% endblock %}
+
+{% block content %}
+<div id="slide-over">
+    {% include 'tasks/partials/slide_over.html' %}
+</div>
+{% endblock %}

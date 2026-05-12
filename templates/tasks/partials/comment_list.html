@@ -1,0 +1,29 @@
+<div id="comment-list">
+    {% for comment in comments %}
+    <div class="d-flex mb-3">
+        <div class="avatar-circle bg-primary text-white me-3" style="width: 36px; height: 36px; font-size: 0.75rem;">
+            {{ comment.author.initials }}
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div>
+                    <span class="fw-semibold">{{ comment.author.full_name }}</span>
+                    <span class="text-muted small ms-2">{{ comment.created_at|timesince }} ago</span>
+                </div>
+                {% if comment.author == request.user %}
+                <button class="btn btn-sm btn-link text-danger p-0"
+                        hx-post="{% url 'tasks:comment-delete' comment.pk %}"
+                        hx-target="#comment-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Delete this comment?">
+                    <i class="bi bi-trash"></i>
+                </button>
+                {% endif %}
+            </div>
+            <div class="text-break">{{ comment.body|linebreaks }}</div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted text-center py-3">No comments yet</p>
+    {% endfor %}
+</div>
