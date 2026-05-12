@@ -8,7 +8,7 @@
     <h2 class="mb-0">Kanban Board</h2>
     <a href="{% url 'tasks:task-create' %}"
        class="btn btn-primary"
-       hx-get="{% url 'tasks:task-create' %}"
+       hx-get="{% url 'tasks:task-create' %}?slide_over=1"
        hx-target="#slide-over"
        hx-swap="innerHTML">
         <i class="bi bi-plus-lg"></i> New Task
