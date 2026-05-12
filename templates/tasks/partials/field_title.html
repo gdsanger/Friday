@@ -1,0 +1,25 @@
+{% if mode == 'edit' %}
+<form hx-post="{% url 'tasks:task-edit-field' task.pk %}"
+      hx-target="this"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+  <input type="hidden" name="field" value="title">
+  <input type="text"
+         name="value"
+         value="{{ task.title }}"
+         class="form-control form-control-lg fw-semibold"
+         autofocus
+         hx-on:blur="this.form.requestSubmit()"
+         hx-on:keydown="if(event.key==='Enter'){event.preventDefault();this.form.requestSubmit()}else if(event.key==='Escape'){htmx.ajax('GET', '{% url 'tasks:task-edit-field' task.pk %}?mode=view&field=title', {target: this.closest('form'), swap: 'outerHTML'})}">
+</form>
+{% else %}
+<h3 class="mb-3 task-title"
+    hx-get="{% url 'tasks:task-edit-field' task.pk %}?mode=edit&field=title"
+    hx-target="this"
+    hx-swap="outerHTML"
+    title="Click to edit"
+    style="cursor: pointer;">
+  {{ task.title }}
+  <i class="bi bi-pencil ms-2 text-muted" style="font-size:14px;"></i>
+</h3>
+{% endif %}

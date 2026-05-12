@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load friday_tags %}
+
+{% block title %}{{ task.title }} - Friday{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb %}
+            <li class="breadcrumb-item {% if not item.url %}active{% endif %}">
+                {% if item.url %}
+                <a href="{{ item.url }}">{{ item.label }}</a>
+                {% else %}
+                {{ item.label }}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Left Column (Main Content) -->
+        <div class="col-lg-8">
+            <!-- Title (editable) -->
+            {% include 'tasks/partials/field_title.html' with mode='view' %}
+
+            <!-- Project & Status -->
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <a href="{% url 'projects:project-detail' task.project.pk %}" class="text-decoration-none">
+                    <span style="display: inline-block; width: 4px; height: 16px; background-color: {{ task.project.color }}; border-radius: 2px; margin-right: 8px;"></span>
+                    {{ task.project.name }}
+                </a>
+                <select class="form-select form-select-sm" style="width: auto;"
+                        name="status"
+                        hx-post="{% url 'tasks:task-status' task.pk %}"
+                        hx-trigger="change"
+                        hx-include="this">
+                    {% for value, label in task.STATUS_CHOICES %}
+                    <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Description</h6>
+                </div>
+                <div class="card-body">
+                    {% include 'tasks/partials/field_description.html' with mode='view' %}
+                </div>
+            </div>
+
+            <!-- Subtasks -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Subtasks</h6>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#subtask-form">
+                        <i class="bi bi-plus"></i> Add
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="collapse mb-3" id="subtask-form">
+                        <form hx-post="{% url 'tasks:subtask-create' task.pk %}"
+                              hx-target="#subtask-list"
+                              hx-swap="innerHTML"
+                              hx-on::after-request="this.reset(); bootstrap.Collapse.getInstance(document.getElementById('subtask-form')).hide();">
+                            {% csrf_token %}
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="title" class="form-control" placeholder="Subtask title" required>
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% include 'tasks/partials/subtask_list.html' with subtasks=task.subtasks.all %}
+                </div>
+            </div>
+
+            <!-- Attachments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-paperclip"></i> Attachments</h6>
+                </div>
+                <div class="card-body">
+                    {% include 'tasks/partials/attachment_list.html' with attachments=task.attachments.all %}
+                </div>
+            </div>
+
+            <!-- Time Entries -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Time Entries</h6>
+                    <span class="badge bg-primary">Total: {{ total_time_m|floatformat:0 }}m</span>
+                </div>
+                <div class="card-body">
+                    {% include 'tasks/partials/time_entry_list.html' with entries=task.time_entries.all %}
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Comments</h6>
+                </div>
+                <div class="card-body">
+                    {% include 'tasks/partials/comment_list.html' with comments=task.comments.all %}
+
+                    <form hx-post="{% url 'tasks:task-comment' task.pk %}"
+                          hx-target="#comment-list"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="this.reset();"
+                          class="mt-3">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <textarea name="body" class="form-control" rows="2" placeholder="Write a comment..." required></textarea>
+                            <button type="submit" class="btn btn-primary">Post</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (Sidebar) -->
+        <div class="col-lg-4">
+            <!-- Task Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Details</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Assigned To -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assigned to</label>
+                        <select class="form-select form-select-sm mb-2"
+                                name="user_id"
+                                hx-post="{% url 'tasks:task-assign' task.pk %}"
+                                hx-target="#task-assignee"
+                                hx-swap="innerHTML"
+                                hx-include="[name='team_id']">
+                            <option value="">— Select User —</option>
+                            {% for member in project_members %}
+                            <option value="{{ member.id }}" {% if task.assigned_to_user.id == member.id %}selected{% endif %}>
+                                {{ member.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select class="form-select form-select-sm"
+                                name="team_id"
+                                hx-post="{% url 'tasks:task-assign' task.pk %}"
+                                hx-target="#task-assignee"
+                                hx-swap="innerHTML"
+                                hx-include="[name='user_id']">
+                            <option value="">— Select Team —</option>
+                            {% for team in project_teams %}
+                            <option value="{{ team.id }}" {% if task.assigned_to_team.id == team.id %}selected{% endif %}>
+                                {{ team.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="mt-2">
+                            {% include 'tasks/partials/assignee.html' %}
+                        </div>
+                    </div>
+
+                    <!-- Due Date -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Due date</label>
+                        <input type="date"
+                               class="form-control form-control-sm"
+                               name="due_date"
+                               value="{% if task.due_date %}{{ task.due_date|date:'Y-m-d' }}{% endif %}"
+                               hx-post="{% url 'tasks:task-edit' task.pk %}"
+                               hx-trigger="change"
+                               hx-include="this">
+                        {% if task.is_overdue %}
+                        <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Overdue</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Priority</label>
+                        <select class="form-select form-select-sm"
+                                name="priority"
+                                hx-post="{% url 'tasks:task-edit' task.pk %}"
+                                hx-trigger="change"
+                                hx-include="this">
+                            {% for value, label in task.PRIORITY_CHOICES %}
+                            <option value="{{ value }}" {% if task.priority == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Watchers -->
+                    <div>
+                        <label class="form-label fw-semibold">Watchers</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex">
+                                {% for watcher in task.watching_users.all|slice:":5" %}
+                                <div class="avatar-circle bg-primary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;" title="{{ watcher.full_name }}">
+                                    {{ watcher.initials }}
+                                </div>
+                                {% endfor %}
+                                {% if task.watching_users.count > 5 %}
+                                <div class="avatar-circle bg-secondary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;">
+                                    +{{ task.watching_users.count|add:"-5" }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% include 'tasks/partials/watch_button.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-robot"></i> AI Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary"
+                                hx-post="{% url 'ai:task-ai-action' task.pk 'summarize' %}"
+                                hx-target="#ai-result"
+                                hx-indicator="#ai-spinner">
+                            <i class="bi bi-card-text"></i> Summarize
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary"
+                                hx-post="{% url 'ai:task-ai-action' task.pk 'subtasks' %}"
+                                hx-target="#ai-result"
+                                hx-indicator="#ai-spinner">
+                            <i class="bi bi-list-check"></i> Suggest Subtasks
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary"
+                                hx-post="{% url 'ai:task-ai-action' task.pk 'description' %}"
+                                hx-target="#ai-result"
+                                hx-indicator="#ai-spinner">
+                            <i class="bi bi-file-text"></i> Draft Description
+                        </button>
+                    </div>
+                    <div id="ai-spinner" class="htmx-indicator text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="ai-result" class="mt-3"></div>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">
+                        <div class="mb-2">
+                            <i class="bi bi-person"></i>
+                            Created by {{ task.created_by.full_name }}
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-calendar-plus"></i>
+                            {{ task.created_at|date:"M d, Y" }}
+                        </div>
+                        <div>
+                            <i class="bi bi-clock"></i>
+                            Updated {{ task.updated_at|timesince }} ago
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
