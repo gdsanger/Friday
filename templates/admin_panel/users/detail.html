@@ -121,7 +121,7 @@
                 <ul class="list-group list-group-flush">
                     {% for task in created_tasks %}
                     <li class="list-group-item">
-                        <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
+                        <a href="/tasks/{{ task.pk }}/detail/">{{ task.title }}</a>
                         <small class="text-muted d-block">{{ task.created_at|date:"Y-m-d" }}</small>
                     </li>
                     {% endfor %}
@@ -142,7 +142,7 @@
                 <ul class="list-group list-group-flush">
                     {% for task in assigned_tasks %}
                     <li class="list-group-item">
-                        <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
+                        <a href="/tasks/{{ task.pk }}/detail/">{{ task.title }}</a>
                         <small class="text-muted d-block">{{ task.status|upper }}</small>
                     </li>
                     {% endfor %}

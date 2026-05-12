@@ -75,7 +75,7 @@
                     <tr>
                         <td>
                             {% if thread.task %}
-                            <a href="{% url 'tasks:detail' thread.task.pk %}">{{ thread.task.title|truncatewords:5 }}</a>
+                            <a href="/tasks/{{ thread.task.pk }}/detail/">{{ thread.task.title|truncatewords:5 }}</a>
                             {% else %}
                             <span class="text-muted">No task</span>
                             {% endif %}
