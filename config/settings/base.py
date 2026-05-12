@@ -137,6 +137,14 @@ CELERY_TIMEZONE = TIME_ZONE
 # Redis Configuration
 REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/0')
 
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+    }
+}
+
 # Azure / MSAL Configuration
 AZURE_CLIENT_ID = env('AZURE_CLIENT_ID', default='')
 AZURE_CLIENT_SECRET = env('AZURE_CLIENT_SECRET', default='')
