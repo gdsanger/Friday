@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kanban Board - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Kanban Board</h2>
+    <a href="{% url 'tasks:task-create' %}"
+       class="btn btn-primary"
+       hx-get="{% url 'tasks:task-create' %}"
+       hx-target="#slide-over"
+       hx-swap="innerHTML">
+        <i class="bi bi-plus-lg"></i> New Task
+    </a>
+</div>
+
+<!-- View Mode Tabs -->
+<div class="mb-3">
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link {% if view_mode == 'all' %}active{% endif %}"
+               href="?view=all"
+               hx-get="{% url 'kanban:kanban-board' %}?view=all"
+               hx-target="#kanban-board"
+               hx-include="[name='project'],[name='team'],[name='priority'],[name='due']"
+               hx-push-url="true">
+                All
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if view_mode == 'mine_created' %}active{% endif %}"
+               href="?view=mine_created"
+               hx-get="{% url 'kanban:kanban-board' %}?view=mine_created"
+               hx-target="#kanban-board"
+               hx-include="[name='project'],[name='team'],[name='priority'],[name='due']"
+               hx-push-url="true">
+                Created by me
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if view_mode == 'mine_assigned' %}active{% endif %}"
+               href="?view=mine_assigned"
+               hx-get="{% url 'kanban:kanban-board' %}?view=mine_assigned"
+               hx-target="#kanban-board"
+               hx-include="[name='project'],[name='team'],[name='priority'],[name='due']"
+               hx-push-url="true">
+                Assigned to me
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if view_mode == 'team_assigned' %}active{% endif %}"
+               href="?view=team_assigned"
+               hx-get="{% url 'kanban:kanban-board' %}?view=team_assigned"
+               hx-target="#kanban-board"
+               hx-include="[name='project'],[name='team'],[name='priority'],[name='due']"
+               hx-push-url="true">
+                Assigned to my team
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if view_mode == 'watching' %}active{% endif %}"
+               href="?view=watching"
+               hx-get="{% url 'kanban:kanban-board' %}?view=watching"
+               hx-target="#kanban-board"
+               hx-include="[name='project'],[name='team'],[name='priority'],[name='due']"
+               hx-push-url="true">
+                Watching
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="filter-project" class="form-label small text-muted">Project</label>
+                <select id="filter-project" name="project" class="form-select"
+                        hx-get="{% url 'kanban:kanban-board' %}"
+                        hx-target="#kanban-board"
+                        hx-include="[name='view'],[name='team'],[name='priority'],[name='due']"
+                        hx-push-url="true">
+                    <option value="">All Projects</option>
+                    {% for p in projects %}
+                    <option value="{{ p.pk }}" {% if active_filters.project == p.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ p.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter-team" class="form-label small text-muted">Team</label>
+                <select id="filter-team" name="team" class="form-select"
+                        hx-get="{% url 'kanban:kanban-board' %}"
+                        hx-target="#kanban-board"
+                        hx-include="[name='view'],[name='project'],[name='priority'],[name='due']"
+                        hx-push-url="true">
+                    <option value="">All Teams</option>
+                    {% for t in teams %}
+                    <option value="{{ t.pk }}" {% if active_filters.team == t.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ t.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter-priority" class="form-label small text-muted">Priority</label>
+                <select id="filter-priority" name="priority" class="form-select"
+                        hx-get="{% url 'kanban:kanban-board' %}"
+                        hx-target="#kanban-board"
+                        hx-include="[name='view'],[name='project'],[name='team'],[name='due']"
+                        hx-push-url="true">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if active_filters.priority == value|stringformat:"s" %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filter-due" class="form-label small text-muted">Due Date</label>
+                <select id="filter-due" name="due" class="form-select"
+                        hx-get="{% url 'kanban:kanban-board' %}"
+                        hx-target="#kanban-board"
+                        hx-include="[name='view'],[name='project'],[name='team'],[name='priority']"
+                        hx-push-url="true">
+                    <option value="">All</option>
+                    <option value="overdue" {% if active_filters.due == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="today" {% if active_filters.due == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if active_filters.due == 'week' %}selected{% endif %}>This Week</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <a href="{% url 'kanban:kanban-board' %}" class="btn btn-outline-secondary w-100">
+                    Clear
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div id="kanban-board">
+    {% include 'kanban/partials/board.html' %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+    // Initialize Sortable on page load and after HTMX swaps
+    function initSortable() {
+        document.querySelectorAll('.sortable-list').forEach(function(el) {
+            if (el.sortable) {
+                el.sortable.destroy();
+            }
+            el.sortable = Sortable.create(el, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'kanban-card-ghost',
+                onEnd: function(evt) {
+                    const taskId = evt.item.dataset.taskId;
+                    const newStatus = evt.to.dataset.status;
+                    const newPos = evt.newIndex;
+
+                    // Get CSRF token
+                    const csrfToken = document.cookie.split(';')
+                        .find(c => c.trim().startsWith('csrftoken='))
+                        ?.split('=')[1] ?? '';
+
+                    htmx.ajax('POST', '/tasks/' + taskId + '/move/', {
+                        values: { status: newStatus, position: newPos },
+                        headers: { 'X-CSRFToken': csrfToken }
+                    });
+                }
+            });
+        });
+    }
+
+    // Initialize on page load
+    initSortable();
+
+    // Re-initialize after HTMX swaps
+    document.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'kanban-board') {
+            initSortable();
+        }
+    });
+</script>
+{% endblock %}

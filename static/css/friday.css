@@ -358,3 +358,90 @@ body {
     font-size: 0.875rem;
     flex-shrink: 0;
 }
+
+/* ============================================
+   Kanban Board
+   ============================================ */
+
+.kanban-board {
+    align-items: flex-start;
+    min-height: calc(100vh - 240px);
+}
+
+.kanban-column {
+    background: var(--friday-surface-alt);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.kanban-column-header {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--friday-text-muted);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--friday-border);
+    font-weight: 600;
+}
+
+.kanban-cards {
+    min-height: 100px;
+}
+
+.task-card {
+    background: var(--friday-surface);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.15s, transform 0.1s;
+}
+
+.task-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.kanban-card-ghost {
+    opacity: 0.4;
+    background: var(--friday-accent-light);
+}
+
+.kanban-quick-add button {
+    border-style: dashed;
+}
+
+/* Slide-over styles */
+.slide-over-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    display: none;
+}
+
+.slide-over-backdrop.active {
+    display: block;
+}
+
+.slide-over {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 600px;
+    max-width: 100%;
+    background: var(--friday-surface);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.slide-over.active {
+    transform: translateX(0);
+}
+
