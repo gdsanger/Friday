@@ -23,3 +23,25 @@ def file_icon(filename):
         'txt':  'bi-file-earmark-text', 'md':   'bi-file-earmark-text',
     }
     return icons.get(ext, 'bi-file-earmark')
+
+
+@register.filter
+def subtract(value, arg):
+    """{{ total|subtract:open }}"""
+    try:
+        return int(value) - int(arg)
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.filter
+def status_color(project):
+    """Return a muted background color for project status badges."""
+    colors = {
+        'planning':  '#4b5563',
+        'active':    '#166534',
+        'on_hold':   '#92400e',
+        'done':      '#1e3a5f',
+        'archived':  '#374151',
+    }
+    return colors.get(project.status, '#4b5563')
