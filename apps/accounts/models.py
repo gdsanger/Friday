@@ -13,31 +13,35 @@ class User(AbstractUser):
     job_title = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=30, blank=True)
 
-    # Azure SSO
-    azure_oid = models.CharField(max_length=100, blank=True, unique=True, null=True)
-    azure_upn = models.EmailField(blank=True)
+    # Azure Entra ID / SSO
+    azure_oid = models.CharField(max_length=100, blank=True, db_index=True)  # object ID from token
+    azure_upn = models.EmailField(blank=True)  # UserPrincipalName
 
     # Preferences
     notify_email = models.BooleanField(default=True)
     notify_inapp = models.BooleanField(default=True)
-    theme = models.CharField(
-        max_length=10,
-        default='light',
-        choices=[('light', 'Light'), ('dark', 'Dark')]
-    )
     timezone = models.CharField(max_length=50, default='Europe/Berlin')
 
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'
 
-    @property
-    def teams(self):
-        """Get all teams this user belongs to."""
-        from apps.teams.models import Team
-        return Team.objects.filter(memberships__user=self)
+    def __str__(self):
+        return self.full_name
 
     @property
     def full_name(self):
         """Return display name, full name, or username."""
         return self.display_name or self.get_full_name() or self.username
+
+    @property
+    def teams(self):
+        """Get all teams this user belongs to."""
+        from apps.teams.models import Team
+        return Team.objects.filter(memberships__user=self, is_active=True)
+
+    @property
+    def initials(self):
+        """Return user initials from their name."""
+        parts = self.full_name.split()
+        return ''.join(p[0].upper() for p in parts[:2]) if parts else '?'
