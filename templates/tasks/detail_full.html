@@ -182,15 +182,22 @@
                     <!-- Priority -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Priority</label>
-                        <select class="form-select form-select-sm"
-                                name="priority"
-                                hx-post="{% url 'tasks:task-edit' task.pk %}"
-                                hx-trigger="change"
-                                hx-include="this">
-                            {% for value, label in task.PRIORITY_CHOICES %}
-                            <option value="{{ value }}" {% if task.priority == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if task.priority > 0 %}
+                            <i class="bi {{ task.priority|priority_icon }}"
+                               style="color: {{ task.priority|priority_color }}; font-size: 16px;"
+                               title="{{ task.get_priority_display }}"></i>
+                            {% endif %}
+                            <select class="form-select form-select-sm flex-grow-1"
+                                    name="priority"
+                                    hx-post="{% url 'tasks:task-edit' task.pk %}"
+                                    hx-trigger="change"
+                                    hx-include="this">
+                                {% for value, label in task.PRIORITY_CHOICES %}
+                                <option value="{{ value }}" {% if task.priority == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Watchers -->
