@@ -121,6 +121,7 @@ class TeamEditView(LoginRequiredMixin, View):
         team.description = request.POST.get('description', team.description).strip()
         team.color = request.POST.get('color', team.color).strip()
         team.icon = request.POST.get('icon', team.icon).strip()
+        team.is_global = 'is_global' in request.POST
 
         # Validate: name must not be empty
         if not team.name:
@@ -156,6 +157,7 @@ class TeamCreateView(StaffRequiredMixin, View):
         description = request.POST.get('description', '').strip()
         color       = request.POST.get('color', '#6366f1').strip()
         icon        = request.POST.get('icon', 'people-fill').strip()
+        is_global   = 'is_global' in request.POST
 
         if not name:
             return render(request, 'teams/create.html', {
@@ -179,6 +181,7 @@ class TeamCreateView(StaffRequiredMixin, View):
             name=name, slug=slug,
             description=description,
             color=color, icon=icon,
+            is_global=is_global,
         )
 
         # Auto-add creator as team lead

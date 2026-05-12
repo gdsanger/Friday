@@ -71,14 +71,23 @@ class Project(TimeStampedModel):
         return self.name
 
     def get_all_members(self):
-        """All effective members: direct users UNION all users from member teams."""
+        """
+        All effective members:
+        - Direct user members (ProjectUserMembership)
+        - Users from explicitly assigned teams (ProjectTeamMembership)
+        - Users from global teams (Team.is_global=True) — always included
+        """
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        direct   = User.objects.filter(projectusermembership__project=self)
-        via_team = User.objects.filter(
+        direct     = User.objects.filter(projectusermembership__project=self)
+        via_team   = User.objects.filter(
             team_memberships__team__projectteammembership__project=self
         )
-        return (direct | via_team).distinct()
+        via_global = User.objects.filter(
+            team_memberships__team__is_global=True,
+            team_memberships__team__is_active=True,
+        )
+        return (direct | via_team | via_global).distinct()
 
     def is_member(self, user):
         """Check if user is a member of this project."""
@@ -86,14 +95,26 @@ class Project(TimeStampedModel):
 
     def get_effective_role(self, user):
         """Return highest role the user holds in this project."""
+        # Direct membership
         direct = self.projectusermembership_set.filter(user=user).first()
         if direct:
             return direct.role
+
+        # Via explicitly assigned team
         team_membership = self.projectteammembership_set.filter(
             team__memberships__user=user
         ).first()
         if team_membership:
             return team_membership.role
+
+        # Via global team
+        is_global_member = user.team_memberships.filter(
+            team__is_global=True,
+            team__is_active=True,
+        ).exists()
+        if is_global_member:
+            return 'contributor'  # global teams always get contributor role
+
         return None
 
 

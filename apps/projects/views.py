@@ -80,7 +80,8 @@ class ProjectDetailView(LoginRequiredMixin, DetailView):
         )
         ctx['available_teams']   = Team.objects.filter(is_active=True).exclude(
             projectteammembership__project=project
-        )
+        ).exclude(is_global=True)  # Exclude global teams from "add team" dropdown
+        ctx['global_teams']      = Team.objects.filter(is_global=True, is_active=True)
         ctx['user_role'] = project.get_effective_role(self.request.user)
         return ctx
 

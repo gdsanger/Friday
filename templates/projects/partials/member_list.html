@@ -33,7 +33,14 @@
                 <i class="bi bi-people-fill fs-4" style="color: {{ membership.team.color }};"></i>
             </div>
             <div>
-                <div class="fw-bold">{{ membership.team.name }}</div>
+                <div class="fw-bold">
+                    {{ membership.team.name }}
+                    {% if membership.team.is_global %}
+                    <i class="bi bi-globe2 ms-1"
+                       title="Global team — member of all projects"
+                       style="font-size: 11px; color: var(--friday-accent);"></i>
+                    {% endif %}
+                </div>
                 <small class="text-muted">{{ membership.get_role_display }}</small>
             </div>
         </div>
@@ -49,6 +56,29 @@
         {% endif %}
     </div>
     {% endfor %}
+
+    <!-- Global teams (auto-included, shown informatively) -->
+    {% if global_teams %}
+    <div class="list-group-item border-top" style="background-color: #f8f9fa;">
+        <div class="text-muted mb-2" style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">
+            <i class="bi bi-globe2 me-1"></i> Global Teams (auto-included)
+        </div>
+        {% for team in global_teams %}
+        <div class="d-flex align-items-center gap-2 py-1">
+            <div class="me-2">
+                <i class="bi bi-people-fill" style="color: {{ team.color }}; font-size: 1.5rem;"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold small">{{ team.name }}</div>
+                <small class="text-muted">Contributor</small>
+            </div>
+            <i class="bi bi-globe2 ms-auto"
+               style="font-size:11px; color:var(--friday-accent);"
+               title="Global team"></i>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% else %}
     <div class="list-group-item text-center text-muted">
         No members yet.

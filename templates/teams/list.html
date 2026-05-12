@@ -38,7 +38,14 @@
                         <span class="badge bg-primary">My Team</span>
                         {% endif %}
                     </div>
-                    <h5 class="card-title">{{ team.name }}</h5>
+                    <h5 class="card-title">
+                        {{ team.name }}
+                        {% if team.is_global %}
+                        <i class="bi bi-globe2 ms-1"
+                           title="Global team — member of all projects"
+                           style="font-size: 11px; color: var(--friday-accent);"></i>
+                        {% endif %}
+                    </h5>
                     {% if team.description %}
                     <p class="card-text text-muted small">{{ team.description|truncatewords:15 }}</p>
                     {% endif %}
