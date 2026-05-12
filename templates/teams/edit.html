@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Team - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'teams:team-list' %}">Teams</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'teams:team-detail' team.slug %}">{{ team.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+        <h2>Edit Team</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Team Name <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control"
+                               id="name"
+                               name="name"
+                               value="{{ team.name }}"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control"
+                                  id="description"
+                                  name="description"
+                                  rows="4">{{ team.description }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="color" class="form-label">Team Color</label>
+                        <input type="color"
+                               class="form-control form-control-color"
+                               id="color"
+                               name="color"
+                               value="{{ team.color }}"
+                               title="Choose team color">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="icon" class="form-label">Icon (Bootstrap Icon Name)</label>
+                        <input type="text"
+                               class="form-control"
+                               id="icon"
+                               name="icon"
+                               value="{{ team.icon }}"
+                               placeholder="e.g., people-fill, star, rocket"
+                               oninput="updateIconPreview(this.value)">
+                        <div class="form-text">
+                            Enter a Bootstrap Icon name.
+                            <a href="https://icons.getbootstrap.com/" target="_blank">Browse icons</a>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Preview:</strong>
+                            <i id="icon-preview" class="bi bi-{{ team.icon }}" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'teams:team-detail' team.slug %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateIconPreview(iconName) {
+    const preview = document.getElementById('icon-preview');
+    preview.className = 'bi bi-' + (iconName || 'question-circle');
+}
+</script>
+{% endblock %}

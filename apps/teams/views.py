@@ -3,8 +3,10 @@ Team views for Friday project.
 """
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import ListView, DetailView
 
@@ -83,3 +85,44 @@ class TeamMemberRoleView(LoginRequiredMixin, View):
         membership = team.memberships.select_related('user').get(user_id=user_id)
         return render(request, 'teams/partials/member_row.html',
                       {'team': team, 'membership': membership})
+
+
+class TeamEditView(LoginRequiredMixin, View):
+    """
+    Only Team Leads and staff users can edit a team.
+    GET  → render edit form
+    POST → save changes, redirect to team detail
+    """
+    def dispatch(self, request, *args, **kwargs):
+        self.team = get_object_or_404(Team, slug=kwargs['slug'])
+        is_lead = self.team.memberships.filter(
+            user=request.user, role='lead'
+        ).exists()
+        if not (is_lead or request.user.is_staff):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, slug):
+        return render(request, 'teams/edit.html', {'team': self.team})
+
+    def post(self, request, slug):
+        team = self.team
+        team.name = request.POST.get('name', team.name).strip()
+        team.description = request.POST.get('description', team.description).strip()
+        team.color = request.POST.get('color', team.color).strip()
+        team.icon = request.POST.get('icon', team.icon).strip()
+
+        # Validate: name must not be empty
+        if not team.name:
+            return render(request, 'teams/edit.html', {
+                'team': team,
+                'error': 'Team name cannot be empty.'
+            })
+
+        # Regenerate slug only if name changed
+        new_slug = slugify(team.name)
+        if new_slug != team.slug and not Team.objects.filter(slug=new_slug).exists():
+            team.slug = new_slug
+
+        team.save()
+        return redirect('teams:team-detail', slug=team.slug)
