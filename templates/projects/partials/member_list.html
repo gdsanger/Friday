@@ -1,0 +1,57 @@
+<div class="list-group list-group-flush">
+    {% if user_memberships or team_memberships %}
+    <!-- User Members -->
+    {% for membership in user_memberships %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-primary text-white me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                {{ membership.user.initials }}
+            </div>
+            <div>
+                <div class="fw-bold">{{ membership.user.full_name }}</div>
+                <small class="text-muted">{{ membership.get_role_display }}</small>
+            </div>
+        </div>
+        {% if user_role == 'manager' and membership.user != project.owner %}
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-post="{% url 'projects:project-remove-user' project.pk membership.user.id %}"
+                hx-target="#project-members"
+                hx-swap="innerHTML"
+                hx-confirm="Remove {{ membership.user.full_name }} from this project?">
+            <i class="bi bi-trash"></i>
+        </button>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Team Members -->
+    {% for membership in team_memberships %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <div class="me-2">
+                <i class="bi bi-people-fill fs-4" style="color: {{ membership.team.color }};"></i>
+            </div>
+            <div>
+                <div class="fw-bold">{{ membership.team.name }}</div>
+                <small class="text-muted">{{ membership.get_role_display }}</small>
+            </div>
+        </div>
+        {% if user_role == 'manager' %}
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-post="{% url 'projects:project-remove-team' project.pk membership.team.id %}"
+                hx-target="#project-members"
+                hx-swap="innerHTML"
+                hx-confirm="Remove {{ membership.team.name }} team from this project?">
+            <i class="bi bi-trash"></i>
+        </button>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="list-group-item text-center text-muted">
+        No members yet.
+    </div>
+    {% endif %}
+</div>
