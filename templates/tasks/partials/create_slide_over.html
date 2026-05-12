@@ -1,0 +1,149 @@
+{% load static %}
+<div class="slide-over-panel" style="position: fixed; top: 0; right: 0; width: 600px; height: 100vh; background: var(--bs-body-bg); box-shadow: -4px 0 24px rgba(0,0,0,0.15); overflow-y: auto; z-index: 1050; padding: 2rem;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeSlideOver();">
+            <i class="bi bi-arrow-left"></i> Back
+        </button>
+    </div>
+
+    <!-- Title -->
+    <h3 class="mb-4">Create New Task</h3>
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post"
+          hx-post="{% url 'tasks:task-create' %}"
+          hx-target="#slide-over"
+          hx-swap="innerHTML">
+        {% csrf_token %}
+
+        <!-- Project -->
+        <div class="mb-3">
+            <label for="project" class="form-label">Project <span class="text-danger">*</span></label>
+            <select class="form-select" id="project" name="project" required>
+                <option value="">Select a project...</option>
+                {% for project in accessible_projects %}
+                <option value="{{ project.pk }}"
+                        {% if selected_project and selected_project.pk == project.pk %}selected{% endif %}>
+                    {{ project.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Title -->
+        <div class="mb-3">
+            <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   id="title"
+                   name="title"
+                   required
+                   autofocus>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control"
+                      id="description"
+                      name="description"
+                      rows="4"></textarea>
+        </div>
+
+        <div class="row">
+            <!-- Status -->
+            <div class="col-md-6 mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}"
+                            {% if selected_status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Priority -->
+            <div class="col-md-6 mb-3">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Assign to User -->
+            <div class="col-md-6 mb-3">
+                <label for="assigned_to_user" class="form-label">Assign to User</label>
+                <select class="form-select" id="assigned_to_user" name="assigned_to_user">
+                    <option value="">Unassigned</option>
+                    {% if selected_project %}
+                        {% for member in selected_project.get_all_members %}
+                        <option value="{{ member.pk }}">{{ member.full_name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <!-- Assign to Team -->
+            <div class="col-md-6 mb-3">
+                <label for="assigned_to_team" class="form-label">Or Assign to Team</label>
+                <select class="form-select" id="assigned_to_team" name="assigned_to_team">
+                    <option value="">No team</option>
+                    {% if selected_project %}
+                        {% for team in selected_project.team_members.all %}
+                        <option value="{{ team.pk }}">{{ team.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Due Date -->
+        <div class="mb-4">
+            <label for="due_date" class="form-label">Due Date</label>
+            <input type="date" class="form-control" id="due_date" name="due_date">
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="closeSlideOver();">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Task</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Update assignee options when project changes
+document.getElementById('project').addEventListener('change', function() {
+    const projectId = this.value;
+    if (projectId) {
+        // Reload the form with the selected project to get proper member lists
+        htmx.ajax('GET', '{% url "tasks:task-create" %}?slide_over=1&project_id=' + projectId + '&status={{ selected_status }}', {
+            target: '#slide-over',
+            swap: 'innerHTML'
+        });
+    }
+});
+
+// Ensure only one assignment type is selected
+document.getElementById('assigned_to_user').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('assigned_to_team').value = '';
+    }
+});
+
+document.getElementById('assigned_to_team').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('assigned_to_user').value = '';
+    }
+});
+</script>

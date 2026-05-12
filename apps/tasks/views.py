@@ -58,13 +58,15 @@ class TaskCreateView(LoginRequiredMixin, View):
     def get(self, request):
         """
         Full task creation form page.
-        Optional: ?project=<id> pre-selects the project.
+        Optional: ?project=<id> or ?project_id=<id> pre-selects the project.
         Optional: ?status=<status> pre-selects the status column.
+        Optional: ?slide_over=1 returns slide-over template for HTMX.
         """
         from apps.projects.models import Project
 
         project_id = request.GET.get('project_id') or request.GET.get('project')
         status     = request.GET.get('status', Task.STATUS_BACKLOG)
+        slide_over = request.GET.get('slide_over')
 
         # Only show projects the user is a member of
         accessible_projects = Project.objects.filter(
@@ -85,16 +87,21 @@ class TaskCreateView(LoginRequiredMixin, View):
             'teams':               request.user.teams,
         }
 
-        # Return quick-add form for HTMX, full form for regular requests
-        if request.htmx:
+        # Return slide-over form for HTMX with slide_over parameter
+        if request.htmx and slide_over:
+            return render(request, 'tasks/partials/create_slide_over.html', ctx)
+        # Return quick-add form for HTMX without slide_over parameter
+        elif request.htmx:
             return render(request, 'tasks/partials/quick_add_form.html', ctx)
+        # Return full page form for regular requests
         return render(request, 'tasks/create.html', ctx)
 
     def post(self, request):
         """
-        Handles both:
+        Handles:
         - Full page form submission (non-HTMX) → redirect to task detail
         - HTMX quick-add from Kanban column → return card partial
+        - HTMX slide-over form → redirect to task detail in slide-over
         """
         from apps.projects.models import Project
 
@@ -141,9 +148,20 @@ class TaskCreateView(LoginRequiredMixin, View):
             task.assigned_to_team_id = team_id
             task.save(update_fields=['assigned_to_team'])
 
-        # HTMX quick-add from Kanban → return card partial
+        # HTMX requests
         if request.htmx:
-            return render(request, 'tasks/partials/card.html', {'task': task})
+            # Check if this is a slide-over submission by checking the target
+            # Slide-over submissions target #slide-over, quick-add targets .kanban-cards
+            hx_target = request.headers.get('HX-Target', '')
+            if hx_target == 'slide-over':
+                # Redirect to task detail in slide-over
+                from django.http import HttpResponse
+                response = HttpResponse()
+                response['HX-Redirect'] = f'/tasks/{task.pk}/detail/'
+                return response
+            else:
+                # Quick-add from Kanban column → return card partial
+                return render(request, 'tasks/partials/card.html', {'task': task})
 
         # Full page form → redirect to task detail
         return redirect('tasks:task-detail', pk=task.pk)
