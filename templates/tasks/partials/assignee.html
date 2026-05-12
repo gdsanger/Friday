@@ -1,0 +1,27 @@
+<div id="task-assignee">
+    {% if task.assigned_to_user %}
+        <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-primary text-white me-2" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                {{ task.assigned_to_user.initials }}
+            </div>
+            <div>
+                <div class="fw-semibold">{{ task.assigned_to_user.full_name }}</div>
+                <div class="text-muted small">{{ task.assigned_to_user.email }}</div>
+            </div>
+        </div>
+    {% elif task.assigned_to_team %}
+        <div class="d-flex align-items-center">
+            <div class="avatar-circle bg-secondary text-white me-2" style="width: 32px; height: 32px;">
+                <i class="bi bi-people"></i>
+            </div>
+            <div>
+                <div class="fw-semibold">{{ task.assigned_to_team.name }}</div>
+                <div class="text-muted small">Team</div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-muted">
+            <i class="bi bi-person-dash"></i> Unassigned
+        </div>
+    {% endif %}
+</div>

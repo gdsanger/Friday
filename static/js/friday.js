@@ -70,4 +70,26 @@
         });
     });
 
+    // Slide-over close function
+    window.closeSlideOver = function() {
+        const slideOver = document.getElementById('slide-over');
+        if (slideOver) {
+            slideOver.innerHTML = '';
+            // If URL was pushed, go back in history
+            if (window.location.pathname.includes('/tasks/') && window.location.pathname.includes('/detail/')) {
+                window.history.back();
+            }
+        }
+    };
+
+    // Handle browser back button to close slide-over
+    window.addEventListener('popstate', function(event) {
+        if (!window.location.pathname.includes('/tasks/') || !window.location.pathname.includes('/detail/')) {
+            const slideOver = document.getElementById('slide-over');
+            if (slideOver && slideOver.innerHTML.trim() !== '') {
+                slideOver.innerHTML = '';
+            }
+        }
+    });
+
 })();

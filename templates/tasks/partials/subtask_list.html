@@ -1,0 +1,25 @@
+<div id="subtask-list">
+    {% for subtask in subtasks %}
+    <div class="d-flex align-items-center mb-2 p-2 bg-body-secondary rounded">
+        <input type="checkbox"
+               class="form-check-input me-2"
+               {% if subtask.status == 'done' %}checked{% endif %}
+               hx-post="{% url 'tasks:subtask-check' task.pk subtask.pk %}"
+               hx-target="#subtask-list"
+               hx-swap="innerHTML">
+        <span class="flex-grow-1 {% if subtask.status == 'done' %}text-decoration-line-through text-muted{% endif %}">
+            {{ subtask.title }}
+        </span>
+        <span class="badge bg-secondary small">
+            {% if subtask.status == 'backlog' %}Backlog
+            {% elif subtask.status == 'todo' %}To Do
+            {% elif subtask.status == 'in_progress' %}In Progress
+            {% elif subtask.status == 'review' %}Review
+            {% elif subtask.status == 'done' %}Done
+            {% endif %}
+        </span>
+    </div>
+    {% empty %}
+    <p class="text-muted text-center py-2 small">No subtasks yet</p>
+    {% endfor %}
+</div>

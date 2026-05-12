@@ -1,0 +1,8 @@
+<button id="watch-btn"
+        class="btn btn-sm {% if is_watching %}btn-primary{% else %}btn-outline-primary{% endif %}"
+        hx-post="{% url 'tasks:task-watch' task.pk %}"
+        hx-target="#watch-btn"
+        hx-swap="outerHTML">
+    <i class="bi bi-eye{% if is_watching %}-fill{% endif %}"></i>
+    {% if is_watching %}Watching{% else %}Watch{% endif %}
+</button>
