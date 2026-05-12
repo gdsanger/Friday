@@ -313,6 +313,29 @@ def run_tests():
     print("\n## Edge Case Tests")
 
     try:
+        # Test project list view for global team members
+        from apps.projects.views import ProjectListView
+        from django.test import RequestFactory
+
+        factory = RequestFactory()
+        request = factory.get('/projects/?status=all')  # Remove status filter
+        request.user = tc.user2  # Global team member
+        request.GET = {'status': 'all'}
+
+        view = ProjectListView()
+        view.request = request
+
+        queryset = view.get_queryset()
+
+        # user2 is in global team, so should see ALL projects (with status filter removed)
+        project_ids = list(queryset.values_list('id', flat=True))
+        assert tc.project.id in project_ids, f"Global team member should see all projects. Project {tc.project.id} not in {project_ids}"
+
+        results['passed'] += test_pass("ProjectListView shows all projects to global team members")
+    except AssertionError as e:
+        results['failed'] += test_fail("ProjectListView for global members", str(e))
+
+    try:
         # Test that a team that is both global AND explicitly assigned is not duplicated
         ProjectTeamMembership.objects.create(
             project=tc.project,

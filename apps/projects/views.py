@@ -26,11 +26,22 @@ class ProjectListView(LoginRequiredMixin, ListView):
         # Show projects the user is a member of + org-visible projects
         user = self.request.user
         my_teams = user.teams
-        queryset = Project.objects.filter(
-            models.Q(user_members=user) |
-            models.Q(team_members__in=my_teams) |
-            models.Q(visibility='organisation')
-        ).distinct().annotate(
+
+        # Check if user is in any global team
+        is_global_member = my_teams.filter(is_global=True).exists()
+
+        if is_global_member:
+            # Global team members see ALL projects (since global teams are members of all projects)
+            queryset = Project.objects.all()
+        else:
+            # Regular users see: their projects + team projects + org-visible
+            queryset = Project.objects.filter(
+                models.Q(user_members=user) |
+                models.Q(team_members__in=my_teams) |
+                models.Q(visibility='organisation')
+            ).distinct()
+
+        queryset = queryset.annotate(
             task_count=Count('tasks'),
             open_task_count=Count('tasks', filter=~models.Q(tasks__status='done')),
             done_task_count=Count('tasks', filter=models.Q(tasks__status='done')),
