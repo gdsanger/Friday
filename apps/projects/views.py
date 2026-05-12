@@ -91,6 +91,15 @@ class ProjectCreateView(LoginRequiredMixin, CreateView):
     fields = ['name', 'description', 'status', 'visibility',
               'start_date', 'due_date', 'priority', 'color']
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['status_choices'] = Project.STATUS_CHOICES
+        ctx['visibility_choices'] = Project.VISIBILITY_CHOICES
+        ctx['priority_choices'] = [
+            (0, 'None'), (1, 'Low'), (2, 'Medium'), (3, 'High'), (4, 'Critical')
+        ]
+        return ctx
+
     def form_valid(self, form):
         project = form.save(commit=False)
         project.owner = self.request.user
@@ -107,6 +116,22 @@ class ProjectEditView(LoginRequiredMixin, UpdateView):
     template_name = 'projects/form.html'
     fields = ['name', 'description', 'status', 'visibility',
               'start_date', 'due_date', 'priority', 'color']
+
+    def dispatch(self, request, *args, **kwargs):
+        project = self.get_object()
+        role = project.get_effective_role(request.user)
+        if role != 'manager' and not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['status_choices'] = Project.STATUS_CHOICES
+        ctx['visibility_choices'] = Project.VISIBILITY_CHOICES
+        ctx['priority_choices'] = [
+            (0, 'None'), (1, 'Low'), (2, 'Medium'), (3, 'High'), (4, 'Critical')
+        ]
+        return ctx
 
     def get_success_url(self):
         return reverse('projects:project-detail', kwargs={'pk': self.object.pk})
