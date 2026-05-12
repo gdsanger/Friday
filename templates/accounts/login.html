@@ -7,30 +7,58 @@
 <div class="text-center mb-4">
     <i class="bi bi-calendar-check-fill" style="font-size: 3rem; color: var(--friday-accent);"></i>
     <h3 class="mt-2">Friday</h3>
-    <p class="text-muted">Project Management</p>
+    <p class="text-muted">Get to Friday.</p>
 </div>
 
-<form method="post">
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% endif %}
+
+<form method="post" class="needs-validation" novalidate>
     {% csrf_token %}
 
     <div class="mb-3">
         <label for="id_username" class="form-label">Username</label>
         <input type="text" class="form-control" id="id_username" name="username" required autofocus>
+        <div class="invalid-feedback">Please enter your username.</div>
     </div>
 
     <div class="mb-3">
         <label for="id_password" class="form-label">Password</label>
         <input type="password" class="form-control" id="id_password" name="password" required>
+        <div class="invalid-feedback">Please enter your password.</div>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100 mb-3">
-        <i class="bi bi-box-arrow-in-right"></i> Login
+    <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-box-arrow-in-right"></i> Sign in
     </button>
 </form>
 
-<div class="text-center">
-    <small class="text-muted">
-        Don't have an account? Contact your administrator.
-    </small>
+<div class="d-flex align-items-center my-3">
+    <div class="flex-grow-1 border-top"></div>
+    <span class="px-2 text-muted small">or</span>
+    <div class="flex-grow-1 border-top"></div>
 </div>
+
+<a class="btn btn-outline-secondary w-100" href="{% url 'accounts:azure-login' %}">
+    <i class="bi bi-microsoft"></i> Sign in with Microsoft
+</a>
+
+<script>
+(() => {
+  'use strict';
+  const forms = document.querySelectorAll('.needs-validation');
+  Array.from(forms).forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+</script>
 {% endblock %}

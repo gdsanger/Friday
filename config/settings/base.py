@@ -148,7 +148,7 @@ CACHES = {
 # Azure / MSAL Configuration
 AZURE_CLIENT_ID = env('AZURE_CLIENT_ID', default='')
 AZURE_CLIENT_SECRET = env('AZURE_CLIENT_SECRET', default='')
-AZURE_TENANT_ID = env('AZURE_TENANT_ID', default='')
+AZURE_TENANT_ID = env('AZURE_TENANT_ID', default='common')
 AZURE_REDIRECT_URI = env('AZURE_REDIRECT_URI', default='http://localhost:8000/accounts/azure/callback/')
 
 # Graph API
