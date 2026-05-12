@@ -1,0 +1,13 @@
+{% if project.status == 'planning' %}
+<span class="badge bg-info">{{ project.get_status_display }}</span>
+{% elif project.status == 'active' %}
+<span class="badge bg-success">{{ project.get_status_display }}</span>
+{% elif project.status == 'on_hold' %}
+<span class="badge bg-warning">{{ project.get_status_display }}</span>
+{% elif project.status == 'done' %}
+<span class="badge bg-primary">{{ project.get_status_display }}</span>
+{% elif project.status == 'archived' %}
+<span class="badge bg-secondary">{{ project.get_status_display }}</span>
+{% else %}
+<span class="badge bg-secondary">{{ project.get_status_display }}</span>
+{% endif %}

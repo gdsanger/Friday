@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit{% else %}Create{% endif %} Project - Friday{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+            <li class="breadcrumb-item"><a href="{% url 'projects:project-list' %}">Projects</a></li>
+            {% if object %}
+            <li class="breadcrumb-item"><a href="{% url 'projects:project-detail' object.pk %}">{{ object.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            {% else %}
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+            {% endif %}
+        </ol>
+    </nav>
+    <h2>{% if object %}Edit Project{% else %}Create New Project{% endif %}</h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control" id="id_name"
+                               value="{{ form.name.value|default:'' }}" required maxlength="200">
+                        {% if form.name.errors %}
+                        <div class="text-danger mt-1">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description</label>
+                        <textarea name="description" class="form-control" id="id_description"
+                                  rows="4">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                        <div class="text-danger mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_status" class="form-label">Status</label>
+                            <select name="status" class="form-select" id="id_status">
+                                {% for value, label in form.status.field.choices %}
+                                <option value="{{ value }}"
+                                        {% if form.status.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.status.errors %}
+                            <div class="text-danger mt-1">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_visibility" class="form-label">Visibility</label>
+                            <select name="visibility" class="form-select" id="id_visibility">
+                                {% for value, label in form.visibility.field.choices %}
+                                <option value="{{ value }}"
+                                        {% if form.visibility.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.visibility.errors %}
+                            <div class="text-danger mt-1">{{ form.visibility.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_start_date" class="form-label">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" id="id_start_date"
+                                   value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.start_date.errors %}
+                            <div class="text-danger mt-1">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_due_date" class="form-label">Due Date</label>
+                            <input type="date" name="due_date" class="form-control" id="id_due_date"
+                                   value="{{ form.due_date.value|date:'Y-m-d'|default:'' }}">
+                            {% if form.due_date.errors %}
+                            <div class="text-danger mt-1">{{ form.due_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_priority" class="form-label">Priority</label>
+                            <input type="number" name="priority" class="form-control" id="id_priority"
+                                   value="{{ form.priority.value|default:'0' }}">
+                            {% if form.priority.errors %}
+                            <div class="text-danger mt-1">{{ form.priority.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_color" class="form-label">Color</label>
+                            <input type="color" name="color" class="form-control form-control-color w-100"
+                                   id="id_color" value="{{ form.color.value|default:'#3b82f6' }}">
+                            {% if form.color.errors %}
+                            <div class="text-danger mt-1">{{ form.color.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i>
+                            {% if object %}Save Changes{% else %}Create Project{% endif %}
+                        </button>
+                        <a href="{% if object %}{% url 'projects:project-detail' object.pk %}{% else %}{% url 'projects:project-list' %}{% endif %}"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

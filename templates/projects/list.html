@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Projects - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Projects</h2>
+    <a href="{% url 'projects:project-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> New Project
+    </a>
+</div>
+
+<!-- Status tabs -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'all' %}active{% endif %}"
+           href="?status=all">All</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'active' %}active{% endif %}"
+           href="?status=active">Active</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'planning' %}active{% endif %}"
+           href="?status=planning">Planning</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'on_hold' %}active{% endif %}"
+           href="?status=on_hold">On Hold</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'done' %}active{% endif %}"
+           href="?status=done">Done</a>
+    </li>
+</ul>
+
+<!-- Project list -->
+<div class="list-group">
+    {% for project in projects %}
+    <a href="{% url 'projects:project-detail' project.pk %}"
+       class="list-group-item list-group-item-action"
+       style="border-left: 4px solid {{ project.color }};">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <h5 class="mb-0 me-3">{{ project.name }}</h5>
+                    {% include 'projects/partials/status_badge.html' %}
+                </div>
+                {% if project.description %}
+                <p class="text-muted mb-2">{{ project.description|truncatewords:20 }}</p>
+                {% endif %}
+                <div class="d-flex align-items-center gap-3 text-muted small">
+                    <!-- Owner -->
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary text-white me-2" style="width: 24px; height: 24px; font-size: 0.625rem;">
+                            {{ project.owner.initials }}
+                        </div>
+                        <span>{{ project.owner.full_name }}</span>
+                    </div>
+                    <!-- Task progress -->
+                    {% if project.task_count > 0 %}
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-list-check me-1"></i>
+                        <span>{{ project.open_task_count }} / {{ project.task_count }} tasks</span>
+                        <div class="progress ms-2" style="width: 100px; height: 6px;">
+                            <div class="progress-bar bg-success"
+                                 role="progressbar"
+                                 style="width: {% widthratio project.done_task_count project.task_count 100 %}%"
+                                 aria-valuenow="{% widthratio project.done_task_count project.task_count 100 %}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <!-- Due date -->
+                    {% if project.due_date %}
+                    <div>
+                        <i class="bi bi-calendar me-1"></i>
+                        <span>Due {{ project.due_date|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="card">
+        <div class="card-body text-center text-muted py-5">
+            <i class="bi bi-folder fs-1 mb-3 d-block"></i>
+            <p class="mb-0">No projects found.</p>
+            <a href="{% url 'projects:project-create' %}" class="btn btn-outline-primary mt-3">
+                <i class="bi bi-plus-circle"></i> Create your first project
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
