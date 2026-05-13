@@ -101,12 +101,12 @@ def test_no_definition_time_gantt_calls():
     assert 'gantt.date.str_to_date' not in columns_section, \
            "Column templates should not call gantt.date.str_to_date() at definition time"
 
-    # Check that fmtDate() is used instead
-    assert 'fmtDate(' in columns_section, \
-           "Column templates should use fmtDate() helper"
+    # Check that fmtDate() or fmtShort() is used instead
+    assert 'fmtDate(' in columns_section or 'fmtShort(' in columns_section, \
+           "Column templates should use fmtDate() or fmtShort() helper"
 
     print("  ✓ Column templates do not call gantt.date.* at definition time")
-    print("  ✓ Column templates use fmtDate() helper which is called at render time")
+    print("  ✓ Column templates use fmtDate()/fmtShort() helper which is called at render time")
     print("  ✅ PASSED: No definition-time gantt.date.* calls")
 
 
