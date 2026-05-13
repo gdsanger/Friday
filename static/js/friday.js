@@ -130,12 +130,16 @@
     // Wird automatisch auf alle <textarea class="md-editor"> angewendet
     // HTMX-aware: neu initialisieren nach HTMX Swap
 
+    // Store EasyMDE instances for cleanup
+    const easyMDEInstances = new WeakMap();
+
     function initMarkdownEditors(container) {
         const target = container || document;
         target.querySelectorAll('textarea.md-editor').forEach(textarea => {
-            // Bereits initialisiert? Überspringen
-            if (textarea.dataset.mdInitialized) return;
-            textarea.dataset.mdInitialized = 'true';
+            // Skip if already initialized (check for EasyMDE wrapper element)
+            if (textarea.nextSibling && textarea.nextSibling.classList && textarea.nextSibling.classList.contains('EasyMDEContainer')) {
+                return;
+            }
 
             // Check if EasyMDE is available
             if (typeof EasyMDE === 'undefined') {
@@ -148,41 +152,58 @@
                 return;
             }
 
-            const easyMDE = new EasyMDE({
-                element:          textarea,
-                spellChecker:     false,
-                autosave:         { enabled: false },
-                toolbar: [
-                    'bold', 'italic', 'heading', '|',
-                    'unordered-list', 'ordered-list', '|',
-                    'link', 'quote', 'code', '|',
-                    'preview', 'side-by-side', '|',
-                    'guide',
-                ],
-                placeholder:      'Beschreibung eingeben... (Markdown wird unterstützt)',
-                status:           false,          // Statusleiste ausblenden
-                minHeight:        '120px',
-                renderingConfig: {
-                    singleLineBreaks: false,
-                    codeSyntaxHighlighting: false,
-                },
-                // Theming: passt sich an Light/Dark Mode an
-                theme:            document.documentElement.getAttribute('data-bs-theme') === 'dark'
-                                  ? 'dark' : 'default',
-            });
+            try {
+                const easyMDE = new EasyMDE({
+                    element:          textarea,
+                    spellChecker:     false,
+                    autosave:         { enabled: false },
+                    toolbar: [
+                        'bold', 'italic', 'heading', '|',
+                        'unordered-list', 'ordered-list', '|',
+                        'link', 'quote', 'code', '|',
+                        'preview', 'side-by-side', '|',
+                        'guide',
+                    ],
+                    placeholder:      'Beschreibung eingeben... (Markdown wird unterstützt)',
+                    status:           false,          // Statusleiste ausblenden
+                    minHeight:        '120px',
+                    renderingConfig: {
+                        singleLineBreaks: false,
+                        codeSyntaxHighlighting: false,
+                    },
+                    // Theming: passt sich an Light/Dark Mode an
+                    theme:            document.documentElement.getAttribute('data-bs-theme') === 'dark'
+                                      ? 'dark' : 'default',
+                });
 
-            // Dark Mode Toggle: Editor-Theme aktualisieren
-            document.addEventListener('friday:theme-changed', (e) => {
-                const wrapper = easyMDE.codemirror.getWrapperElement();
-                wrapper.classList.toggle('cm-s-dark', e.detail.theme === 'dark');
-            });
+                // Store instance for potential cleanup
+                easyMDEInstances.set(textarea, easyMDE);
+
+                // Dark Mode Toggle: Editor-Theme aktualisieren
+                document.addEventListener('friday:theme-changed', (e) => {
+                    if (easyMDE && easyMDE.codemirror) {
+                        const wrapper = easyMDE.codemirror.getWrapperElement();
+                        if (wrapper) {
+                            wrapper.classList.toggle('cm-s-dark', e.detail.theme === 'dark');
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to initialize EasyMDE:', error);
+            }
         });
     }
 
     // Initial + nach jedem HTMX Swap
     initMarkdownEditors();
-    document.addEventListener('htmx:afterSwap', (e) => initMarkdownEditors(e.detail.target));
-    document.addEventListener('htmx:afterSettle', (e) => initMarkdownEditors(e.detail.target));
+    document.addEventListener('htmx:afterSwap', (e) => {
+        // Use a small delay to ensure DOM is fully updated
+        setTimeout(() => initMarkdownEditors(e.detail.target), 10);
+    });
+    document.addEventListener('htmx:afterSettle', (e) => {
+        // Use a small delay to ensure DOM is fully updated
+        setTimeout(() => initMarkdownEditors(e.detail.target), 10);
+    });
 
 
     // ── Markdown Rendering (marked.js + DOMPurify) ────────────────
