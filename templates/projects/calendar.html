@@ -34,6 +34,13 @@
   [data-bs-theme="dark"] .gantt_grid_data .gantt_row:hover {
     background: var(--friday-surface-alt);
   }
+  /* Weekend highlighting */
+  .weekend-cell {
+    background: rgba(107, 114, 128, 0.08) !important;
+  }
+  [data-bs-theme="dark"] .weekend-cell {
+    background: rgba(255, 255, 255, 0.03) !important;
+  }
 </style>
 {% endblock %}
 
@@ -92,20 +99,27 @@ gantt.config.columns = [
     name: "text", label: "Project / Task",
     tree: true, width: 220,
     template: (task) => task.type === 'milestone'
-      ? `${task.text}`
-      : `${task.text}`
+      ? `<span style="padding-left:16px;font-size:12px;opacity:.7">${task.text}</span>`
+      : task.type === 'project'
+        ? `<span style="font-weight:600">${task.text}</span>`
+        : `<span style="padding-left:16px;font-size:13px">${task.text}</span>`
   },
   {
     name: "start_date", label: "Start",
-    align: "center", width: 90,
+    align: "center", width: 85,
     template: (task) => task.type === 'milestone' ? '' : fmtDate(task.start_date)
   },
   {
-    name: "due", label: "Due",
-    align: "center", width: 90,
-    template: (task) => task.type === 'milestone'
-      ? fmtDate(task.start_date)
-      : fmtDate(task.end_date)
+    name: "due", label: "Deadline",
+    align: "center", width: 85,
+    template: (task) => fmtDate(task.end_date || task.start_date)
+  },
+  {
+    name: "sp", label: "SP",
+    align: "center", width: 45,
+    template: (task) => task.story_points
+      ? `<span style="font-family:monospace;font-size:12px">${task.story_points}</span>`
+      : ''
   },
 ];
 
@@ -113,14 +127,63 @@ gantt.config.columns = [
 gantt.templates.task_class = (start, end, task) =>
   task.type === 'milestone' ? 'gantt-milestone' : 'gantt-project-bar';
 
-gantt.templates.task_style = (start, end, task) =>
-  task.color ? `background:${task.color}; border-color:${task.color};` : '';
+gantt.templates.task_style = (start, end, task) => {
+  // Projektbalken: Projektfarbe
+  if (task.type === 'project') {
+    return task.color
+      ? `background:${task.color}; border-color:${task.color};`
+      : '';
+  }
+
+  // Task-Balken: Status-Farbe
+  const statusColors = {
+    'backlog':     '#6b7280',
+    'todo':        '#3b82f6',
+    'in_progress': '#f59e0b',
+    'review':      '#8b5cf6',
+    'done':        '#10b981',
+  };
+  const color = statusColors[task.status] || task.color || '#3b82f6';
+  return `background:${color}; border-color:${color};`;
+};
 
 gantt.templates.task_text = (start, end, task) =>
   task.type === 'milestone' ? task.text : '';
 
 // ── Plugins ───────────────────────────────────────────────────
-gantt.plugins({ marker: true });
+gantt.plugins({ marker: true, tooltip: true });
+
+// ── Tooltip ───────────────────────────────────────────────────
+gantt.templates.tooltip_text = (start, end, task) => {
+  if (task.type === 'milestone') {
+    return `<b>${task.text}</b><br>Deadline: ${fmtDate(task.start_date)}`;
+  }
+  const sp = task.story_points ? `${task.story_points} SP` : '—';
+  const days = task.working_days ? `${task.working_days} AT` : '—';
+  return `
+    <b>${task.text}</b><br>
+    Start: ${fmtDate(task.start_date)}<br>
+    Deadline: ${fmtDate(task.end_date)}<br>
+    Aufwand: ${sp} (${days})<br>
+    Status: ${task.status_label || '—'}<br>
+    ${task.resource_label ? `Bearbeiter: ${task.resource_label}` : ''}
+  `.trim();
+};
+
+// ── Weekend highlighting ──────────────────────────────────────
+gantt.templates.scale_cell_class = (date) => {
+  if (date.getDay() === 0 || date.getDay() === 6) {
+    return 'weekend-cell';
+  }
+  return '';
+};
+
+gantt.templates.timeline_cell_class = (task, date) => {
+  if (date.getDay() === 0 || date.getDay() === 6) {
+    return 'weekend-cell';
+  }
+  return '';
+};
 
 // ── Scale ─────────────────────────────────────────────────────
 gantt.config.scales = [

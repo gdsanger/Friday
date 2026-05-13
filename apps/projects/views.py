@@ -254,6 +254,8 @@ class CalendarDataView(LoginRequiredMixin, View):
     Gantt "resources" = assigned users and teams.
     """
     def get(self, request):
+        from apps.projects.utils import subtract_working_days, sp_to_working_days
+
         user = request.user
         my_teams = user.teams
 
@@ -295,6 +297,20 @@ class CalendarDataView(LoginRequiredMixin, View):
             ).select_related('assigned_to_user', 'assigned_to_team')
 
             for task in tasks:
+                end_date = task.deadline
+
+                # Story Points → Dauer berechnen
+                if task.story_points and task.story_points > 0:
+                    working_days = sp_to_working_days(float(task.story_points))
+                    start_date = subtract_working_days(end_date, working_days)
+                    duration = None  # wird aus start/end berechnet
+                    task_type = 'task'  # normaler Balken
+                else:
+                    start_date = end_date  # Milestone: Start = Ende
+                    duration = 0  # Punkt
+                    task_type = 'milestone'
+                    working_days = 0
+
                 # Determine resource
                 resource_id = None
                 resource_label = None
@@ -324,15 +340,22 @@ class CalendarDataView(LoginRequiredMixin, View):
                 gantt_tasks.append({
                     'id': f't_{task.pk}',
                     'text': task.title,
-                    'start_date': task.deadline.strftime('%Y-%m-%d'),
-                    'duration': 0,  # milestone = duration 0
-                    'type': 'milestone',
+                    'start_date': start_date.strftime('%Y-%m-%d'),
+                    'end_date': end_date.strftime('%Y-%m-%d'),
+                    'duration': duration,
+                    'type': task_type,
                     'parent': f'p_{project.pk}',
                     'priority': task.priority,
+                    'priority_label': task.get_priority_display(),
                     'status': task.status,
+                    'status_label': task.get_status_display(),
+                    'story_points': float(task.story_points) if task.story_points else None,
+                    'working_days': working_days,
                     'resource_id': resource_id,
                     'resource_label': resource_label,
                     'task_id': task.pk,
+                    # Farbe: Projektfarbe für Balken
+                    'color': project.color,
                 })
 
         # Add dependency links for Gantt
