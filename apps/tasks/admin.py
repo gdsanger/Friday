@@ -2,7 +2,18 @@
 Admin configuration for tasks app.
 """
 from django.contrib import admin
-from .models import Label, Task, Comment, Attachment, TimeEntry
+from .models import Label, Task, Comment, Attachment, TimeEntry, TaskTemplate
+
+
+@admin.register(TaskTemplate)
+class TaskTemplateAdmin(admin.ModelAdmin):
+    """TaskTemplate admin."""
+    list_display = ['name', 'slug', 'default_project', 'is_active', 'is_portal_visible', 'client', 'created_at']
+    list_filter = ['is_active', 'is_portal_visible', 'client', 'created_at']
+    search_fields = ['name', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    prepopulated_fields = {'slug': ('name',)}
+    filter_horizontal = []
 
 
 @admin.register(Label)

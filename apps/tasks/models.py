@@ -6,6 +6,135 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 
 
+class TaskTemplate(TimeStampedModel):
+    """
+    Wiederverwendbare Task-Vorlage.
+    extra_fields_yaml definiert Zusatzfelder als YAML.
+    Nur Staff kann Templates anlegen/bearbeiten.
+    """
+    name                = models.CharField(max_length=200)
+    slug                = models.SlugField(unique=True)
+    description         = models.TextField(
+                            blank=True,
+                            help_text='Interne Beschreibung der Vorlage.'
+                          )
+    # Standard-Felder Defaults
+    default_project     = models.ForeignKey(
+                            'projects.Project',
+                            on_delete=models.SET_NULL,
+                            null=True, blank=True,
+                            help_text='Vorausgewähltes Projekt.'
+                          )
+    default_priority    = models.IntegerField(
+                            choices=[],  # Will be set dynamically
+                            default=0
+                          )
+    default_assigned_to_team = models.ForeignKey(
+                            'teams.Team',
+                            on_delete=models.SET_NULL,
+                            null=True, blank=True,
+                            help_text='Vorausgewähltes Team.'
+                          )
+
+    # Zusatzfelder als YAML
+    extra_fields_yaml   = models.TextField(
+                            blank=True,
+                            help_text='''YAML-Definition der Zusatzfelder.
+Beispiel:
+- name: zielgruppe
+  label: Zielgruppe
+  type: text
+  required: true
+
+- name: ton
+  label: Ton der Kommunikation
+  type: select
+  required: true
+  options:
+    - Formell
+    - Informell
+    - Neutral
+'''
+                          )
+
+    # Sichtbarkeit
+    is_active           = models.BooleanField(default=True)
+    is_portal_visible   = models.BooleanField(
+                            default=False,
+                            help_text='Im Customer Portal verfügbar.'
+                          )
+    client              = models.ForeignKey(
+                            'core.Client',
+                            on_delete=models.SET_NULL,
+                            null=True, blank=True,
+                            help_text='Nur für diesen Mandanten sichtbar. '
+                                      'Leer = alle Mandanten.'
+                          )
+    created_by          = models.ForeignKey(
+                            settings.AUTH_USER_MODEL,
+                            on_delete=models.SET_NULL,
+                            null=True
+                          )
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Task Template'
+
+    def __str__(self):
+        return self.name
+
+    def get_extra_fields(self) -> list:
+        """
+        Parst extra_fields_yaml und gibt eine Liste von Feld-Definitionen zurück.
+        Gibt [] zurück wenn kein YAML definiert oder YAML ungültig.
+        """
+        if not self.extra_fields_yaml:
+            return []
+        try:
+            import yaml
+            fields = yaml.safe_load(self.extra_fields_yaml)
+            return fields if isinstance(fields, list) else []
+        except yaml.YAMLError:
+            return []
+
+    def validate_yaml(self) -> tuple:
+        """
+        Validiert das YAML. Gibt (True, '') oder (False, Fehlermeldung) zurück.
+        Wird im Admin und im Edit-View aufgerufen.
+        """
+        if not self.extra_fields_yaml:
+            return True, ''
+        try:
+            import yaml
+            fields = yaml.safe_load(self.extra_fields_yaml)
+            if not isinstance(fields, list):
+                return False, 'YAML muss eine Liste von Feldern sein.'
+
+            valid_types = {'text', 'textarea', 'number', 'select',
+                           'multiselect', 'date', 'checkbox'}
+
+            for i, field in enumerate(fields):
+                if not isinstance(field, dict):
+                    return False, f'Feld {i+1}: muss ein Objekt sein.'
+                if 'name' not in field:
+                    return False, f'Feld {i+1}: "name" fehlt.'
+                if 'label' not in field:
+                    return False, f'Feld {i+1}: "label" fehlt.'
+                if 'type' not in field:
+                    return False, f'Feld {i+1}: "type" fehlt.'
+                if field['type'] not in valid_types:
+                    return False, f'Feld {i+1}: ungültiger type "{field["type"]}". ' \
+                                  f'Erlaubt: {", ".join(valid_types)}'
+                if field['type'] in ('select', 'multiselect'):
+                    if 'options' not in field or not isinstance(field['options'], list):
+                        return False, f'Feld {i+1} ({field["type"]}): "options" ' \
+                                      f'fehlt oder ist keine Liste.'
+
+            return True, ''
+        except Exception as e:
+            return False, f'YAML-Fehler: {str(e)}'
+
+
 class Label(models.Model):
     """Label model for categorizing tasks."""
     name  = models.CharField(max_length=50, unique=True)
@@ -138,6 +267,13 @@ class Task(TimeStampedModel):
     )
     position    = models.IntegerField(default=0)
     labels      = models.ManyToManyField(Label, blank=True)
+    template    = models.ForeignKey(
+        'TaskTemplate',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='created_tasks',
+        help_text='Template aus dem dieser Task erstellt wurde.'
+    )
 
     class Meta:
         ordering = ['position', '-created_at']
