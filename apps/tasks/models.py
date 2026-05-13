@@ -94,6 +94,11 @@ class Task(TimeStampedModel):
     )
 
     due_date    = models.DateField(null=True, blank=True)
+    deadline    = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Hard deadline for this task — shown as milestone in calendar.'
+    )
     estimated_h = models.DecimalField(
         max_digits=6,
         decimal_places=2,

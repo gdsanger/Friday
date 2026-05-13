@@ -146,6 +146,7 @@ class TaskCreateView(LoginRequiredMixin, View):
             priority    = int(request.POST.get('priority', Task.PRIORITY_NONE)),
             created_by  = request.user,
             due_date    = request.POST.get('due_date') or None,
+            deadline    = request.POST.get('deadline') or None,
         )
 
         # Optional: assign immediately
@@ -194,6 +195,9 @@ class TaskEditView(LoginRequiredMixin, View):
         if 'due_date' in request.POST:
             due_date = request.POST['due_date'].strip()
             task.due_date = due_date if due_date else None
+        if 'deadline' in request.POST:
+            deadline = request.POST['deadline'].strip()
+            task.deadline = deadline if deadline else None
 
         task.save()
         return HttpResponse(status=204)

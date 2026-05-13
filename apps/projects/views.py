@@ -1,15 +1,19 @@
 """
 Project views for Friday project.
 """
+import json
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import View
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
 
 from .models import Project, ProjectUserMembership, ProjectTeamMembership
 from apps.teams.models import Team
@@ -230,3 +234,133 @@ class ProjectRemoveTeamView(LoginRequiredMixin, View):
             'user_memberships': project.projectusermembership_set.select_related('user'),
             'team_memberships': project.projectteammembership_set.select_related('team'),
         }
+
+
+class CalendarView(LoginRequiredMixin, TemplateView):
+    """Calendar/Gantt view for projects."""
+    template_name = 'projects/calendar.html'
+
+
+class CalendarDataView(LoginRequiredMixin, View):
+    """
+    Returns JSON data for DHTMLX Gantt.
+    Format: { data: [...tasks/projects], links: [...dependencies] }
+
+    Gantt "tasks" = both projects (as parent bars) and task deadlines (as milestones).
+    Gantt "resources" = assigned users and teams.
+    """
+    def get(self, request):
+        user = request.user
+        my_teams = user.teams
+
+        # Accessible projects
+        projects = Project.objects.filter(
+            models.Q(user_members=user) |
+            models.Q(team_members__in=my_teams) |
+            models.Q(visibility='organisation')
+        ).exclude(status='archived').distinct()
+
+        gantt_tasks = []
+        gantt_links = []
+        gantt_resources = []
+        resource_ids = set()
+
+        for project in projects:
+            start = project.start_date or project.created_at.date()
+            end = project.due_date
+
+            if not end:
+                continue  # skip projects with no end date
+
+            # Project bar
+            gantt_tasks.append({
+                'id': f'p_{project.pk}',
+                'text': project.name,
+                'start_date': start.strftime('%d-%m-%Y'),
+                'end_date': end.strftime('%d-%m-%Y'),
+                'color': project.color,
+                'type': 'project',
+                'open': True,
+                'readonly': False,
+                'project_id': project.pk,
+            })
+
+            # Task deadlines as milestones (children of project bar)
+            tasks = project.tasks.filter(
+                deadline__isnull=False
+            ).select_related('assigned_to_user', 'assigned_to_team')
+
+            for task in tasks:
+                # Determine resource
+                resource_id = None
+                resource_label = None
+
+                if task.assigned_to_user:
+                    resource_id = f'u_{task.assigned_to_user.pk}'
+                    resource_label = task.assigned_to_user.full_name
+                    if resource_id not in resource_ids:
+                        gantt_resources.append({
+                            'id': resource_id,
+                            'label': resource_label,
+                            'avatar': task.assigned_to_user.initials,
+                        })
+                        resource_ids.add(resource_id)
+
+                elif task.assigned_to_team:
+                    resource_id = f't_{task.assigned_to_team.pk}'
+                    resource_label = task.assigned_to_team.name
+                    if resource_id not in resource_ids:
+                        gantt_resources.append({
+                            'id': resource_id,
+                            'label': resource_label,
+                            'color': task.assigned_to_team.color,
+                        })
+                        resource_ids.add(resource_id)
+
+                gantt_tasks.append({
+                    'id': f't_{task.pk}',
+                    'text': task.title,
+                    'start_date': task.deadline.strftime('%d-%m-%Y'),
+                    'duration': 0,  # milestone = duration 0
+                    'type': 'milestone',
+                    'parent': f'p_{project.pk}',
+                    'priority': task.priority,
+                    'status': task.status,
+                    'resource_id': resource_id,
+                    'resource_label': resource_label,
+                    'task_id': task.pk,
+                })
+
+        return JsonResponse({
+            'data': gantt_tasks,
+            'links': gantt_links,
+            'resources': gantt_resources,
+        })
+
+
+class CalendarUpdateView(LoginRequiredMixin, View):
+    """
+    HTMX/AJAX — update project dates after drag & drop in Gantt.
+    POST: { type: 'project', id: pk, start_date: '...', end_date: '...' }
+    """
+    def post(self, request):
+        data = json.loads(request.body)
+        obj_type = data.get('type')
+        obj_id = data.get('id')
+        start_str = data.get('start_date')
+        end_str = data.get('end_date')
+
+        fmt = '%d-%m-%Y'
+
+        if obj_type == 'project':
+            project = get_object_or_404(Project, pk=obj_id)
+            if not (project.get_effective_role(request.user) == 'manager'
+                    or request.user.is_staff):
+                raise PermissionDenied
+            if start_str:
+                project.start_date = datetime.strptime(start_str, fmt).date()
+            if end_str:
+                project.due_date = datetime.strptime(end_str, fmt).date()
+            project.save(update_fields=['start_date', 'due_date'])
+
+        return JsonResponse({'status': 'ok'})

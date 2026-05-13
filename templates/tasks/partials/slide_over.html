@@ -115,6 +115,22 @@
                     {% if task.is_overdue %}
                     <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Overdue</small>
                     {% endif %}
+                    <div class="form-text">Soft due date shown on Kanban cards</div>
+                </div>
+            </div>
+
+            <!-- Deadline -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Deadline:</div>
+                <div class="col-8">
+                    <input type="date"
+                           class="form-control form-control-sm"
+                           name="deadline"
+                           value="{% if task.deadline %}{{ task.deadline|date:'Y-m-d' }}{% endif %}"
+                           hx-post="{% url 'tasks:task-edit' task.pk %}"
+                           hx-trigger="change"
+                           hx-include="this">
+                    <div class="form-text">Hard deadline — shown in calendar</div>
                 </div>
             </div>
 

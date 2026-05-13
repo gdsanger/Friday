@@ -17,10 +17,14 @@
             <i class="bi bi-kanban"></i>
             <span>Tasks</span>
         </a>
-        <a href="{% url 'projects:project-list' %}" class="nav-item {% if request.resolver_match.app_name == 'projects' %}active{% endif %}">
+        <a href="{% url 'projects:project-list' %}" class="nav-item {% if request.resolver_match.app_name == 'projects' and request.resolver_match.url_name != 'calendar' %}active{% endif %}">
             <i class="bi bi-folder"></i>
             <span>Projects</span>
-        </a>        
+        </a>
+        <a href="{% url 'projects:calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+            <i class="bi bi-calendar3"></i>
+            <span>Calendar</span>
+        </a>
         <a href="{% url 'teams:team-list' %}" class="nav-item {% if request.resolver_match.app_name == 'teams' %}active{% endif %}">
             <i class="bi bi-people"></i>
             <span>Teams</span>

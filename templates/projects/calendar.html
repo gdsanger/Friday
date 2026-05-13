@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Calendar · Friday{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
+<style>
+  #gantt-container {
+    width: 100%;
+    height: calc(100vh - 140px);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--friday-border);
+  }
+  /* Match Friday dark/light theme */
+  [data-bs-theme="dark"] .gantt_container {
+    background: var(--friday-surface);
+    color: var(--friday-text);
+  }
+  [data-bs-theme="dark"] .gantt_grid_head_cell,
+  [data-bs-theme="dark"] .gantt_scale_cell {
+    background: var(--friday-surface-alt);
+    color: var(--friday-text-muted);
+    border-color: var(--friday-border);
+  }
+  [data-bs-theme="dark"] .gantt_row,
+  [data-bs-theme="dark"] .gantt_grid_data .gantt_cell {
+    background: var(--friday-surface);
+    border-color: var(--friday-border);
+    color: var(--friday-text);
+  }
+  [data-bs-theme="dark"] .gantt_row:hover,
+  [data-bs-theme="dark"] .gantt_grid_data .gantt_row:hover {
+    background: var(--friday-surface-alt);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Project Calendar</h4>
+  <div class="d-flex gap-2">
+    <!-- View switcher -->
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-outline-secondary active"
+              onclick="setScale('month')">Month</button>
+      <button class="btn btn-outline-secondary"
+              onclick="setScale('quarter')">Quarter</button>
+      <button class="btn btn-outline-secondary"
+              onclick="setScale('year')">Year</button>
+    </div>
+    <!-- Resource toggle -->
+    <button class="btn btn-outline-secondary btn-sm"
+            id="resource-toggle"
+            onclick="toggleResourceView()">
+      <i class="bi bi-people"></i> Resource View
+    </button>
+  </div>
+</div>
+
+<div id="gantt-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+<script>
+// ── DHTMLX Gantt Configuration ────────────────────────────────
+
+gantt.config.date_format    = "%d-%m-%Y";
+gantt.config.drag_progress  = false;
+gantt.config.drag_resize    = true;
+gantt.config.drag_move      = true;
+gantt.config.fit_tasks      = true;
+gantt.config.open_tree_initially = true;
+
+// Grid columns
+gantt.config.columns = [
+  {
+    name: "text", label: "Project / Task",
+    tree: true, width: 220,
+    template: (task) => {
+      if (task.type === 'milestone') {
+        return `${task.text}`;
+      }
+      return `${task.text}`;
+    }
+  },
+  {
+    name: "start_date", label: "Start",
+    align: "center", width: 85,
+    template: (task) => task.type === 'milestone' ? '' :
+      gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.start_date))
+  },
+  {
+    name: "due", label: "Due",
+    align: "center", width: 85,
+    template: (task) => task.type === 'milestone'
+      ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.start_date))
+      : (task.end_date
+          ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.end_date))
+          : '')
+  },
+];
+
+// Custom task bar color from project color
+gantt.templates.task_class = (start, end, task) => {
+  return task.type === 'milestone' ? 'gantt-milestone' : 'gantt-project-bar';
+};
+
+gantt.templates.task_style = (start, end, task) => {
+  if (task.color) return `background:${task.color}; border-color:${task.color};`;
+  return '';
+};
+
+// Milestone label
+gantt.templates.task_text = (start, end, task) => {
+  if (task.type === 'milestone') return task.text;
+  return '';
+};
+
+// Today marker
+gantt.plugins({ marker: true });
+gantt.addMarker({
+  start_date: new Date(),
+  css: "gantt-today-marker",
+  text: "Today",
+});
+
+// Click task → open detail
+gantt.attachEvent("onTaskClick", (id, e) => {
+  const task = gantt.getTask(id);
+  if (task.task_id) {
+    // Open task slide-over
+    htmx.ajax('GET', `/tasks/${task.task_id}/detail/`, {
+      target: '#slide-over',
+      swap: 'innerHTML',
+    });
+  }
+  return true;
+});
+
+// Drag & drop → save updated dates
+gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
+  const task = gantt.getTask(id);
+  if (task.type !== 'project') return;
+
+  const fmt = gantt.date.date_to_str("%d-%m-%Y");
+  fetch("{% url 'projects:calendar-update' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: JSON.stringify({
+      type:       'project',
+      id:         task.project_id,
+      start_date: fmt(task.start_date),
+      end_date:   fmt(task.end_date),
+    }),
+  });
+});
+
+// ── Scale helpers ─────────────────────────────────────────────
+
+function setScale(mode) {
+  document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (mode === 'month') {
+    gantt.config.scales = [
+      { unit: "month", step: 1, format: "%F %Y" },
+      { unit: "week",  step: 1, format: "KW%W" },
+    ];
+  } else if (mode === 'quarter') {
+    gantt.config.scales = [
+      { unit: "quarter", step: 1, format: "Q%q %Y" },
+      { unit: "month",   step: 1, format: "%M" },
+    ];
+  } else {
+    gantt.config.scales = [
+      { unit: "year",  step: 1, format: "%Y" },
+      { unit: "month", step: 1, format: "%M" },
+    ];
+  }
+  gantt.render();
+}
+
+// ── Resource View toggle ──────────────────────────────────────
+
+let resourceMode = false;
+
+function toggleResourceView() {
+  resourceMode = !resourceMode;
+  document.getElementById('resource-toggle')
+    .classList.toggle('btn-primary', resourceMode);
+
+  if (resourceMode) {
+    // Group by resource — add resource column
+    gantt.config.columns = [
+      { name: "resource", label: "Resource", width: 150,
+        template: (task) => task.resource_label || '' },
+      ...gantt.config.columns.slice(0, 3),
+    ];
+  } else {
+    gantt.config.columns = gantt.config.columns.slice(1);
+  }
+  gantt.render();
+}
+
+// ── Init ─────────────────────────────────────────────────────
+
+gantt.config.scales = [
+  { unit: "month", step: 1, format: "%F %Y" },
+  { unit: "week",  step: 1, format: "KW%W" },
+];
+
+gantt.init("gantt-container");
+
+// Load data from Django JSON endpoint
+fetch("{% url 'projects:calendar-data' %}")
+  .then(r => r.json())
+  .then(data => {
+    gantt.parse({ data: data.data, links: data.links });
+    window._ganttResources = data.resources;
+  });
+
+function getCsrfToken() {
+  return document.cookie.split(';')
+    .find(c => c.trim().startsWith('csrftoken='))
+    ?.split('=')[1] ?? '';
+}
+</script>
+{% endblock %}
