@@ -2,7 +2,7 @@
 Admin configuration for mail models.
 """
 from django.contrib import admin
-from .models import UserMailToken, MailThread, WebhookSubscription
+from .models import UserMailToken, MailThread, WebhookSubscription, MailHook
 
 
 @admin.register(UserMailToken)
@@ -40,3 +40,28 @@ class WebhookSubscriptionAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     raw_id_fields = ['user']
     date_hierarchy = 'expiration'
+
+
+@admin.register(MailHook)
+class MailHookAdmin(admin.ModelAdmin):
+    """Admin interface for MailHook."""
+    list_display = ['event', 'is_active', 'template_name', 'updated_at']
+    list_filter = ['is_active', 'event']
+    search_fields = ['event', 'template_name', 'subject_template', 'description']
+    readonly_fields = ['updated_at']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('event', 'is_active', 'description')
+        }),
+        ('Template Configuration', {
+            'fields': ('template_name', 'subject_template')
+        }),
+        ('Recipients', {
+            'fields': ('recipients',)
+        }),
+        ('Metadata', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+

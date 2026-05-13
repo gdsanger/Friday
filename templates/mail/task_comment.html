@@ -1,0 +1,26 @@
+{% extends "mail/base.html" %}
+{% block body %}
+<h1 class="email-title">New comment on task</h1>
+<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">
+  <strong>{{ comment_author }}</strong> commented on a task:
+</p>
+
+<div class="info-box">
+  <div class="info-row">
+    Task:
+    <strong>{{ task_title }}</strong>
+  </div>
+  <div class="info-row">
+    Project:
+    {{ project_name }}
+  </div>
+  <div class="info-row" style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e0d8;">
+    <em>"{{ comment_body }}"</em>
+  </div>
+</div>
+
+<p style="margin:24px 0;">
+  <a href="{{ task_url }}" class="email-btn">View Comment</a>
+</p>
+{% endblock %}

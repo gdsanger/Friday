@@ -89,3 +89,74 @@ class WebhookSubscription(TimeStampedModel):
         verbose_name = 'Webhook Subscription'
         verbose_name_plural = 'Webhook Subscriptions'
         ordering = ['-created_at']
+
+
+class MailHook(models.Model):
+    """
+    Configures when which mail is sent.
+    Staff can activate/deactivate hooks.
+    """
+    # Available Hook Events
+    EVENT_TASK_CREATED = 'task_created'
+    EVENT_TASK_ASSIGNED = 'task_assigned'
+    EVENT_TASK_DONE = 'task_done'
+    EVENT_TASK_COMMENT = 'task_comment'
+    EVENT_TASK_OVERDUE = 'task_overdue'  # via Celery Beat
+    EVENT_PORTAL_CREATED = 'portal_ticket_created'
+    EVENT_PORTAL_DONE = 'portal_ticket_done'
+    EVENT_DAILY_DIGEST = 'daily_digest'  # via Celery Beat
+    EVENT_USER_INVITED = 'user_invited'
+
+    EVENT_CHOICES = [
+        (EVENT_TASK_CREATED, 'Task created'),
+        (EVENT_TASK_ASSIGNED, 'Task assigned'),
+        (EVENT_TASK_DONE, 'Task completed'),
+        (EVENT_TASK_COMMENT, 'Comment added'),
+        (EVENT_TASK_OVERDUE, 'Task overdue'),
+        (EVENT_PORTAL_CREATED, 'Portal: Ticket received'),
+        (EVENT_PORTAL_DONE, 'Portal: Ticket completed'),
+        (EVENT_DAILY_DIGEST, 'Daily summary'),
+        (EVENT_USER_INVITED, 'User invited'),
+    ]
+
+    # Recipient Types
+    RECIPIENT_ASSIGNEE = 'assignee'
+    RECIPIENT_CREATOR = 'creator'
+    RECIPIENT_WATCHERS = 'watchers'
+    RECIPIENT_PROJECT_MANAGER = 'project_manager'
+    RECIPIENT_PORTAL_USER = 'portal_user'
+
+    RECIPIENT_CHOICES = [
+        (RECIPIENT_ASSIGNEE, 'Assigned person/team'),
+        (RECIPIENT_CREATOR, 'Creator'),
+        (RECIPIENT_WATCHERS, 'Watchers'),
+        (RECIPIENT_PROJECT_MANAGER, 'Project manager'),
+        (RECIPIENT_PORTAL_USER, 'Portal user (creator)'),
+    ]
+
+    event = models.CharField(max_length=50, choices=EVENT_CHOICES, unique=True)
+    is_active = models.BooleanField(default=True)
+    recipients = models.JSONField(
+        default=list,
+        help_text='List of recipient types, e.g. ["assignee", "watchers"]'
+    )
+    template_name = models.CharField(
+        max_length=100,
+        help_text='Template filename without .html, e.g. task_assigned'
+    )
+    subject_template = models.CharField(
+        max_length=200,
+        help_text='Subject template, e.g. "New task: {task_title}"'
+    )
+    description = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['event']
+        verbose_name = 'Mail Hook'
+        verbose_name_plural = 'Mail Hooks'
+
+    def __str__(self):
+        status = '✓' if self.is_active else '✗'
+        return f'[{status}] {self.get_event_display()}'
+

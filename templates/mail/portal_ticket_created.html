@@ -1,0 +1,31 @@
+{% extends "mail/base.html" %}
+{% block body %}
+<h1 class="email-title">Your request has been received</h1>
+<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">
+  Thank you for your request. We have received it and will process it as soon as possible.
+</p>
+
+<div class="info-box">
+  <div class="info-row">
+    Subject:
+    <strong>{{ task_title }}</strong>
+  </div>
+  <div class="info-row">
+    Reference number:
+    #{{ task_id }}
+  </div>
+  <div class="info-row">
+    Status:
+    <span class="badge badge-blue">In Progress</span>
+  </div>
+</div>
+
+<p class="email-text">
+  You will receive a notification as soon as your request has been completed.
+</p>
+
+<p style="margin:24px 0;">
+  <a href="{{ support_url }}" class="email-btn">View Portal</a>
+</p>
+{% endblock %}

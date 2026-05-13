@@ -24,6 +24,14 @@ app.conf.beat_schedule = {
         'task': 'apps.mail.tasks.renew_webhook_subscriptions',
         'schedule': crontab(hour=6, minute=0),  # daily at 06:00
     },
+    'daily-digest': {
+        'task': 'apps.mail.tasks.send_daily_digest',
+        'schedule': crontab(hour=7, minute=0),  # daily at 07:00
+    },
+    'overdue-notifications': {
+        'task': 'apps.mail.tasks.send_overdue_notifications',
+        'schedule': crontab(hour=8, minute=0),  # daily at 08:00
+    },
 }
 
 
