@@ -108,9 +108,18 @@
                         </div>
 
                         <!-- Due Date -->
-                        <div class="mb-4">
-                            <label for="due_date" class="form-label">Due Date</label>
-                            <input type="date" class="form-control" id="due_date" name="due_date">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date">
+                                <div class="form-text">Soft due date shown on Kanban cards</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="deadline" class="form-label">Deadline</label>
+                                <input type="date" class="form-control" id="deadline" name="deadline">
+                                <div class="form-text">Hard deadline — shown in calendar</div>
+                            </div>
                         </div>
 
                         <!-- Form Actions -->
