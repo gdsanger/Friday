@@ -55,6 +55,7 @@ class TaskDetailView(LoginRequiredMixin, View):
                                    t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
             'clients':         Client.objects.filter(is_active=True).order_by('name'),
+            'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
         }
         template = 'tasks/partials/slide_over.html' if request.htmx else 'tasks/detail.html'
         return render(request, template, ctx)
@@ -233,6 +234,15 @@ class TaskStatusView(LoginRequiredMixin, View):
             raise PermissionDenied
         status   = request.POST.get('status')
         position = request.POST.get('position')
+
+        # Block transition to in_progress if task is blocked
+        if status == Task.STATUS_IN_PROGRESS and task.is_blocked:
+            blocking = task.blocking_tasks.exclude(status=Task.STATUS_DONE)
+            return render(request, 'tasks/partials/blocked_warning.html', {
+                'task':     task,
+                'blocking': blocking,
+            }, status=409)
+
         if status in dict(Task.STATUS_CHOICES):
             task.status = status
         if position is not None:
@@ -414,6 +424,7 @@ class TaskDetailFullView(LoginRequiredMixin, View):
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
+            'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
             'breadcrumb': [
                 {'label': 'Projects',      'url': reverse('projects:project-list')},
                 {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},
@@ -585,3 +596,52 @@ class TaskCloneView(LoginRequiredMixin, View):
             return render(request, 'tasks/partials/card.html', {'task': clone})
 
         return redirect('tasks:task-detail-full', pk=clone.pk)
+
+
+class DependencyAddView(LoginRequiredMixin, View):
+    """
+    HTMX — add a "blocked by" dependency.
+    POST: { blocked_by_id: <task_id> }
+    Returns updated dependency list partial.
+    """
+    def post(self, request, pk):
+        from .models import TaskDependency
+        task         = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+        blocked_by_id = request.POST.get('blocked_by_id')
+        if not blocked_by_id:
+            return HttpResponseBadRequest('blocked_by_id is required.')
+        blocked_by   = get_object_or_404(Task, pk=blocked_by_id)
+
+        # Prevent self-dependency
+        if task.pk == blocked_by.pk:
+            return HttpResponseBadRequest('A task cannot depend on itself.')
+
+        # Prevent circular dependency (simple check)
+        if blocked_by.is_blocked and task in blocked_by.blocking_tasks:
+            return HttpResponseBadRequest('Circular dependency detected.')
+
+        TaskDependency.objects.get_or_create(
+            task=task, blocked_by=blocked_by,
+            defaults={'created_by': request.user}
+        )
+
+        # Get project_tasks for the form
+        project_tasks = task.project.tasks.exclude(pk=task.pk).order_by('title')
+        return render(request, 'tasks/partials/dependency_list.html',
+                      {'task': task, 'project_tasks': project_tasks})
+
+
+class DependencyRemoveView(LoginRequiredMixin, View):
+    """HTMX — remove a dependency. Returns updated list."""
+    def post(self, request, pk, dep_pk):
+        from .models import TaskDependency
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+        TaskDependency.objects.filter(task=task, pk=dep_pk).delete()
+        # Get project_tasks for the form
+        project_tasks = task.project.tasks.exclude(pk=task.pk).order_by('title')
+        return render(request, 'tasks/partials/dependency_list.html',
+                      {'task': task, 'project_tasks': project_tasks})

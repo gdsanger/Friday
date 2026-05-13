@@ -28,4 +28,9 @@ urlpatterns = [
     # Time Entries
     path('<int:pk>/time/log/',                   views.TimeEntryLogView.as_view(),        name='time-log'),
     path('time/<int:entry_pk>/delete/',          views.TimeEntryDeleteView.as_view(),     name='time-delete'),
+
+    # Dependencies
+    path('<int:pk>/dependencies/add/',           views.DependencyAddView.as_view(),       name='dependency-add'),
+    path('<int:pk>/dependencies/<int:dep_pk>/remove/',
+                                                 views.DependencyRemoveView.as_view(),    name='dependency-remove'),
 ]
