@@ -41,6 +41,11 @@
         const currentTheme = getCurrentTheme();
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
+
+        // Dispatch custom event for markdown editor theme update
+        document.dispatchEvent(new CustomEvent('friday:theme-changed', {
+            detail: { theme: newTheme }
+        }));
     }
 
     // Initialize theme on page load
@@ -120,5 +125,90 @@
             }
         }
     });
+
+    // ── Markdown Editor (EasyMDE) ─────────────────────────────────
+    // Wird automatisch auf alle <textarea class="md-editor"> angewendet
+    // HTMX-aware: neu initialisieren nach HTMX Swap
+
+    function initMarkdownEditors(container) {
+        const target = container || document;
+        target.querySelectorAll('textarea.md-editor').forEach(textarea => {
+            // Bereits initialisiert? Überspringen
+            if (textarea.dataset.mdInitialized) return;
+            textarea.dataset.mdInitialized = 'true';
+
+            const easyMDE = new EasyMDE({
+                element:          textarea,
+                spellChecker:     false,
+                autosave:         { enabled: false },
+                toolbar: [
+                    'bold', 'italic', 'heading', '|',
+                    'unordered-list', 'ordered-list', '|',
+                    'link', 'quote', 'code', '|',
+                    'preview', 'side-by-side', '|',
+                    'guide',
+                ],
+                placeholder:      'Beschreibung eingeben... (Markdown wird unterstützt)',
+                status:           false,          // Statusleiste ausblenden
+                minHeight:        '120px',
+                renderingConfig: {
+                    singleLineBreaks: false,
+                    codeSyntaxHighlighting: false,
+                },
+                // Theming: passt sich an Light/Dark Mode an
+                theme:            document.documentElement.getAttribute('data-bs-theme') === 'dark'
+                                  ? 'dark' : 'default',
+            });
+
+            // Dark Mode Toggle: Editor-Theme aktualisieren
+            document.addEventListener('friday:theme-changed', (e) => {
+                const wrapper = easyMDE.codemirror.getWrapperElement();
+                wrapper.classList.toggle('cm-s-dark', e.detail.theme === 'dark');
+            });
+        });
+    }
+
+    // Initial + nach jedem HTMX Swap
+    initMarkdownEditors();
+    document.addEventListener('htmx:afterSwap', (e) => initMarkdownEditors(e.detail.target));
+    document.addEventListener('htmx:afterSettle', (e) => initMarkdownEditors(e.detail.target));
+
+
+    // ── Markdown Rendering (marked.js + DOMPurify) ────────────────
+    // Wird auf alle <div class="md-render"> angewendet
+    // data-md Attribut enthält den Markdown-Text (oder Inhalt des divs)
+
+    function renderMarkdown(container) {
+        const target = container || document;
+        target.querySelectorAll('.md-render').forEach(el => {
+            const raw = el.dataset.md || el.textContent || '';
+            if (!raw.trim()) {
+                el.innerHTML = '<span class="text-muted fst-italic">Keine Beschreibung</span>';
+                return;
+            }
+            const html = DOMPurify.sanitize(marked.parse(raw), {
+                ALLOWED_TAGS: [
+                    'h1','h2','h3','h4','h5','h6',
+                    'p','br','hr',
+                    'strong','em','del','code','pre',
+                    'ul','ol','li',
+                    'blockquote',
+                    'a','img',
+                    'table','thead','tbody','tr','th','td',
+                ],
+                ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'class'],
+            });
+            el.innerHTML = html;
+            // Links in neuem Tab öffnen
+            el.querySelectorAll('a').forEach(a => {
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+        });
+    }
+
+    renderMarkdown();
+    document.addEventListener('htmx:afterSwap', (e) => renderMarkdown(e.detail.target));
+    document.addEventListener('htmx:afterSettle', (e) => renderMarkdown(e.detail.target));
 
 })();
