@@ -6,65 +6,90 @@
 (function() {
     'use strict';
 
-    // Theme Toggle Functionality
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIconLight = document.getElementById('theme-icon-light');
-    const themeIconDark = document.getElementById('theme-icon-dark');
+    // ── Sidebar State ─────────────────────────────────────────────
 
-    // Get current theme from localStorage or default to light
-    function getCurrentTheme() {
-        return localStorage.getItem('friday-theme') || 'light';
+    const SIDEBAR_KEY = 'friday-sidebar';
+
+    function initSidebar() {
+        const sidebar = document.getElementById('friday-sidebar');
+        if (!sidebar) return;
+
+        // Gespeicherten State laden (nur Desktop)
+        if (window.innerWidth > 992) {
+            const saved = localStorage.getItem(SIDEBAR_KEY) || 'expanded';
+            if (saved === 'collapsed') {
+                sidebar.classList.add('collapsed');
+            }
+        }
+
+        // Theme Icon aktualisieren
+        updateThemeIcon();
     }
 
-    // Set theme
-    function setTheme(theme) {
-        document.documentElement.setAttribute('data-bs-theme', theme);
-        localStorage.setItem('friday-theme', theme);
-        updateThemeIcon(theme);
-    }
+    window.toggleSidebar = function() {
+        const sidebar = document.getElementById('friday-sidebar');
+        if (!sidebar) return;
+
+        sidebar.classList.toggle('collapsed');
+        const state = sidebar.classList.contains('collapsed') ? 'collapsed' : 'expanded';
+        localStorage.setItem(SIDEBAR_KEY, state);
+    };
+
+    window.openSidebarMobile = function() {
+        const sidebar  = document.getElementById('friday-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        sidebar?.classList.add('mobile-open');
+        backdrop?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeSidebarMobile = function() {
+        const sidebar  = document.getElementById('friday-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        sidebar?.classList.remove('mobile-open');
+        backdrop?.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    // Schließen bei Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.closeSidebarMobile();
+    });
+
+    // Schließen bei Resize auf Desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) window.closeSidebarMobile();
+    });
+
+    // Init beim Laden
+    document.addEventListener('DOMContentLoaded', initSidebar);
+
+
+    // ── Theme Toggle ──────────────────────────────────────────────
 
     // Update theme toggle icon
-    function updateThemeIcon(theme) {
-        if (!themeIconLight || !themeIconDark) return;
-
-        if (theme === 'dark') {
-            themeIconLight.classList.add('d-none');
-            themeIconDark.classList.remove('d-none');
-        } else {
-            themeIconLight.classList.remove('d-none');
-            themeIconDark.classList.add('d-none');
-        }
+    function updateThemeIcon() {
+        const theme = localStorage.getItem('friday-theme') || 'light';
+        const icon  = document.getElementById('theme-icon');
+        if (!icon) return;
+        icon.className = theme === 'dark'
+            ? 'bi bi-sun'
+            : 'bi bi-moon-stars';
     }
 
     // Toggle theme
-    function toggleTheme() {
-        const currentTheme = getCurrentTheme();
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
+    window.toggleTheme = function() {
+        const html    = document.documentElement;
+        const current = html.getAttribute('data-bs-theme') || 'light';
+        const next    = current === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-bs-theme', next);
+        localStorage.setItem('friday-theme', next);
+        updateThemeIcon();
+        // EasyMDE Editoren informieren
+        document.dispatchEvent(new CustomEvent('friday:theme-changed',
+            { detail: { theme: next } }));
+    };
 
-        // Dispatch custom event for markdown editor theme update
-        document.dispatchEvent(new CustomEvent('friday:theme-changed', {
-            detail: { theme: newTheme }
-        }));
-    }
-
-    // Initialize theme on page load
-    function initTheme() {
-        const theme = getCurrentTheme();
-        updateThemeIcon(theme);
-    }
-
-    // Event listeners
-    if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
-    }
-
-    // Initialize on DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initTheme);
-    } else {
-        initTheme();
-    }
 
     // HTMX Event Handlers
     document.addEventListener('htmx:afterSwap', function(event) {
