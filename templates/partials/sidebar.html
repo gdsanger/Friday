@@ -88,11 +88,11 @@
 
         {% if request.user.is_staff %}
         <div class="sidebar-section-label">Admin</div>
-        <a href="{% url 'admin:index' %}"
-           class="sidebar-link {% if request.resolver_match.namespace == 'admin' %}active{% endif %}"
-           title="Admin">
+        <a href="{% url 'admin_panel:admin-dashboard' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'admin_panel' %}active{% endif %}"
+           title="Admin Panel">
             <i class="bi bi-gear"></i>
-            <span class="sidebar-link-text">Einstellungen</span>
+            <span class="sidebar-link-text">Admin Panel</span>
         </a>
         {% endif %}
 
