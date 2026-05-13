@@ -40,6 +40,7 @@ class TaskDetailView(LoginRequiredMixin, View):
 
         # Import Team model for global teams query
         from apps.teams.models import Team
+        from apps.core.models import Client
 
         ctx = {
             'task': task,
@@ -53,6 +54,7 @@ class TaskDetailView(LoginRequiredMixin, View):
             'total_time_m':    task.time_entries.aggregate(
                                    t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
+            'clients':         Client.objects.filter(is_active=True).order_by('name'),
         }
         template = 'tasks/partials/slide_over.html' if request.htmx else 'tasks/detail.html'
         return render(request, template, ctx)
@@ -72,6 +74,7 @@ class TaskCreateView(LoginRequiredMixin, View):
         Optional: ?slide_over=1 returns slide-over template for HTMX.
         """
         from apps.projects.models import Project
+        from apps.core.models import Client
 
         project_id = request.GET.get('project_id') or request.GET.get('project')
         status     = request.GET.get('status', Task.STATUS_BACKLOG)
@@ -95,6 +98,7 @@ class TaskCreateView(LoginRequiredMixin, View):
             'status_choices':      Task.STATUS_CHOICES,
             'priority_choices':    Task.PRIORITY_CHOICES,
             'teams':               request.user.teams,
+            'clients':             Client.objects.filter(is_active=True).order_by('name'),
         }
 
         # Return slide-over form for HTMX with slide_over parameter
@@ -147,6 +151,7 @@ class TaskCreateView(LoginRequiredMixin, View):
             created_by  = request.user,
             due_date    = request.POST.get('due_date') or None,
             deadline    = request.POST.get('deadline') or None,
+            client_id   = request.POST.get('client') or None,
         )
 
         # Optional: assign immediately
@@ -198,6 +203,9 @@ class TaskEditView(LoginRequiredMixin, View):
         if 'deadline' in request.POST:
             deadline = request.POST['deadline'].strip()
             task.deadline = deadline if deadline else None
+        if 'client' in request.POST:
+            client_id = request.POST['client'].strip()
+            task.client_id = client_id if client_id else None
 
         task.save()
         return HttpResponse(status=204)

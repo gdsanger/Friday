@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load friday_tags %}
+
+{% block title %}{{ client.name }} - Clients - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'core:client-list' %}">Clients</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ client.name }}</li>
+            </ol>
+        </nav>
+        <h2>
+            <span class="badge me-2" style="background-color: {{ client.color }};">
+                {{ client.short_name|default:client.name|slice:":3"|upper }}
+            </span>
+            {{ client.name }}
+        </h2>
+        {% if client.description %}
+        <p class="text-muted">{{ client.description }}</p>
+        {% endif %}
+    </div>
+    <div>
+        {% if request.user.is_staff %}
+        <a href="{% url 'core:client-edit' client.slug %}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil"></i> Edit Client
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Projects & Tasks -->
+    <div class="col-lg-8">
+        <!-- Projects -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Projects
+                    <span class="badge bg-secondary">{{ projects.count }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                <div class="list-group list-group-flush">
+                    {% for project in projects %}
+                    <a href="{% url 'projects:project-detail' project.pk %}"
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge me-2" style="background-color: {{ project.color }};">&nbsp;</span>
+                                <strong>{{ project.name }}</strong>
+                                {% if project.status == 'active' %}
+                                <span class="badge bg-success ms-2">Active</span>
+                                {% elif project.status == 'planning' %}
+                                <span class="badge bg-info ms-2">Planning</span>
+                                {% elif project.status == 'on_hold' %}
+                                <span class="badge bg-warning ms-2">On Hold</span>
+                                {% elif project.status == 'done' %}
+                                <span class="badge bg-secondary ms-2">Done</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Updated {{ project.updated_at|timesince }} ago</small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="bi bi-folder"></i> No projects assigned to this client yet.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Open Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Open Tasks</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if open_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Project</th>
+                                <th>Assignee</th>
+                                <th>Priority</th>
+                                <th>Due Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in open_tasks %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'tasks:task-detail' task.pk %}">
+                                        {{ task.title }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small>
+                                        <a href="{% url 'projects:project-detail' task.project.pk %}">
+                                            {{ task.project.name }}
+                                        </a>
+                                    </small>
+                                </td>
+                                <td>
+                                    <small>{{ task.assignee_display }}</small>
+                                </td>
+                                <td>
+                                    {% if task.priority %}
+                                    <i class="bi bi-{{ task.priority|priority_icon }}"
+                                       style="color: {{ task.priority|priority_color }}"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.due_date %}
+                                    <small class="{% if task.is_overdue %}text-danger{% endif %}">
+                                        {{ task.due_date|date:"d.m.Y" }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="bi bi-check-circle"></i> No open tasks for this client.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Client Info -->
+    <div class="col-lg-4">
+        <!-- Client Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Client Info</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Short Name:</dt>
+                    <dd class="col-sm-7">{{ client.short_name|default:"—" }}</dd>
+
+                    <dt class="col-sm-5">Color:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge" style="background-color: {{ client.color }};">
+                            {{ client.color }}
+                        </span>
+                    </dd>
+
+                    {% if client.website %}
+                    <dt class="col-sm-5">Website:</dt>
+                    <dd class="col-sm-7">
+                        <a href="{{ client.website }}" target="_blank" rel="noopener">
+                            {{ client.website|truncatechars:30 }}
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </dd>
+                    {% endif %}
+
+                    <dt class="col-sm-5">Status:</dt>
+                    <dd class="col-sm-7">
+                        {% if client.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Created:</dt>
+                    <dd class="col-sm-7">
+                        <small class="text-muted">{{ client.created_at|date:"d.m.Y" }}</small>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

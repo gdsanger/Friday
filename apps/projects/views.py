@@ -107,15 +107,17 @@ class ProjectCreateView(LoginRequiredMixin, CreateView):
     model = Project
     template_name = 'projects/form.html'
     fields = ['name', 'description', 'status', 'visibility',
-              'start_date', 'due_date', 'priority', 'color']
+              'start_date', 'due_date', 'priority', 'color', 'client']
 
     def get_context_data(self, **kwargs):
+        from apps.core.models import Client
         ctx = super().get_context_data(**kwargs)
         ctx['status_choices'] = Project.STATUS_CHOICES
         ctx['visibility_choices'] = Project.VISIBILITY_CHOICES
         ctx['priority_choices'] = [
             (0, 'None'), (1, 'Low'), (2, 'Medium'), (3, 'High'), (4, 'Critical')
         ]
+        ctx['clients'] = Client.objects.filter(is_active=True).order_by('name')
         return ctx
 
     def form_valid(self, form):
@@ -133,7 +135,7 @@ class ProjectEditView(LoginRequiredMixin, UpdateView):
     model = Project
     template_name = 'projects/form.html'
     fields = ['name', 'description', 'status', 'visibility',
-              'start_date', 'due_date', 'priority', 'color']
+              'start_date', 'due_date', 'priority', 'color', 'client']
 
     def dispatch(self, request, *args, **kwargs):
         project = self.get_object()
@@ -143,12 +145,14 @@ class ProjectEditView(LoginRequiredMixin, UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        from apps.core.models import Client
         ctx = super().get_context_data(**kwargs)
         ctx['status_choices'] = Project.STATUS_CHOICES
         ctx['visibility_choices'] = Project.VISIBILITY_CHOICES
         ctx['priority_choices'] = [
             (0, 'None'), (1, 'Low'), (2, 'Medium'), (3, 'High'), (4, 'Critical')
         ]
+        ctx['clients'] = Client.objects.filter(is_active=True).order_by('name')
         return ctx
 
     def get_success_url(self):

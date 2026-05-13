@@ -50,6 +50,20 @@
             <textarea name="description" class="form-control" rows="3">{{ object.description|default:'' }}</textarea>
           </div>
 
+          <!-- Client / Mandant -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Client / Mandant</label>
+            <select name="client" class="form-select">
+              <option value="">— No client —</option>
+              {% for client in clients %}
+              <option value="{{ client.pk }}"
+                {% if object.client_id == client.pk %}selected{% endif %}>
+                {{ client.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
           <!-- Status + Visibility (row) -->
           <div class="row g-3 mb-3">
             <div class="col-md-6">
