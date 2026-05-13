@@ -1,29 +1,50 @@
 {% extends "mail/base.html" %}
 {% block body %}
-<h1 class="email-title">Welcome to Friday!</h1>
-<p class="email-text">Hello {{ recipient_name }},</p>
+
+<h1 class="email-title">Willkommen bei Friday! 🚀</h1>
+
+<p class="email-text">Hallo {{ recipient_name }},</p>
+
 <p class="email-text">
-  You have been invited to join <strong>Friday</strong>, our project management platform.
+  du wurdest eingeladen Friday zu nutzen —
+  {% if user_type == 'Portal' %}
+  das Auftragsportal von
+  <strong>{{ portal_client }}</strong>.
+  {% else %}
+  das Projektmanagement-Tool des EOE-Verbunds.
+  {% endif %}
 </p>
 
-{% if invite_message %}
 <div class="info-box">
   <div class="info-row">
-    <em>"{{ invite_message }}"</em>
+    <span class="info-label">Zugang:</span>
+    Mit deinem Microsoft-Konto (Single Sign-On)
+  </div>
+  <div class="info-row">
+    <span class="info-label">Bereich:</span>
+    {% if user_type == 'Portal' %}
+    Customer Portal — Anfragen stellen & verfolgen
+    {% else %}
+    Friday — Projekte, Tasks, Kanban
+    {% endif %}
   </div>
 </div>
-{% endif %}
 
 <p class="email-text">
-  <strong>{{ invited_by }}</strong> has invited you to collaborate on projects.
-  Click the button below to log in and get started.
+  Klicke auf den Button um dich mit deinem
+  Microsoft-Konto anzumelden:
 </p>
 
-<p style="margin:24px 0;">
-  <a href="{{ app_url }}/accounts/login/" class="email-btn">Log In to Friday</a>
+<p style="margin: 24px 0; text-align:center;">
+  <a href="{{ login_url }}" class="email-btn">
+    Mit Microsoft anmelden →
+  </a>
 </p>
 
-<p class="email-text" style="font-size:13px; color:#6b6960;">
-  If you have any questions, please contact your administrator.
+<p style="font-size:13px; color:#6b7280;">
+  Der Login funktioniert mit deinem bestehenden
+  Microsoft / Office 365 Konto.
+  Du brauchst kein neues Passwort.
 </p>
+
 {% endblock %}

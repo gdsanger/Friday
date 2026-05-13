@@ -326,3 +326,146 @@ class AdminUserPortalSettingsView(StaffRequiredMixin, View):
         user.save(update_fields=['is_portal_user', 'portal_client'])
         messages.success(request, f'Portal settings updated for {user.full_name}.')
         return redirect('admin_panel:admin-user-detail', pk=pk)
+
+
+class UserInviteView(StaffRequiredMixin, TemplateView):
+    """
+    Main page for Azure AD user invitation.
+    Contains search field + results list + provisioning form.
+    """
+    template_name = 'admin_panel/users/invite.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.core.models import Client
+        ctx['clients'] = Client.objects.filter(is_active=True).order_by('name')
+        ctx['teams'] = Team.objects.filter(is_active=True).order_by('name')
+        return ctx
+
+
+class UserInviteSearchView(StaffRequiredMixin, View):
+    """
+    HTMX - Azure AD search.
+    GET ?q=<query> → returns results list as partial.
+    """
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+
+        if len(query) < 2:
+            return render(request, 'admin_panel/users/partials/invite_results.html', {
+                'results': [],
+                'query': query,
+                'hint': 'Mindestens 2 Zeichen eingeben...',
+            })
+
+        from apps.accounts.azure_directory import search_azure_users
+
+        results = search_azure_users(query)
+
+        # Mark already provisioned users
+        existing_oids = set(
+            User.objects.filter(
+                azure_oid__in=[r['azure_oid'] for r in results]
+            ).values_list('azure_oid', flat=True)
+        )
+
+        for result in results:
+            result['already_exists'] = result['azure_oid'] in existing_oids
+
+        from apps.core.models import Client
+        return render(request, 'admin_panel/users/partials/invite_results.html', {
+            'results': results,
+            'query': query,
+            'clients': Client.objects.filter(is_active=True).order_by('name'),
+            'teams': Team.objects.filter(is_active=True).order_by('name'),
+        })
+
+
+class UserProvisionView(StaffRequiredMixin, View):
+    """
+    POST - Create user(s) in Friday and send invitation email.
+
+    POST body:
+    - azure_oids[]: List of Azure OIDs
+    - user_type: 'friday' | 'portal'
+    - portal_client: Client PK (only for portal)
+    - team_ids[]: Team PKs (optional)
+    - send_invite: '1' | '0'
+    """
+    def post(self, request):
+        from apps.accounts.azure_directory import get_azure_user
+
+        azure_oids = request.POST.getlist('azure_oids[]')
+        user_type = request.POST.get('user_type', 'friday')
+        client_id = request.POST.get('portal_client') or None
+        team_ids = request.POST.getlist('team_ids[]')
+        send_invite = request.POST.get('send_invite', '1') == '1'
+
+        if not azure_oids:
+            return render(request, 'admin_panel/users/partials/provision_result.html', {
+                'error': 'Keine User ausgewählt.'
+            })
+
+        provisioned = []
+        skipped = []
+        errors = []
+
+        for oid in azure_oids:
+            # Already exists?
+            if User.objects.filter(azure_oid=oid).exists():
+                skipped.append(oid)
+                continue
+
+            # Fetch Azure AD data
+            az_user = get_azure_user(oid)
+            if not az_user:
+                errors.append(f'User {oid} nicht gefunden.')
+                continue
+
+            # Generate unique username (from UPN)
+            base_username = az_user['azure_upn'].split('@')[0]
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f'{base_username}{counter}'
+                counter += 1
+
+            # Create user
+            user = User.objects.create(
+                username=username,
+                email=az_user['email'],
+                display_name=az_user['name'],
+                job_title=az_user.get('job_title', ''),
+                azure_oid=az_user['azure_oid'],
+                azure_upn=az_user['azure_upn'],
+                is_active=True,
+                is_portal_user=(user_type == 'portal'),
+                portal_client_id=client_id if user_type == 'portal' else None,
+            )
+            user.set_unusable_password()
+            user.save()
+
+            # Team assignment
+            for team_id in team_ids:
+                TeamMembership.objects.get_or_create(
+                    user=user,
+                    team_id=team_id,
+                    defaults={'role': 'member'},
+                )
+
+            # Send invitation email
+            if send_invite:
+                from apps.mail.tasks import send_invitation_mail
+                send_invitation_mail.delay(user.pk)
+
+            provisioned.append({
+                'name': user.display_name,
+                'email': user.email,
+                'type': user_type,
+            })
+
+        return render(request, 'admin_panel/users/partials/provision_result.html', {
+            'provisioned': provisioned,
+            'skipped': skipped,
+            'errors': errors,
+        })

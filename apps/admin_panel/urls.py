@@ -10,6 +10,9 @@ urlpatterns = [
     path('users/', views.AdminUserListView.as_view(), name='admin-users'),
     path('users/<int:pk>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('users/invite/', views.AdminUserInviteView.as_view(), name='admin-user-invite'),
+    path('users/invite-azure/', views.UserInviteView.as_view(), name='admin-user-invite-azure'),
+    path('users/invite-azure/search/', views.UserInviteSearchView.as_view(), name='admin-user-invite-search'),
+    path('users/invite-azure/provision/', views.UserProvisionView.as_view(), name='admin-user-provision'),
     path('users/<int:pk>/portal/', views.AdminUserPortalSettingsView.as_view(), name='admin-user-portal'),
     path('users/<int:pk>/toggle-active/', views.AdminUserToggleActiveView.as_view(), name='admin-user-toggle'),
 
