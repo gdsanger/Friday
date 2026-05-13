@@ -48,6 +48,55 @@
   .gantt_task_line.gantt-task-narrow {
     min-width: 24px !important;
   }
+
+  /* ── Filter Bar Styling ───────────────────────────────────── */
+  .calendar-filter-bar {
+    background: var(--friday-surface);
+    border: 1px solid var(--friday-border);
+    border-radius: 8px;
+    padding: 10px 16px;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .filter-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--friday-text-muted);
+    margin-bottom: 0;
+  }
+
+  .filter-separator {
+    flex: 1;
+  }
+
+  .filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--friday-accent-light);
+    color: var(--friday-accent);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .filter-badge button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--friday-accent);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+  }
 </style>
 {% endblock %}
 
@@ -71,6 +120,62 @@
       <i class="bi bi-people"></i> Resource View
     </button>
   </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="calendar-filter-bar d-flex flex-wrap gap-2 align-items-center mb-3"
+     id="calendar-filters">
+
+  <!-- Projekt Filter -->
+  <div class="filter-group">
+    <label class="filter-label">Projekt</label>
+    <select id="filter-project" class="form-select form-select-sm"
+            onchange="applyGanttFilters()" style="min-width:160px;">
+      <option value="">Alle Projekte</option>
+    </select>
+  </div>
+
+  <!-- Team Filter -->
+  <div class="filter-group">
+    <label class="filter-label">Team</label>
+    <select id="filter-team" class="form-select form-select-sm"
+            onchange="applyGanttFilters()" style="min-width:140px;">
+      <option value="">Alle Teams</option>
+    </select>
+  </div>
+
+  <!-- Bearbeiter Filter -->
+  <div class="filter-group">
+    <label class="filter-label">Bearbeiter</label>
+    <select id="filter-user" class="form-select form-select-sm"
+            onchange="applyGanttFilters()" style="min-width:150px;">
+      <option value="">Alle Bearbeiter</option>
+    </select>
+  </div>
+
+  <!-- Mandant Filter -->
+  <div class="filter-group">
+    <label class="filter-label">Mandant</label>
+    <select id="filter-client" class="form-select form-select-sm"
+            onchange="applyGanttFilters()" style="min-width:140px;">
+      <option value="">Alle Mandanten</option>
+    </select>
+  </div>
+
+  <!-- Separator -->
+  <div class="filter-separator"></div>
+
+  <!-- Aktive Filter Anzeige -->
+  <div id="active-filter-badges" class="d-flex flex-wrap gap-1"></div>
+
+  <!-- Reset -->
+  <button class="btn btn-outline-secondary btn-sm"
+          id="filter-reset-btn"
+          onclick="resetGanttFilters()"
+          style="display:none;">
+    <i class="bi bi-x-circle me-1"></i>Zurücksetzen
+  </button>
+
 </div>
 
 <div id="gantt-container"></div>
@@ -260,6 +365,133 @@ const SCALES = {
 // Initial scale: Quarter view
 gantt.config.scales = SCALES.quarter;
 
+// ── Gantt Filter Logic ───────────────────────────────────────
+
+// Active filters state
+const _filters = {
+  project: '',
+  team:    '',
+  user:    '',
+  client:  '',
+};
+
+// Populate filter dropdowns with data from API
+function populateFilterDropdowns(filterOptions) {
+  const { projects, teams, users, clients } = filterOptions;
+
+  const projectSel = document.getElementById('filter-project');
+  projects.forEach(p => {
+    const opt = new Option(p.name, p.id);
+    projectSel.appendChild(opt);
+  });
+
+  const teamSel = document.getElementById('filter-team');
+  teams.forEach(t => {
+    const opt = new Option(t.name, t.id);
+    teamSel.appendChild(opt);
+  });
+
+  const userSel = document.getElementById('filter-user');
+  users.forEach(u => {
+    const opt = new Option(u.name, u.id);
+    userSel.appendChild(opt);
+  });
+
+  const clientSel = document.getElementById('filter-client');
+  clients.forEach(c => {
+    const opt = new Option(c.name, c.id);
+    clientSel.appendChild(opt);
+  });
+}
+
+// Apply DHTMLX Gantt filters
+function applyGanttFilters() {
+  _filters.project = document.getElementById('filter-project').value;
+  _filters.team    = document.getElementById('filter-team').value;
+  _filters.user    = document.getElementById('filter-user').value;
+  _filters.client  = document.getElementById('filter-client').value;
+
+  gantt.refreshData();
+  updateFilterBadges();
+  updateResetButton();
+}
+
+// DHTMLX onBeforeTaskDisplay callback — return true to show, false to hide
+gantt.attachEvent('onBeforeTaskDisplay', (id, task) => {
+  // Project bars: show if no project filter or if it matches the filtered project
+  if (task.type === 'project') {
+    if (_filters.project && task.project_id !== _filters.project) return false;
+    if (_filters.client  && task.client_id  !== _filters.client)  return false;
+    return true;
+  }
+
+  // Tasks/Milestones: apply all filters
+  if (_filters.project && task.project_id !== _filters.project) return false;
+  if (_filters.team    && task.team_id    !== _filters.team)    return false;
+  if (_filters.user    && task.user_id    !== _filters.user)    return false;
+  if (_filters.client  && task.client_id  !== _filters.client)  return false;
+
+  return true;
+});
+
+// Reset all filters
+function resetGanttFilters() {
+  _filters.project = _filters.team = _filters.user = _filters.client = '';
+
+  document.getElementById('filter-project').value = '';
+  document.getElementById('filter-team').value    = '';
+  document.getElementById('filter-user').value    = '';
+  document.getElementById('filter-client').value  = '';
+
+  gantt.refreshData();
+  updateFilterBadges();
+  updateResetButton();
+}
+
+// Remove a single filter
+function removeFilter(key) {
+  _filters[key] = '';
+  document.getElementById(`filter-${key}`).value = '';
+  gantt.refreshData();
+  updateFilterBadges();
+  updateResetButton();
+}
+
+// Update active filter badges
+function updateFilterBadges() {
+  const container = document.getElementById('active-filter-badges');
+  container.innerHTML = '';
+
+  const labels = {
+    project: document.getElementById('filter-project'),
+    team:    document.getElementById('filter-team'),
+    user:    document.getElementById('filter-user'),
+    client:  document.getElementById('filter-client'),
+  };
+
+  Object.entries(_filters).forEach(([key, val]) => {
+    if (!val) return;
+    const sel   = labels[key];
+    const label = sel?.options[sel.selectedIndex]?.text || val;
+    const badge = document.createElement('span');
+    badge.className = 'filter-badge';
+    badge.innerHTML = `
+      ${label}
+      <button onclick="removeFilter('${key}')" title="Filter entfernen">
+        <i class="bi bi-x"></i>
+      </button>
+    `;
+    container.appendChild(badge);
+  });
+}
+
+// Show/hide reset button
+function updateResetButton() {
+  const hasFilters = Object.values(_filters).some(v => v !== '');
+  const btn = document.getElementById('filter-reset-btn');
+  if (btn) btn.style.display = hasFilters ? 'inline-flex' : 'none';
+}
+
 // ── Init BEFORE parse ─────────────────────────────────────────
 gantt.init("gantt-container");
 
@@ -320,6 +552,11 @@ fetch("{% url 'projects:calendar-data' %}")
 
     gantt.parse({ data: data.data, links: data.links || [] });
     window._ganttResources = data.resources || [];
+
+    // Populate filter dropdowns
+    if (data.filter_options) {
+      populateFilterDropdowns(data.filter_options);
+    }
 
     // Fix 1: Center today's date in view (scroll to show today at ~25% from left)
     setTimeout(() => {
