@@ -1,6 +1,7 @@
 """
 Core models for Friday project.
 """
+from django.conf import settings
 from django.db import models
 
 
@@ -69,3 +70,62 @@ class Client(TimeStampedModel):
 
     def __str__(self):
         return self.short_name or self.name
+
+
+class CapacityBudget(models.Model):
+    """
+    Weekly Story Point budget for a client/team combination.
+    Defines how many SP a team can deliver for a client per week.
+    """
+    client = models.ForeignKey(
+        'core.Client',
+        on_delete=models.CASCADE,
+        related_name='capacity_budgets'
+    )
+    team = models.ForeignKey(
+        'teams.Team',
+        on_delete=models.CASCADE,
+        related_name='capacity_budgets'
+    )
+    weekly_sp_budget = models.DecimalField(
+        max_digits=6,
+        decimal_places=1,
+        help_text='Available Story Points per week for this client/team.'
+    )
+    valid_from = models.DateField(
+        help_text='Budget valid from this date (inclusive).'
+    )
+    valid_until = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Budget valid until this date. Null = ongoing.'
+    )
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['client__name', 'team__name', '-valid_from']
+        verbose_name = 'Capacity Budget'
+        verbose_name_plural = 'Capacity Budgets'
+
+    def __str__(self):
+        return f'{self.client} / {self.team}: {self.weekly_sp_budget} SP/Woche'
+
+    @classmethod
+    def current_budget(cls, client, team, date=None):
+        """Return the active budget for client/team on given date."""
+        from django.utils import timezone
+        date = date or timezone.now().date()
+        return cls.objects.filter(
+            client=client,
+            team=team,
+            valid_from__lte=date,
+        ).filter(
+            models.Q(valid_until__isnull=True) |
+            models.Q(valid_until__gte=date)
+        ).order_by('-valid_from').first()

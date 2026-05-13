@@ -2,9 +2,10 @@
 Dashboard views.
 """
 from datetime import timedelta
+from decimal import Decimal
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
@@ -13,6 +14,7 @@ from django.views.generic import TemplateView
 from apps.tasks.models import Task
 from apps.projects.models import Project
 from apps.notifications.models import Notification
+from apps.core.models import Client, CapacityBudget
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -156,4 +158,64 @@ class WidgetMyProjectsView(LoginRequiredMixin, View):
 
         return render(request, 'dashboard/partials/widget_my_projects.html', {
             'count': count,
+        })
+
+
+class WidgetCapacityView(LoginRequiredMixin, View):
+    """
+    Shows SP budget vs. planned SP per client for the current week.
+    Only shown for staff users or team leads.
+    """
+    def get(self, request):
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+
+        user = request.user
+        my_teams = user.teams
+
+        capacity_data = []
+
+        for client in Client.objects.filter(is_active=True):
+            client_data = {'client': client, 'teams': []}
+            total_budget = Decimal('0')
+            total_planned = Decimal('0')
+
+            for team in my_teams:
+                budget = CapacityBudget.current_budget(client, team, today)
+                if not budget:
+                    continue
+
+                # Planned SP: tasks assigned to this team for this client
+                # excluding done tasks
+                planned = Task.objects.filter(
+                    models.Q(client=client) |
+                    models.Q(project__client=client),
+                    assigned_to_team=team,
+                    story_points__isnull=False,
+                ).exclude(status=Task.STATUS_DONE).aggregate(
+                    total=Sum('story_points')
+                )['total'] or Decimal('0')
+
+                weekly_budget = budget.weekly_sp_budget
+                total_budget += weekly_budget
+                total_planned += planned
+
+                client_data['teams'].append({
+                    'team': team,
+                    'budget': weekly_budget,
+                    'planned': planned,
+                    'pct': min(int((planned / weekly_budget * 100) if weekly_budget > 0 else 0), 100),
+                    'over': planned > weekly_budget,
+                })
+
+            if client_data['teams']:
+                client_data['total_budget'] = total_budget
+                client_data['total_planned'] = total_planned
+                capacity_data.append(client_data)
+
+        return render(request, 'dashboard/partials/widget_capacity.html', {
+            'capacity_data': capacity_data,
+            'week_start': week_start,
+            'week_end': week_end,
         })

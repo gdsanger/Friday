@@ -113,6 +113,13 @@ class Task(TimeStampedModel):
         null=True,
         blank=True
     )
+    story_points = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text='Story Points (1 SP = 1 Stunde). Schätzung des Aufwands.'
+    )
     parent_task = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,

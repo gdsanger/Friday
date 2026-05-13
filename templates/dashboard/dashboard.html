@@ -88,6 +88,18 @@
             <div class="widget-skeleton"></div>
         </div>
 
+        <!-- Capacity widget (staff and team leads only) -->
+        {% if request.user.is_staff or request.user.team_memberships.filter(role='lead').exists %}
+        <div id="widget-capacity"
+             class="dashboard-widget mb-3"
+             hx-get="{% url 'dashboard:widget-capacity' %}"
+             hx-trigger="load, every 60s"
+             hx-target="this"
+             hx-swap="outerHTML">
+            <div class="widget-skeleton"></div>
+        </div>
+        {% endif %}
+
         <!-- Activity Feed widget -->
         <div id="widget-activity"
              class="dashboard-widget"

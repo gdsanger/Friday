@@ -1,0 +1,47 @@
+{% load static %}
+<div class="dashboard-widget"
+     id="widget-capacity"
+     hx-get="{% url 'dashboard:widget-capacity' %}"
+     hx-trigger="every 60s"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="widget-header d-flex justify-content-between align-items-center">
+        <h5 class="widget-title mb-0">Kapazität KW {{ week_start|date:"W" }}</h5>
+        <small class="text-muted">{{ week_start|date:"d.m." }} – {{ week_end|date:"d.m.Y" }}</small>
+    </div>
+    <div class="widget-body">
+        {% if capacity_data %}
+            {% for c in capacity_data %}
+            <div class="mb-3">
+                <!-- Client header -->
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <strong>{{ c.client.name }}</strong>
+                    <small class="text-muted">{{ c.total_planned }} / {{ c.total_budget }} SP</small>
+                </div>
+
+                <!-- Per-team bars -->
+                {% for t in c.teams %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
+                        <span>{{ t.team.name }}</span>
+                        <span>{{ t.planned }} / {{ t.budget }} SP</span>
+                    </div>
+                    <div class="progress" style="height:6px; background:var(--bs-border-color);">
+                        <div class="progress-bar"
+                             style="width:{{ t.pct }}%;
+                                    background:{% if t.over %}#dc3545{% elif t.pct >= 80 %}#ffc107{% else %}#198754{% endif %};">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p class="text-muted mb-0 fst-italic" style="font-size:13px;">
+                    Keine Kapazitätsbudgets konfiguriert.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
