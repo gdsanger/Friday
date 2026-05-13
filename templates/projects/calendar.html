@@ -67,7 +67,7 @@
 <script>
 // ── DHTMLX Gantt Configuration ────────────────────────────────
 
-gantt.config.date_format    = "%d-%m-%Y";
+gantt.config.date_format    = "%Y-%m-%d";
 gantt.config.drag_progress  = false;
 gantt.config.drag_resize    = true;
 gantt.config.drag_move      = true;
@@ -90,15 +90,15 @@ gantt.config.columns = [
     name: "start_date", label: "Start",
     align: "center", width: 85,
     template: (task) => task.type === 'milestone' ? '' :
-      gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.start_date))
+      gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.start_date))
   },
   {
     name: "due", label: "Due",
     align: "center", width: 85,
     template: (task) => task.type === 'milestone'
-      ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.start_date))
+      ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.start_date))
       : (task.end_date
-          ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%d-%m-%Y")(task.end_date))
+          ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.end_date))
           : '')
   },
 ];
@@ -145,7 +145,7 @@ gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
   const task = gantt.getTask(id);
   if (task.type !== 'project') return;
 
-  const fmt = gantt.date.date_to_str("%d-%m-%Y");
+  const fmt = gantt.date.date_to_str("%Y-%m-%d");
   fetch("{% url 'projects:calendar-update' %}", {
     method: 'POST',
     headers: {
