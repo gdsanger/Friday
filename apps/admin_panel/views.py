@@ -358,9 +358,17 @@ class UserInviteSearchView(StaffRequiredMixin, View):
                 'hint': 'Mindestens 2 Zeichen eingeben...',
             })
 
-        from apps.accounts.azure_directory import search_azure_users
+        from apps.accounts.azure_directory import search_azure_users, AzureDirectoryError
 
-        results = search_azure_users(query)
+        try:
+            results = search_azure_users(query)
+        except AzureDirectoryError as e:
+            # Return error message to user
+            return render(request, 'admin_panel/users/partials/invite_results.html', {
+                'results': [],
+                'query': query,
+                'error': str(e),
+            })
 
         # Mark already provisioned users
         existing_oids = set(
@@ -393,7 +401,7 @@ class UserProvisionView(StaffRequiredMixin, View):
     - send_invite: '1' | '0'
     """
     def post(self, request):
-        from apps.accounts.azure_directory import get_azure_user
+        from apps.accounts.azure_directory import get_azure_user, AzureDirectoryError
 
         azure_oids = request.POST.getlist('azure_oids[]')
         user_type = request.POST.get('user_type', 'friday')
@@ -417,7 +425,12 @@ class UserProvisionView(StaffRequiredMixin, View):
                 continue
 
             # Fetch Azure AD data
-            az_user = get_azure_user(oid)
+            try:
+                az_user = get_azure_user(oid)
+            except AzureDirectoryError as e:
+                errors.append(f'Azure AD Fehler: {str(e)}')
+                continue
+
             if not az_user:
                 errors.append(f'User {oid} nicht gefunden.')
                 continue
