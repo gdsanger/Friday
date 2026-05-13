@@ -64,6 +64,15 @@ class Task(TimeStampedModel):
         null=True,
         related_name='created_tasks'
     )
+    requester   = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requested_tasks',
+        help_text='Person die diese Arbeit angefordert hat. '
+                  'Kann von "Erstellt von" abweichen.'
+    )
 
     # Assignment: user OR team (both nullable — unassigned is valid)
     assigned_to_user = models.ForeignKey(
@@ -155,6 +164,11 @@ class Task(TimeStampedModel):
     def effective_client(self):
         """Return the client for this task (direct or inherited from project)."""
         return self.client or (self.project.client if self.project else None)
+
+    @property
+    def effective_requester(self):
+        """Return requester or created_by if requester is not set."""
+        return self.requester or self.created_by
 
     @property
     def is_overdue(self):

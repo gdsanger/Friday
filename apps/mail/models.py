@@ -125,6 +125,7 @@ class MailHook(models.Model):
     RECIPIENT_WATCHERS = 'watchers'
     RECIPIENT_PROJECT_MANAGER = 'project_manager'
     RECIPIENT_PORTAL_USER = 'portal_user'
+    RECIPIENT_REQUESTER = 'requester'
 
     RECIPIENT_CHOICES = [
         (RECIPIENT_ASSIGNEE, 'Assigned person/team'),
@@ -132,6 +133,7 @@ class MailHook(models.Model):
         (RECIPIENT_WATCHERS, 'Watchers'),
         (RECIPIENT_PROJECT_MANAGER, 'Project manager'),
         (RECIPIENT_PORTAL_USER, 'Portal user (creator)'),
+        (RECIPIENT_REQUESTER, 'Anforderer (Requester)'),
     ]
 
     event = models.CharField(max_length=50, choices=EVENT_CHOICES, unique=True)

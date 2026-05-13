@@ -1,0 +1,42 @@
+{% if mode == 'edit' %}
+<form hx-post="{% url 'tasks:task-edit-field' task.pk %}"
+      hx-target="this"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+  <input type="hidden" name="field" value="requester">
+  <select name="value"
+          class="form-select form-select-sm"
+          autofocus
+          hx-on:blur="this.form.requestSubmit()"
+          hx-on:change="this.form.requestSubmit()">
+    <option value="">— Nicht angegeben —</option>
+    {% for member in project_members %}
+    <option value="{{ member.pk }}"
+            {% if task.requester_id == member.pk %}selected{% endif %}>
+      {{ member.full_name }}
+    </option>
+    {% endfor %}
+  </select>
+</form>
+{% else %}
+<div hx-get="{% url 'tasks:task-edit-field' task.pk %}?mode=edit&field=requester"
+     hx-target="this"
+     hx-swap="outerHTML"
+     style="cursor:pointer;"
+     title="Click to edit">
+  {% if task.requester %}
+  <div class="d-flex align-items-center gap-2">
+    <div class="user-avatar user-avatar-sm" style="width: 24px; height: 24px; border-radius: 50%; background: var(--bs-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">
+      {{ task.requester.initials }}
+    </div>
+    <span style="font-size:13px;">{{ task.requester.full_name }}</span>
+    <i class="bi bi-pencil text-muted" style="font-size:11px;"></i>
+  </div>
+  {% else %}
+  <span class="text-muted fst-italic" style="font-size:13px;">
+    Nicht angegeben
+    <i class="bi bi-pencil ms-1" style="font-size:11px;"></i>
+  </span>
+  {% endif %}
+</div>
+{% endif %}

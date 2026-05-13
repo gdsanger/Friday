@@ -53,6 +53,13 @@
         </div>
         {% endif %}
 
+        {% if task.requester and task.requester != task.assigned_to_user %}
+        <div class="d-flex align-items-center mb-2" style="font-size:10px; color:var(--friday-text-muted);">
+            <i class="bi bi-person-raised-hand" style="font-size:10px;"></i>
+            <span class="ms-1">{{ task.requester.full_name }}</span>
+        </div>
+        {% endif %}
+
         <div class="d-flex justify-content-between align-items-center small text-muted">
             <div class="d-flex gap-2 align-items-center">
                 {% if task.effective_client %}
