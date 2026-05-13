@@ -88,6 +88,10 @@ def _resolve_recipients(hook: MailHook, task) -> list[str]:
             if task.created_by and task.created_by.is_portal_user:
                 emails.add(task.created_by.email)
 
+        elif recipient_type == 'requester':
+            if task.effective_requester and _wants_mail(task.effective_requester):
+                emails.add(task.effective_requester.email)
+
     return list(emails)
 
 

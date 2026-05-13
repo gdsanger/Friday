@@ -156,6 +156,12 @@ class TaskCreateView(LoginRequiredMixin, View):
             story_points = request.POST.get('story_points') or None,
         )
 
+        # Optional: set requester
+        requester_id = request.POST.get('requester')
+        if requester_id:
+            task.requester_id = requester_id
+            task.save(update_fields=['requester'])
+
         # Optional: assign immediately
         user_id = request.POST.get('assigned_to_user')
         team_id = request.POST.get('assigned_to_team')
@@ -359,10 +365,10 @@ class CommentDeleteView(LoginRequiredMixin, View):
 class TaskEditFieldView(LoginRequiredMixin, View):
     """
     HTMX inline field editor.
-    Accepts: title, description, due_date, priority, status
+    Accepts: title, description, due_date, priority, status, requester
     Returns: updated field partial
     """
-    EDITABLE_FIELDS = ['title', 'description', 'due_date', 'priority', 'status']
+    EDITABLE_FIELDS = ['title', 'description', 'due_date', 'priority', 'status', 'requester']
 
     def get(self, request, pk):
         """Return edit or view mode partial based on ?mode= parameter."""
@@ -376,8 +382,13 @@ class TaskEditFieldView(LoginRequiredMixin, View):
         if field not in self.EDITABLE_FIELDS:
             return HttpResponseBadRequest(f'Field "{field}" is not editable.')
 
+        # Add project members for requester field dropdown
+        context = {'task': task, 'mode': mode}
+        if field == 'requester':
+            context['project_members'] = task.project.get_all_members()
+
         template_name = f'tasks/partials/field_{field}.html'
-        return render(request, template_name, {'task': task, 'mode': mode})
+        return render(request, template_name, context)
 
     def post(self, request, pk):
         """Update field value and return view mode partial."""
@@ -394,8 +405,15 @@ class TaskEditFieldView(LoginRequiredMixin, View):
         if field == 'title' and not value:
             return HttpResponseBadRequest('Title cannot be empty.')
 
-        setattr(task, field, value or None)
-        task.save(update_fields=[field])
+        # Special handling for FK fields
+        if field == 'requester':
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            task.requester = User.objects.filter(pk=value).first() if value else None
+            task.save(update_fields=['requester'])
+        else:
+            setattr(task, field, value or None)
+            task.save(update_fields=[field])
 
         return render(request, f'tasks/partials/field_{field}.html', {'task': task, 'mode': 'view'})
 

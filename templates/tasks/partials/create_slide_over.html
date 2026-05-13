@@ -107,6 +107,22 @@
             </div>
         </div>
 
+        <!-- Requester -->
+        <div class="mb-3">
+            <label for="requester" class="form-label">
+                Angefordert von
+                <span class="text-muted" style="font-size:12px;">(optional)</span>
+            </label>
+            <select class="form-select" id="requester" name="requester">
+                <option value="">— Nicht angegeben —</option>
+                {% if selected_project %}
+                    {% for member in selected_project.get_all_members %}
+                    <option value="{{ member.pk }}">{{ member.full_name }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
         <!-- Due Date -->
         <div class="mb-4">
             <label for="due_date" class="form-label">Due Date</label>
