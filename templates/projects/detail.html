@@ -146,7 +146,15 @@
                             {% for task in recent_tasks %}
                             <tr>
                                 <td>
-                                    <strong>{{ task.title }}</strong>
+                                    <a href="{% url 'tasks:task-detail-full' task.pk %}"
+                                       hx-get="{% url 'tasks:task-detail' task.pk %}"
+                                       hx-target="#slide-over"
+                                       hx-swap="innerHTML"
+                                       hx-push-url="true"
+                                       class="text-decoration-none fw-medium"
+                                       style="color: var(--friday-text);">
+                                        {{ task.title }}
+                                    </a>
                                 </td>
                                 <td>
                                     {% if task.assigned_to_user %}
