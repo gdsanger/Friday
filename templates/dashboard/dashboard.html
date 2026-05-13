@@ -89,7 +89,7 @@
         </div>
 
         <!-- Capacity widget (staff and team leads only) -->
-        {% if request.user.is_staff or request.user.team_memberships.filter(role='lead').exists %}
+        {% if request.user.is_staff or request.user.is_team_lead %}
         <div id="widget-capacity"
              class="dashboard-widget mb-3"
              hx-get="{% url 'dashboard:widget-capacity' %}"

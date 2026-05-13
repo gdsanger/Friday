@@ -51,3 +51,8 @@ class User(AbstractUser):
         """Return user initials from their name."""
         parts = self.full_name.split()
         return ''.join(p[0].upper() for p in parts[:2]) if parts else '?'
+
+    @property
+    def is_team_lead(self):
+        """Check if user has any team membership with role='lead'."""
+        return self.team_memberships.filter(role='lead').exists()
