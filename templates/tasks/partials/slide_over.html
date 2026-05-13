@@ -18,7 +18,24 @@
                 <i class="bi bi-three-dots-vertical"></i>
             </button>
             <ul class="dropdown-menu">
+                <li>
+                    <form method="POST" action="{% url 'tasks:task-clone' task.pk %}">
+                        {% csrf_token %}
+                        <div class="form-check mb-2 px-3 pt-2">
+                            <input class="form-check-input" type="checkbox"
+                                   name="include_subtasks" value="1" id="clone-subtasks">
+                            <label class="form-check-label" for="clone-subtasks"
+                                   style="font-size:13px;">
+                                Subtasks mit klonen
+                            </label>
+                        </div>
+                        <button type="submit" class="dropdown-item">
+                            <i class="bi bi-copy me-2"></i> Task klonen
+                        </button>
+                    </form>
+                </li>
                 {% if user_role == 'manager' or task.created_by == request.user %}
+                <li><hr class="dropdown-divider"></li>
                 <li>
                     <a class="dropdown-item text-danger"
                        hx-post="{% url 'tasks:task-delete' task.pk %}"

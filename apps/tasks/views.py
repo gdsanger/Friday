@@ -525,3 +525,63 @@ class TimeEntryDeleteView(LoginRequiredMixin, View):
         total_m = entries.aggregate(t=Sum('duration_m'))['t'] or 0
         return render(request, 'tasks/partials/time_entry_list.html',
                       {'task': task, 'entries': entries, 'total_m': total_m})
+
+
+class TaskCloneView(LoginRequiredMixin, View):
+    """
+    POST — clone a task and redirect to the new task's detail page.
+    Clones: title (prefixed), description, priority, labels,
+            assigned_to_user, assigned_to_team, due_date, deadline,
+            estimated_h, client.
+    Does NOT clone: status (reset to backlog), time entries,
+                    comments, attachments, watchers.
+    Optionally clones subtasks if ?include_subtasks=1.
+    """
+    def post(self, request, pk):
+        original = get_object_or_404(Task, pk=pk)
+
+        if not original.project.is_member(request.user):
+            raise PermissionDenied
+
+        include_subtasks = request.POST.get('include_subtasks') == '1'
+
+        # Clone the task
+        clone = Task.objects.create(
+            title            = f'[Kopie] {original.title}',
+            description      = original.description,
+            project          = original.project,
+            status           = Task.STATUS_BACKLOG,
+            priority         = original.priority,
+            created_by       = request.user,
+            assigned_to_user = original.assigned_to_user,
+            assigned_to_team = original.assigned_to_team,
+            due_date         = original.due_date,
+            deadline         = original.deadline,
+            estimated_h      = original.estimated_h,
+            client           = original.client,
+        )
+
+        # Copy labels (M2M)
+        clone.labels.set(original.labels.all())
+
+        # Optionally clone subtasks
+        if include_subtasks:
+            for subtask in original.subtasks.all():
+                Task.objects.create(
+                    title            = subtask.title,
+                    description      = subtask.description,
+                    project          = clone.project,
+                    status           = Task.STATUS_BACKLOG,
+                    priority         = subtask.priority,
+                    created_by       = request.user,
+                    assigned_to_user = subtask.assigned_to_user,
+                    assigned_to_team = subtask.assigned_to_team,
+                    parent_task      = clone,
+                    client           = subtask.client,
+                )
+
+        # HTMX or full page
+        if request.htmx:
+            return render(request, 'tasks/partials/card.html', {'task': clone})
+
+        return redirect('tasks:task-detail-full', pk=clone.pk)

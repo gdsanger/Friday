@@ -23,8 +23,46 @@
     <div class="row">
         <!-- Left Column (Main Content) -->
         <div class="col-lg-8">
-            <!-- Title (editable) -->
-            {% include 'tasks/partials/field_title.html' with mode='view' %}
+            <!-- Title (editable) with actions -->
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="flex-grow-1">
+                    {% include 'tasks/partials/field_title.html' with mode='view' %}
+                </div>
+                <div class="dropdown ms-3">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <form method="POST" action="{% url 'tasks:task-clone' task.pk %}">
+                                {% csrf_token %}
+                                <div class="form-check mb-2 px-3 pt-2">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="include_subtasks" value="1" id="clone-subtasks-full">
+                                    <label class="form-check-label" for="clone-subtasks-full"
+                                           style="font-size:13px;">
+                                        Subtasks mit klonen
+                                    </label>
+                                </div>
+                                <button type="submit" class="dropdown-item">
+                                    <i class="bi bi-copy me-2"></i> Task klonen
+                                </button>
+                            </form>
+                        </li>
+                        {% if user_role == 'manager' or task.created_by == request.user %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger"
+                               hx-post="{% url 'tasks:task-delete' task.pk %}"
+                               hx-confirm="Delete this task?"
+                               hx-on::after-request="window.location.href='{% url 'projects:project-detail' task.project.pk %}';">
+                                <i class="bi bi-trash"></i> Delete Task
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
 
             <!-- Project & Status -->
             <div class="d-flex align-items-center gap-3 mb-4">
