@@ -77,3 +77,21 @@ def priority_color(priority):
         return colors.get(int(priority), '')
     except (ValueError, TypeError):
         return ''
+
+
+@register.filter
+def subtask_count(task):
+    """Return total count of subtasks for a task."""
+    try:
+        return task.subtasks.count()
+    except (AttributeError, TypeError):
+        return 0
+
+
+@register.filter
+def done_subtask_count(task):
+    """Return count of completed subtasks for a task."""
+    try:
+        return task.subtasks.filter(status='done').count()
+    except (AttributeError, TypeError):
+        return 0
