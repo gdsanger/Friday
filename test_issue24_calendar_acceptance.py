@@ -332,8 +332,8 @@ def test_calendar_update_endpoint(data):
     payload = {
         'type': 'project',
         'id': data['project1'].pk,
-        'start_date': new_start.strftime('%d-%m-%Y'),
-        'end_date': new_end.strftime('%d-%m-%Y'),
+        'start_date': new_start.strftime('%Y-%m-%d'),
+        'end_date': new_end.strftime('%Y-%m-%d'),
     }
 
     response = client.post(
@@ -363,8 +363,8 @@ def test_calendar_update_permissions(data):
     payload = {
         'type': 'project',
         'id': data['project1'].pk,
-        'start_date': date.today().strftime('%d-%m-%Y'),
-        'end_date': (date.today() + timedelta(days=30)).strftime('%d-%m-%Y'),
+        'start_date': date.today().strftime('%Y-%m-%d'),
+        'end_date': (date.today() + timedelta(days=30)).strftime('%Y-%m-%d'),
     }
 
     # Test contributor (should fail)

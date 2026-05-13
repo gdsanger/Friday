@@ -276,8 +276,8 @@ class CalendarDataView(LoginRequiredMixin, View):
             gantt_tasks.append({
                 'id': f'p_{project.pk}',
                 'text': project.name,
-                'start_date': start.strftime('%d-%m-%Y'),
-                'end_date': end.strftime('%d-%m-%Y'),
+                'start_date': start.strftime('%Y-%m-%d'),
+                'end_date': end.strftime('%Y-%m-%d'),
                 'color': project.color,
                 'type': 'project',
                 'open': True,
@@ -320,7 +320,7 @@ class CalendarDataView(LoginRequiredMixin, View):
                 gantt_tasks.append({
                     'id': f't_{task.pk}',
                     'text': task.title,
-                    'start_date': task.deadline.strftime('%d-%m-%Y'),
+                    'start_date': task.deadline.strftime('%Y-%m-%d'),
                     'duration': 0,  # milestone = duration 0
                     'type': 'milestone',
                     'parent': f'p_{project.pk}',
@@ -350,7 +350,7 @@ class CalendarUpdateView(LoginRequiredMixin, View):
         start_str = data.get('start_date')
         end_str = data.get('end_date')
 
-        fmt = '%d-%m-%Y'
+        fmt = '%Y-%m-%d'
 
         if obj_type == 'project':
             project = get_object_or_404(Project, pk=obj_id)

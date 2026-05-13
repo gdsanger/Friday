@@ -41,7 +41,7 @@ Successfully implemented a comprehensive Project Calendar & Resource Gantt view 
 3. **CalendarUpdateView** (View)
    - URL: `/projects/calendar/update/`
    - POST endpoint for drag-and-drop updates
-   - Date format: `%d-%m-%Y` (DD-MM-YYYY)
+   - Date format: `%Y-%m-%d` (ISO 8601: YYYY-MM-DD)
    - Permission check: manager role or staff only
    - Updates project `start_date` and `due_date`
 
@@ -61,7 +61,7 @@ path('calendar/update/', views.CalendarUpdateView.as_view(), name='calendar-upda
 **Features**:
 - DHTMLX Gantt loaded via CDN (edge version)
 - Gantt configuration:
-  - Date format: `%d-%m-%Y`
+  - Date format: `%Y-%m-%d` (ISO 8601: YYYY-MM-DD)
   - Drag & drop enabled for project bars
   - Tree view with parent-child relationships
   - Custom columns: Project/Task name, Start date, Due date
@@ -125,8 +125,8 @@ path('calendar/update/', views.CalendarUpdateView.as_view(), name='calendar-upda
     {
       "id": "p_1",
       "text": "Project Name",
-      "start_date": "13-05-2026",
-      "end_date": "12-06-2026",
+      "start_date": "2026-05-13",
+      "end_date": "2026-06-12",
       "color": "#3b82f6",
       "type": "project",
       "open": true,
@@ -136,7 +136,7 @@ path('calendar/update/', views.CalendarUpdateView.as_view(), name='calendar-upda
     {
       "id": "t_5",
       "text": "Task Title",
-      "start_date": "28-05-2026",
+      "start_date": "2026-05-28",
       "duration": 0,
       "type": "milestone",
       "parent": "p_1",
@@ -208,9 +208,10 @@ python test_issue24_calendar_acceptance.py
 - Cleaner, more meaningful calendar view
 
 ### Date Format Choice
-- Format: `DD-MM-YYYY` (e.g., "13-05-2026")
-- Reasoning: European/international standard, less ambiguous than US format
-- Consistent with DHTMLX Gantt default format
+- Format: `YYYY-MM-DD` (e.g., "2026-05-13")
+- Reasoning: ISO 8601 standard, unambiguous, works reliably with DHTMLX Gantt
+- Prevents date parsing errors (date.match is not a function)
+- Display format in grid columns remains `dd.mm.YYYY` (German format)
 
 ## Acceptance Criteria Verification
 
