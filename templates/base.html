@@ -8,8 +8,18 @@
 
     <!-- Prevent flash of wrong theme -->
     <script>
-        const t = localStorage.getItem('friday-theme') || 'light';
-        document.documentElement.setAttribute('data-bs-theme', t);
+        // Theme
+        const _t = localStorage.getItem('friday-theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', _t);
+        // Sidebar collapsed state (Desktop only)
+        if (window.innerWidth > 992) {
+            const _s = localStorage.getItem('friday-sidebar');
+            if (_s === 'collapsed') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('friday-sidebar')?.classList.add('collapsed');
+                });
+            }
+        }
     </script>
 
     <!-- Google Fonts -->

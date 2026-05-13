@@ -1,81 +1,138 @@
 <!-- Sidebar Navigation -->
-<aside class="friday-sidebar">
-    <div class="sidebar-header">
-        <div class="logo">
-            <i class="bi bi-calendar-check-fill"></i>
-            <span class="logo-text">Friday</span>
+<aside class="friday-sidebar" id="friday-sidebar">
+
+    <!-- Logo / Header -->
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">F</div>
+        <div class="sidebar-logo-text-wrap">
+            <span class="sidebar-logo-text">Friday</span>
+            <span class="sidebar-logo-tagline">Get to Friday. 🚀</span>
         </div>
-        <div class="tagline">Get to Friday. 🚀</div>
     </div>
 
+    <!-- Toggle Button (Desktop) -->
+    <button class="sidebar-toggle-btn"
+            id="sidebar-toggle"
+            onclick="toggleSidebar()"
+            title="Menü ein-/ausklappen">
+        <i class="bi bi-layout-sidebar-inset"></i>
+    </button>
+
+    <!-- Navigation -->
     <nav class="sidebar-nav">
-        <a href="{% url 'dashboard:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
+
+        <div class="sidebar-section-label">Navigation</div>
+
+        <a href="{% url 'dashboard:dashboard' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}"
+           title="Dashboard">
             <i class="bi bi-speedometer2"></i>
-            <span>Dashboard</span>
+            <span class="sidebar-link-text">Dashboard</span>
         </a>
-        <a href="{% url 'kanban:kanban-board' %}" class="nav-item {% if request.resolver_match.app_name == 'kanban' %}active{% endif %}">
+
+        <a href="{% url 'kanban:kanban-board' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'kanban' %}active{% endif %}"
+           title="Tasks">
             <i class="bi bi-kanban"></i>
-            <span>Tasks</span>
+            <span class="sidebar-link-text">Tasks</span>
         </a>
-        <a href="{% url 'projects:project-list' %}" class="nav-item {% if request.resolver_match.app_name == 'projects' and request.resolver_match.url_name != 'calendar' %}active{% endif %}">
-            <i class="bi bi-folder"></i>
-            <span>Projects</span>
+
+        <a href="{% url 'projects:project-list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'projects' and request.resolver_match.url_name != 'calendar' %}active{% endif %}"
+           title="Projekte">
+            <i class="bi bi-folder2"></i>
+            <span class="sidebar-link-text">Projekte</span>
         </a>
-        <a href="{% url 'projects:calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+
+        <a href="{% url 'projects:calendar' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}"
+           title="Kalender">
             <i class="bi bi-calendar3"></i>
-            <span>Calendar</span>
+            <span class="sidebar-link-text">Kalender</span>
         </a>
-        <a href="{% url 'teams:team-list' %}" class="nav-item {% if request.resolver_match.app_name == 'teams' %}active{% endif %}">
+
+        <a href="{% url 'teams:team-list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'teams' %}active{% endif %}"
+           title="Teams">
             <i class="bi bi-people"></i>
-            <span>Teams</span>
+            <span class="sidebar-link-text">Teams</span>
         </a>
-        <a href="{% url 'tasks:template-list' %}" class="nav-item {% if request.resolver_match.url_name|slice:":9" == 'template-' %}active{% endif %}">
-            <i class="bi bi-file-earmark-text"></i>
-            <span>Vorlagen</span>
-        </a>
+
         {% if request.user.is_staff %}
-        <a href="{% url 'core:client-list' %}" class="nav-item {% if request.resolver_match.url_name|slice:":7" == 'client-' %}active{% endif %}">
+        <a href="{% url 'core:client-list' %}"
+           class="sidebar-link {% if request.resolver_match.url_name|slice:":7" == 'client-' %}active{% endif %}"
+           title="Mandanten">
             <i class="bi bi-building"></i>
-            <span>Clients</span>
+            <span class="sidebar-link-text">Mandanten</span>
         </a>
         {% endif %}
-        <a href="{% url 'notifications:notification-list' %}" class="nav-item {% if request.resolver_match.app_name == 'notifications' %}active{% endif %} position-relative">
-            <i class="bi bi-bell"></i>
-            <span>Notifications</span>
-            {% if unread_notification_count > 0 %}
-            <span id="unread-badge"
-                  class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle"
-                  style="font-size: 0.65rem;">
-                {{ unread_notification_count }}
-            </span>
-            {% endif %}
+
+        <a href="{% url 'tasks:template-list' %}"
+           class="sidebar-link {% if request.resolver_match.url_name|slice:":9" == 'template-' %}active{% endif %}"
+           title="Vorlagen">
+            <i class="bi bi-file-earmark-text"></i>
+            <span class="sidebar-link-text">Vorlagen</span>
         </a>
+
+        <a href="{% url 'notifications:notification-list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}"
+           title="Benachrichtigungen">
+            <i class="bi bi-bell"></i>
+            <span class="sidebar-link-text">
+                Benachrichtigungen
+                {% if unread_notification_count > 0 %}
+                <span class="sidebar-badge">{{ unread_notification_count }}</span>
+                {% endif %}
+            </span>
+        </a>
+
+        {% if request.user.is_staff %}
+        <div class="sidebar-section-label">Admin</div>
+        <a href="{% url 'admin:index' %}"
+           class="sidebar-link {% if request.resolver_match.namespace == 'admin' %}active{% endif %}"
+           title="Admin">
+            <i class="bi bi-gear"></i>
+            <span class="sidebar-link-text">Einstellungen</span>
+        </a>
+        {% endif %}
+
     </nav>
 
+    <!-- Footer: User + Theme Toggle -->
     <div class="sidebar-footer">
         {% if user.is_authenticated %}
-	        <div class="user-section">
-	            <div class="user-avatar">
-	                {% if user.avatar %}
-	                    <img src="{{ user.avatar.url }}" alt="{{ user.full_name }}">
-	                {% else %}
-	                    <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
-	                {% endif %}
-	            </div>
-	            <div class="user-info">
-	                <div class="user-name">{{ user.full_name }}</div>
-	                <div class="d-flex gap-2">
-	                    <a href="{% url 'accounts:profile' %}" class="user-action">Profile</a>
-	                    <form method="post" action="{% url 'accounts:logout' %}">
-	                        {% csrf_token %}
-	                        <button type="submit" class="btn btn-link p-0 user-action">Logout</button>
-	                    </form>
-	                </div>
-	            </div>
-	        </div>
-	        {% endif %}
+        <div class="sidebar-user">
+            <div class="user-avatar user-avatar-sm sidebar-user-avatar">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.full_name }}">
+                {% else %}
+                    <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                {% endif %}
+            </div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">{{ user.full_name }}</div>
+                <div class="sidebar-user-links">
+                    <a href="{% url 'accounts:profile' %}">Profil</a>
+                    <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link-inline">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Theme Toggle -->
-        {% include 'partials/theme_toggle.html' %}
+        <button class="sidebar-theme-btn"
+                id="sidebar-theme-toggle"
+                onclick="toggleTheme()"
+                title="Light/Dark Mode">
+            <i class="bi bi-moon-stars" id="theme-icon"></i>
+        </button>
     </div>
+
 </aside>
+
+<!-- Mobile Backdrop -->
+<div class="sidebar-backdrop" id="sidebar-backdrop"
+     onclick="closeSidebarMobile()"></div>

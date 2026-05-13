@@ -1,6 +1,12 @@
 <!-- Topbar -->
 <header class="friday-topbar">
     <div class="topbar-left">
+        <!-- Hamburger — nur auf Mobile sichtbar -->
+        <button class="hamburger-btn d-lg-none"
+                onclick="openSidebarMobile()"
+                aria-label="Menü öffnen">
+            <i class="bi bi-list"></i>
+        </button>
         <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
     </div>
     <div class="topbar-right">
