@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if object %}Edit {{ object.name }}{% else %}New Client{% endif %} · Friday
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <!-- Breadcrumb for edit mode -->
+    {% if object %}
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="{% url 'core:client-list' %}">Clients</a>
+        </li>
+        <li class="breadcrumb-item">
+          <a href="{% url 'core:client-detail' object.slug %}">{{ object.name }}</a>
+        </li>
+        <li class="breadcrumb-item active">Edit</li>
+      </ol>
+    </nav>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="mb-4">
+          {% if object %}Edit Client{% else %}New Client{% endif %}
+        </h4>
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+          {% csrf_token %}
+
+          <!-- Name -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Name *</label>
+            <input type="text" name="name"
+                   value="{{ object.name|default:'' }}"
+                   class="form-control" required autofocus>
+            <small class="form-text text-muted">Full client name (e.g., "Hochschule Hamburg")</small>
+          </div>
+
+          <!-- Short Name -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Short Name</label>
+            <input type="text" name="short_name"
+                   value="{{ object.short_name|default:'' }}"
+                   class="form-control" maxlength="20">
+            <small class="form-text text-muted">Abbreviation (e.g., "HAM", "DHGS")</small>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Description</label>
+            <textarea name="description" class="form-control" rows="3">{{ object.description|default:'' }}</textarea>
+          </div>
+
+          <!-- Color -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Color</label>
+            <input type="color" name="color"
+                   value="{{ object.color|default:'#6366f1' }}"
+                   class="form-control form-control-color">
+            <small class="form-text text-muted">Used for client badge and visual identification</small>
+          </div>
+
+          <!-- Website -->
+          <div class="mb-3">
+            <label class="form-label fw-medium">Website</label>
+            <input type="url" name="website"
+                   value="{{ object.website|default:'' }}"
+                   class="form-control"
+                   placeholder="https://example.com">
+          </div>
+
+          {% if object %}
+          <!-- Is Active (only on edit) -->
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input type="checkbox" name="is_active" value="1"
+                     class="form-check-input"
+                     id="is_active"
+                     {% if object.is_active %}checked{% endif %}>
+              <label class="form-check-label" for="is_active">
+                Active
+              </label>
+            </div>
+            <small class="form-text text-muted">Inactive clients are hidden from most views</small>
+          </div>
+          {% endif %}
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{% if object %}{% url 'core:client-detail' object.slug %}{% else %}{% url 'core:client-list' %}{% endif %}"
+               class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              {% if object %}Save Changes{% else %}Create Client{% endif %}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

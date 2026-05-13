@@ -93,6 +93,14 @@ class Task(TimeStampedModel):
         related_name='watched_tasks'
     )
 
+    client      = models.ForeignKey(
+        'core.Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tasks',
+        help_text='Client / Mandant — inherited from project if not set directly.'
+    )
     due_date    = models.DateField(null=True, blank=True)
     deadline    = models.DateField(
         null=True,
@@ -135,6 +143,11 @@ class Task(TimeStampedModel):
         if self.assigned_to_team:
             return f'Team: {self.assigned_to_team.name}'
         return 'Unassigned'
+
+    @property
+    def effective_client(self):
+        """Return the client for this task (direct or inherited from project)."""
+        return self.client or (self.project.client if self.project else None)
 
     @property
     def is_overdue(self):

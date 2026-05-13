@@ -45,6 +45,14 @@ class Project(TimeStampedModel):
         null=True,
         related_name='owned_projects'
     )
+    client      = models.ForeignKey(
+        'core.Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='projects',
+        help_text='Client / Mandant this project belongs to.'
+    )
     start_date  = models.DateField(null=True, blank=True)
     due_date    = models.DateField(null=True, blank=True)
     priority    = models.IntegerField(default=0)

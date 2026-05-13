@@ -19,6 +19,7 @@ urlpatterns = [
     path('notifications/', include('apps.notifications.urls')),
     path('admin-panel/', include('apps.admin_panel.urls')),
     path('api/mail/', include('apps.mail.urls')),
+    path('', include('apps.core.urls')),
     path('', include('apps.ai.urls')),
 ]
 
