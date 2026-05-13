@@ -33,4 +33,12 @@ urlpatterns = [
     path('<int:pk>/dependencies/add/',           views.DependencyAddView.as_view(),       name='dependency-add'),
     path('<int:pk>/dependencies/<int:dep_pk>/remove/',
                                                  views.DependencyRemoveView.as_view(),    name='dependency-remove'),
+
+    # Task Templates
+    path('templates/',                           views.TemplateListView.as_view(),        name='template-list'),
+    path('templates/create/',                    views.TemplateCreateView.as_view(),      name='template-create'),
+    path('templates/<slug:slug>/',               views.TemplateDetailView.as_view(),      name='template-detail'),
+    path('templates/<slug:slug>/edit/',          views.TemplateEditView.as_view(),        name='template-edit'),
+    path('templates/<slug:slug>/use/',           views.TemplateUseView.as_view(),         name='template-use'),
+    path('templates/<slug:slug>/preview/',       views.TemplatePreviewView.as_view(),     name='template-preview'),
 ]

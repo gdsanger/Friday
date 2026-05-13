@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template.name }} - Friday{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'tasks:template-list' %}" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left"></i> Zurück zur Liste
+    </a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ template.name }}</h2>
+    <div class="d-flex gap-2">
+        {% if request.user.is_staff %}
+        <a href="{% url 'tasks:template-edit' template.slug %}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil"></i> Bearbeiten
+        </a>
+        {% endif %}
+        <a href="{% url 'tasks:template-use' template.slug %}"
+           class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> Verwenden
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Beschreibung</h5>
+                {% if template.description %}
+                <p class="text-muted">{{ template.description|linebreaks }}</p>
+                {% else %}
+                <p class="text-muted fst-italic">Keine Beschreibung vorhanden.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if extra_fields %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Zusatzfelder ({{ extra_fields|length }})</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Feld</th>
+                                <th>Typ</th>
+                                <th>Pflicht</th>
+                                <th>Optionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for field in extra_fields %}
+                            <tr>
+                                <td><strong>{{ field.label }}</strong><br><small class="text-muted">{{ field.name }}</small></td>
+                                <td><span class="badge bg-secondary">{{ field.type }}</span></td>
+                                <td>
+                                    {% if field.required %}
+                                    <i class="bi bi-check-circle-fill text-success"></i> Ja
+                                    {% else %}
+                                    <i class="bi bi-circle text-muted"></i> Nein
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if field.options %}
+                                    <small class="text-muted">{{ field.options|join:", " }}</small>
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Standard-Werte</h5>
+                <dl class="mb-0">
+                    <dt class="text-muted small">Projekt</dt>
+                    <dd>{{ template.default_project.name|default:"—" }}</dd>
+
+                    <dt class="text-muted small">Priorität</dt>
+                    <dd>
+                        {% if template.default_priority == 0 %}Keine
+                        {% elif template.default_priority == 1 %}Low
+                        {% elif template.default_priority == 2 %}Medium
+                        {% elif template.default_priority == 3 %}High
+                        {% elif template.default_priority == 4 %}Critical
+                        {% endif %}
+                    </dd>
+
+                    <dt class="text-muted small">Team</dt>
+                    <dd>{{ template.default_assigned_to_team.name|default:"—" }}</dd>
+
+                    <dt class="text-muted small">Mandant</dt>
+                    <dd>{{ template.client.name|default:"Alle" }}</dd>
+
+                    <dt class="text-muted small">Portal</dt>
+                    <dd>
+                        {% if template.is_portal_visible %}
+                        <i class="bi bi-check-circle-fill text-success"></i> Sichtbar
+                        {% else %}
+                        <i class="bi bi-x-circle text-muted"></i> Nicht sichtbar
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

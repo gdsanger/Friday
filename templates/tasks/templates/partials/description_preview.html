@@ -1,0 +1,9 @@
+<div id="description-preview"
+     class="p-3 rounded"
+     style="background:var(--bs-secondary-bg); font-size:13px;
+            font-family:var(--bs-font-monospace); white-space:pre-wrap;
+            border:1px solid var(--bs-border-color); min-height:100px;">
+  {% if preview %}{{ preview }}{% else %}<span class="text-muted fst-italic">
+      Fülle die Felder aus um die Vorschau zu sehen...
+    </span>{% endif %}
+</div>
