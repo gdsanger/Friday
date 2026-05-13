@@ -52,6 +52,26 @@
     <!-- Title (editable) -->
     {% include 'tasks/partials/field_title.html' with mode='view' %}
 
+    {% if task.parent_task %}
+    <div class="mb-3 d-flex align-items-center gap-2"
+         style="font-size:13px;">
+        <i class="bi bi-diagram-2 text-muted"></i>
+        <span class="text-muted">Unteraufgabe von:</span>
+        <a hx-get="{% url 'tasks:task-detail' task.parent_task.pk %}"
+           hx-target="#slide-over"
+           hx-swap="innerHTML"
+           hx-push-url="true"
+           href="{% url 'tasks:task-detail-full' task.parent_task.pk %}"
+           class="fw-medium text-decoration-none"
+           style="color:var(--friday-accent);">
+            {{ task.parent_task.title }}
+        </a>
+        <span class="badge bg-secondary" style="font-size:11px;">
+            {{ task.parent_task.get_status_display }}
+        </span>
+    </div>
+    {% endif %}
+
     <!-- Project & Status -->
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="{% url 'projects:project-detail' task.project.pk %}" class="text-decoration-none">

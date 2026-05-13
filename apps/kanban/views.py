@@ -85,6 +85,12 @@ class KanbanBoardView(LoginRequiredMixin, View):
                     due_date__lte=timezone.now().date() + timedelta(days=7)
                 )
 
+        # ── Subtask filter ────────────────────────────────────────
+        show_subtasks = request.GET.get('show_subtasks', '')
+        if not show_subtasks:
+            # Default: hide subtasks — show only top-level tasks
+            tasks = tasks.filter(parent_task__isnull=True)
+
         # ── Build columns ─────────────────────────────────────
         columns = {status: [] for status, _ in Task.STATUS_CHOICES}
         for task in tasks:
@@ -106,6 +112,7 @@ class KanbanBoardView(LoginRequiredMixin, View):
                 'client':   request.GET.get('client', ''),
                 'priority': request.GET.get('priority', ''),
                 'due':      request.GET.get('due', ''),
+                'show_subtasks': request.GET.get('show_subtasks', ''),
             },
         }
 

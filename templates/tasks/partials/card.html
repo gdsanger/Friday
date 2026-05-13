@@ -1,6 +1,14 @@
 {% load friday_tags %}
 <div class="card task-card" data-task-id="{{ task.pk }}" style="border-left: 4px solid {{ task.project.color }}; cursor: pointer;">
     <div class="card-body">
+        {% if task.parent_task %}
+        <div class="d-flex align-items-center gap-1 mb-1"
+             style="font-size:11px; color:var(--friday-text-muted);">
+            <i class="bi bi-diagram-2" style="font-size:10px;"></i>
+            <span>{{ task.parent_task.title }}</span>
+        </div>
+        {% endif %}
+
         <div class="d-flex justify-content-between align-items-start mb-2">
             <a href="{% url 'tasks:task-detail' task.pk %}"
                hx-get="{% url 'tasks:task-detail' task.pk %}"
@@ -44,6 +52,11 @@
                     {{ task.effective_client.short_name|default:task.effective_client.name|slice:":3"|upper }}
                 </span>
                 {% endif %}
+                {% with total=task|subtask_count done=task|done_subtask_count %}
+                {% if total > 0 %}
+                <span><i class="bi bi-list-task" style="font-size:11px;"></i> {{ done }}/{{ total }}</span>
+                {% endif %}
+                {% endwith %}
                 {% if task.comments.count > 0 %}
                 <span><i class="bi bi-chat"></i> {{ task.comments.count }}</span>
                 {% endif %}
