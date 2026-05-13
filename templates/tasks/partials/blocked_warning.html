@@ -1,0 +1,14 @@
+<div class="alert alert-warning d-flex align-items-start gap-2 mb-0">
+  <i class="bi bi-lock-fill mt-1"></i>
+  <div>
+    <strong>Task ist blockiert</strong>
+    <div style="font-size:13px;">
+      Folgende Tasks müssen zuerst abgeschlossen werden:
+      <ul class="mb-0 mt-1">
+        {% for t in blocking %}
+        <li>{{ t.title }} <span class="badge bg-secondary" style="font-size:11px;">{{ t.get_status_display }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>

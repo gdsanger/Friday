@@ -168,6 +168,23 @@ class Task(TimeStampedModel):
         )
         return (self.watching_users.all() | via_team).distinct()
 
+    @property
+    def blocking_tasks(self):
+        """Tasks that must be done before this task can start."""
+        return Task.objects.filter(blocks_deps__task=self)
+
+    @property
+    def is_blocked(self):
+        """True if any blocking task is not yet done."""
+        return self.blocked_by_deps.exclude(
+            blocked_by__status=Task.STATUS_DONE
+        ).exists()
+
+    @property
+    def blocked_tasks(self):
+        """Tasks that are waiting for this task to be done."""
+        return Task.objects.filter(blocked_by_deps__blocked_by=self)
+
 
 class Comment(TimeStampedModel):
     """Comment model for task discussions."""
@@ -229,3 +246,34 @@ class TimeEntry(TimeStampedModel):
 
     def __str__(self):
         return f'{self.user.username} - {self.task.title} ({self.duration_m}m)'
+
+
+class TaskDependency(models.Model):
+    """
+    Represents a "blocked by" relationship between two tasks.
+    task is blocked by blocked_by.
+    """
+    task       = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='blocked_by_deps'
+    )
+    blocked_by = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='blocks_deps'
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('task', 'blocked_by')
+        verbose_name = 'Task Dependency'
+        verbose_name_plural = 'Task Dependencies'
+
+    def __str__(self):
+        return f'{self.task.title} blocked by {self.blocked_by.title}'

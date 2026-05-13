@@ -335,6 +335,19 @@ class CalendarDataView(LoginRequiredMixin, View):
                     'task_id': task.pk,
                 })
 
+        # Add dependency links for Gantt
+        from apps.tasks.models import TaskDependency
+        for dep in TaskDependency.objects.filter(
+            task__project__in=projects
+        ).select_related('task', 'blocked_by'):
+            # Only add links for tasks that have deadlines and are in the Gantt
+            gantt_links.append({
+                'id':     f'dep_{dep.pk}',
+                'source': f't_{dep.blocked_by_id}',
+                'target': f't_{dep.task_id}',
+                'type':   '0',  # finish-to-start
+            })
+
         return JsonResponse({
             'data': gantt_tasks,
             'links': gantt_links,

@@ -1,0 +1,84 @@
+{% load friday_tags %}
+<div id="dependency-list">
+
+  <!-- Blocked by (must be done first) -->
+  {% with blocking=task.blocking_tasks %}
+  {% if blocking %}
+  <div class="mb-3">
+    <div class="text-muted mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">
+      <i class="bi bi-lock me-1"></i> Blockiert durch
+    </div>
+    {% for dep in blocking %}
+    <div class="d-flex align-items-center gap-2 py-1">
+      <span class="badge bg-secondary" style="font-size:11px;">
+        {{ dep.get_status_display }}
+      </span>
+      <a hx-get="{% url 'tasks:task-detail' dep.pk %}"
+         hx-target="#slide-over"
+         hx-swap="innerHTML"
+         class="text-decoration-none flex-grow-1"
+         style="font-size:13px;">
+        {{ dep.title }}
+      </a>
+      {% for d in task.blocked_by_deps.all %}
+        {% if d.blocked_by_id == dep.pk %}
+      <button hx-post="{% url 'tasks:dependency-remove' task.pk d.pk %}"
+              hx-target="#dependency-list"
+              hx-swap="outerHTML"
+              class="btn btn-link btn-sm text-danger p-0">
+        <i class="bi bi-x-lg" style="font-size:11px;"></i>
+      </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Blocking (waiting for this task) -->
+  {% with blocked=task.blocked_tasks %}
+  {% if blocked %}
+  <div class="mb-3">
+    <div class="text-muted mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">
+      <i class="bi bi-unlock me-1"></i> Blockiert diese Tasks
+    </div>
+    {% for t in blocked %}
+    <div class="d-flex align-items-center gap-2 py-1">
+      <span class="badge bg-secondary" style="font-size:11px;">
+        {{ t.get_status_display }}
+      </span>
+      <a hx-get="{% url 'tasks:task-detail' t.pk %}"
+         hx-target="#slide-over"
+         hx-swap="innerHTML"
+         class="text-decoration-none"
+         style="font-size:13px;">
+        {{ t.title }}
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Add dependency form -->
+  <form hx-post="{% url 'tasks:dependency-add' task.pk %}"
+        hx-target="#dependency-list"
+        hx-swap="outerHTML">
+    {% csrf_token %}
+    <div class="d-flex gap-2 mt-2">
+      <select name="blocked_by_id" class="form-select form-select-sm" required>
+        <option value="">— Wird blockiert durch —</option>
+        {% for t in project_tasks %}
+        {% if t.pk != task.pk %}
+        <option value="{{ t.pk }}">{{ t.title }}</option>
+        {% endif %}
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">
+        <i class="bi bi-plus-lg"></i> Hinzufügen
+      </button>
+    </div>
+  </form>
+
+</div>
