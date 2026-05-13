@@ -8,9 +8,14 @@
         <h2>User Management</h2>
         <p class="text-muted">Manage user accounts and permissions</p>
     </div>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteUserModal">
-        <i class="bi bi-person-plus"></i> Invite User
-    </button>
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteUserModal">
+            <i class="bi bi-person-plus"></i> Invite User
+        </button>
+        <a href="{% url 'admin_panel:admin-user-invite-azure' %}" class="btn btn-outline-primary">
+            <i class="bi bi-microsoft"></i> Azure AD Einladen
+        </a>
+    </div>
 </div>
 
 <!-- Search Bar -->

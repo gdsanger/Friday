@@ -263,3 +263,35 @@ def send_overdue_notifications():
         )
         logger.info(f'Sent overdue notification for task {task.pk}')
 
+
+@shared_task
+def send_invitation_mail(user_id: int):
+    """
+    Send invitation mail to newly provisioned user.
+    Uses the new mail engine with user_invited event.
+    """
+    from django.contrib.auth import get_user_model
+    from django.conf import settings
+    from .dispatcher import dispatch
+    from .models import MailHook
+
+    User = get_user_model()
+
+    try:
+        user = User.objects.select_related('portal_client').get(pk=user_id)
+    except User.DoesNotExist:
+        logger.error(f'User {user_id} not found for invitation email')
+        return
+
+    dispatch(
+        event=MailHook.EVENT_USER_INVITED,
+        context={
+            'recipient_name': user.display_name or user.username,
+            'login_url': f'{settings.SITE_URL}/accounts/azure/login/',
+            'app_url': settings.SITE_URL,
+            'user_type': 'Portal' if user.is_portal_user else 'Friday',
+            'portal_client': user.portal_client.name if user.portal_client else '',
+        },
+        recipients_override=[user.email],
+    )
+
