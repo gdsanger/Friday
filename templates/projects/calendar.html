@@ -416,16 +416,44 @@ function applyGanttFilters() {
   updateResetButton();
 }
 
+// Helper function: check if a project has at least one visible child task
+function projectHasVisibleChildren(projectGanttId) {
+  let hasVisible = false;
+
+  gantt.eachTask((child) => {
+    if (hasVisible) return; // early exit
+    if (String(child.parent) !== String(projectGanttId)) return;
+    if (child.type === 'project') return;
+
+    // Check child task against active filters
+    if (_filters.project && child.project_id !== _filters.project) return;
+    if (_filters.team    && child.team_id    !== _filters.team)    return;
+    if (_filters.user    && child.user_id    !== _filters.user)    return;
+    if (_filters.client  && child.client_id  !== _filters.client)  return;
+
+    hasVisible = true;
+  });
+
+  return hasVisible;
+}
+
 // DHTMLX onBeforeTaskDisplay callback — return true to show, false to hide
 gantt.attachEvent('onBeforeTaskDisplay', (id, task) => {
-  // Project bars: show if no project filter or if it matches the filtered project
+  const hasActiveFilter = Object.values(_filters).some(v => v !== '');
+
   if (task.type === 'project') {
+    // No filter active → show all projects
+    if (!hasActiveFilter) return true;
+
+    // Filter active → check project-level filters first
     if (_filters.project && task.project_id !== _filters.project) return false;
     if (_filters.client  && task.client_id  !== _filters.client)  return false;
-    return true;
+
+    // Has this project any visible child tasks?
+    return projectHasVisibleChildren(id);
   }
 
-  // Tasks/Milestones: apply all filters
+  // Task / Milestone: apply all filters
   if (_filters.project && task.project_id !== _filters.project) return false;
   if (_filters.team    && task.team_id    !== _filters.team)    return false;
   if (_filters.user    && task.user_id    !== _filters.user)    return false;
