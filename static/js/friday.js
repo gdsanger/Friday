@@ -151,83 +151,157 @@
         }
     });
 
-    // ── Markdown Editor (EasyMDE) ─────────────────────────────────
-    // Wird automatisch auf alle <textarea class="md-editor"> angewendet
-    // HTMX-aware: neu initialisieren nach HTMX Swap
+    // ── EasyMDE — Robuste Initialisierung ────────────────────────
+    //
+    // Problem: HTMX-Events feuern bevor das Element vollständig
+    // gerendert ist → EasyMDE schlägt still fehl (offsetHeight = 0)
+    //
+    // Lösung: MutationObserver der jede neue textarea.md-editor erkennt
+    // + requestAnimationFrame + setTimeout(0) für garantiertes Rendering
 
-    // Store EasyMDE instances for cleanup
-    const easyMDEInstances = new WeakMap();
+    const _mdInstances = new WeakMap(); // Editor-Instanzen merken
 
-    function initMarkdownEditors(container) {
-        const target = container || document;
-        target.querySelectorAll('textarea.md-editor').forEach(textarea => {
-            // Skip if already initialized (check for EasyMDE wrapper element)
-            if (textarea.nextSibling && textarea.nextSibling.classList && textarea.nextSibling.classList.contains('EasyMDEContainer')) {
-                return;
-            }
+    function initEasyMDE(textarea) {
+        // Bereits initialisiert?
+        if (_mdInstances.has(textarea)) return;
+        // Sicherheitscheck: Element muss sichtbar sein
+        if (!textarea.isConnected) return;
 
-            // Check if EasyMDE is available
-            if (typeof EasyMDE === 'undefined') {
-                console.error('EasyMDE library not loaded');
-                // Fallback: show a visible warning
-                const warning = document.createElement('div');
-                warning.className = 'alert alert-warning';
-                warning.textContent = 'Markdown editor library not loaded. Please refresh the page.';
-                textarea.parentNode.insertBefore(warning, textarea);
-                return;
-            }
+        // requestAnimationFrame: nach dem nächsten Paint
+        requestAnimationFrame(() => {
+            // setTimeout(0): nach dem aktuellen Call-Stack (Layout abgeschlossen)
+            setTimeout(() => {
+                // Nochmals prüfen — könnte zwischenzeitlich entfernt worden sein
+                if (!textarea.isConnected || _mdInstances.has(textarea)) return;
 
-            try {
-                const easyMDE = new EasyMDE({
-                    element:          textarea,
-                    spellChecker:     false,
-                    autosave:         { enabled: false },
-                    toolbar: [
-                        'bold', 'italic', 'heading', '|',
-                        'unordered-list', 'ordered-list', '|',
-                        'link', 'quote', 'code', '|',
-                        'preview', 'side-by-side', '|',
-                        'guide',
-                    ],
-                    placeholder:      'Beschreibung eingeben... (Markdown wird unterstützt)',
-                    status:           false,          // Statusleiste ausblenden
-                    minHeight:        '120px',
-                    renderingConfig: {
-                        singleLineBreaks: false,
-                        codeSyntaxHighlighting: false,
-                    },
-                    // Theming: passt sich an Light/Dark Mode an
-                    theme:            document.documentElement.getAttribute('data-bs-theme') === 'dark'
-                                      ? 'dark' : 'default',
-                });
+                // Check if EasyMDE is available
+                if (typeof EasyMDE === 'undefined') {
+                    console.warn('EasyMDE library not loaded for element:', textarea);
+                    return;
+                }
 
-                // Store instance for potential cleanup
-                easyMDEInstances.set(textarea, easyMDE);
+                try {
+                    const editor = new EasyMDE({
+                        element:          textarea,
+                        spellChecker:     false,
+                        autosave:         { enabled: false },
+                        toolbar: [
+                            'bold', 'italic', 'heading', '|',
+                            'unordered-list', 'ordered-list', '|',
+                            'link', 'quote', 'code', '|',
+                            'preview', 'side-by-side', '|',
+                            'guide',
+                        ],
+                        placeholder:      'Beschreibung eingeben... (Markdown wird unterstützt)',
+                        status:           false,
+                        minHeight:        '120px',
+                        renderingConfig:  { singleLineBreaks: false },
+                    });
 
-                // Dark Mode Toggle: Editor-Theme aktualisieren
-                document.addEventListener('friday:theme-changed', (e) => {
-                    if (easyMDE && easyMDE.codemirror) {
-                        const wrapper = easyMDE.codemirror.getWrapperElement();
-                        if (wrapper) {
-                            wrapper.classList.toggle('cm-s-dark', e.detail.theme === 'dark');
-                        }
+                    _mdInstances.set(textarea, editor);
+
+                    // Dark Mode sync
+                    const theme = localStorage.getItem('friday-theme') || 'light';
+                    if (theme === 'dark') {
+                        editor.codemirror.getWrapperElement()
+                            .classList.add('cm-s-dark');
                     }
-                });
-            } catch (error) {
-                console.error('Failed to initialize EasyMDE:', error);
-            }
+
+                    // Theme-Change Event hören
+                    document.addEventListener('friday:theme-changed', (e) => {
+                        const wrapper = editor.codemirror.getWrapperElement();
+                        wrapper.classList.toggle('cm-s-dark', e.detail.theme === 'dark');
+                    });
+
+                } catch (err) {
+                    // EasyMDE Fehler loggen aber nicht crashen
+                    console.warn('EasyMDE init failed for element:', textarea, err);
+                }
+            }, 0);
         });
     }
 
-    // Initial + nach jedem HTMX Swap
-    initMarkdownEditors();
-    document.addEventListener('htmx:afterSwap', (e) => {
-        // Use a small delay to ensure DOM is fully updated
-        setTimeout(() => initMarkdownEditors(e.detail.target), 10);
+    // MutationObserver — überwacht das gesamte DOM auf neue md-editor Elemente
+    const _mdObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+                // Direkt eine textarea.md-editor?
+                if (node.matches?.('textarea.md-editor')) {
+                    initEasyMDE(node);
+                }
+
+                // Oder enthält textarea.md-editor als Kind?
+                node.querySelectorAll?.('textarea.md-editor').forEach(initEasyMDE);
+            }
+        }
     });
+
+    // Observer starten — gesamtes Document überwachen
+    _mdObserver.observe(document.body, {
+        childList: true,
+        subtree:   true,
+    });
+
+    // Bereits im DOM vorhandene Editoren initialisieren (Seiten-Load)
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('textarea.md-editor').forEach(initEasyMDE);
+    });
+
+    // Nach dem Öffnen des Slide-Overs — EasyMDE neu initialisieren
+    // wenn der Container vorher versteckt war
+    function onSlideoverOpen() {
+        const slideover = document.getElementById('slide-over');
+        if (!slideover) return;
+
+        // Kurz warten bis der Container sichtbar ist
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                slideover.querySelectorAll('textarea.md-editor').forEach(textarea => {
+                    // Bestehende Instanz entfernen und neu initialisieren
+                    if (_mdInstances.has(textarea)) {
+                        const old = _mdInstances.get(textarea);
+                        try { old.toTextArea(); } catch(e) {}
+                        _mdInstances.delete(textarea);
+                    }
+                    initEasyMDE(textarea);
+                });
+            }, 50); // 50ms: genug Zeit für CSS-Transition
+        });
+    }
+
+    // HTMX Event: nach Slide-Over Swap
     document.addEventListener('htmx:afterSettle', (e) => {
-        // Use a small delay to ensure DOM is fully updated
-        setTimeout(() => initMarkdownEditors(e.detail.target), 10);
+        const target = e.detail.target;
+        if (target?.id === 'slide-over') {
+            onSlideoverOpen();
+        }
+    });
+
+    // Bootstrap Modal shown Event — Editor initialisieren
+    document.addEventListener('shown.bs.modal', (e) => {
+        e.target.querySelectorAll('textarea.md-editor').forEach(textarea => {
+            if (_mdInstances.has(textarea)) {
+                const old = _mdInstances.get(textarea);
+                try { old.toTextArea(); } catch(e) {}
+                _mdInstances.delete(textarea);
+            }
+            initEasyMDE(textarea);
+        });
+    });
+
+    // Aufräumen bei HTMX beforeSwap — Memory Leak vermeiden
+    document.addEventListener('htmx:beforeSwap', (e) => {
+        const target = e.detail.target;
+        if (!target) return;
+        target.querySelectorAll('textarea.md-editor').forEach(textarea => {
+            if (_mdInstances.has(textarea)) {
+                const instance = _mdInstances.get(textarea);
+                try { instance.toTextArea(); } catch(err) {}
+                _mdInstances.delete(textarea);
+            }
+        });
     });
 
 
