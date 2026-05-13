@@ -137,6 +137,17 @@
             if (textarea.dataset.mdInitialized) return;
             textarea.dataset.mdInitialized = 'true';
 
+            // Check if EasyMDE is available
+            if (typeof EasyMDE === 'undefined') {
+                console.error('EasyMDE library not loaded');
+                // Fallback: show a visible warning
+                const warning = document.createElement('div');
+                warning.className = 'alert alert-warning';
+                warning.textContent = 'Markdown editor library not loaded. Please refresh the page.';
+                textarea.parentNode.insertBefore(warning, textarea);
+                return;
+            }
+
             const easyMDE = new EasyMDE({
                 element:          textarea,
                 spellChecker:     false,
@@ -186,7 +197,19 @@
                 el.innerHTML = '<span class="text-muted fst-italic">Keine Beschreibung</span>';
                 return;
             }
-            const html = DOMPurify.sanitize(marked.parse(raw), {
+            // Support both marked v4+ (marked.parse) and older versions (marked())
+            let markdownHtml;
+            if (typeof marked.parse === 'function') {
+                markdownHtml = marked.parse(raw);
+            } else if (typeof marked === 'function') {
+                markdownHtml = marked(raw);
+            } else {
+                console.error('marked.js library not loaded');
+                el.innerHTML = '<span class="text-danger">Error: Markdown library not loaded</span>';
+                return;
+            }
+
+            const html = DOMPurify.sanitize(markdownHtml, {
                 ALLOWED_TAGS: [
                     'h1','h2','h3','h4','h5','h6',
                     'p','br','hr',
