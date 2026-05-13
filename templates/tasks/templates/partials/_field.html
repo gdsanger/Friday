@@ -72,8 +72,7 @@
       <input class="form-check-input extra-field" type="checkbox"
              name="extra_{{ field.name }}"
              value="{{ option }}"
-             id="extra_{{ field.name }}_{{ forloop.counter }}"
-             {% if option in post|getlist:field.name %}checked{% endif %}>
+             id="extra_{{ field.name }}_{{ forloop.counter }}">
       <label class="form-check-label"
              for="extra_{{ field.name }}_{{ forloop.counter }}">
         {{ option }}
