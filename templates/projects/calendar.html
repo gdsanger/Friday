@@ -63,94 +63,102 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- DHTMLX must load FIRST before any gantt.* calls -->
 <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
 <script>
 // ── DHTMLX Gantt Configuration ────────────────────────────────
 
-gantt.config.date_format    = "%Y-%m-%d";
-gantt.config.drag_progress  = false;
-gantt.config.drag_resize    = true;
-gantt.config.drag_move      = true;
-gantt.config.fit_tasks      = true;
+gantt.config.date_format         = "%Y-%m-%d";
+gantt.config.drag_progress       = false;
+gantt.config.drag_resize         = true;
+gantt.config.drag_move           = true;
+gantt.config.fit_tasks           = true;
 gantt.config.open_tree_initially = true;
+gantt.config.xml_date            = "%Y-%m-%d";  // extra safety
 
-// Grid columns
+// ── Helper — format date string for display ───────────────────
+// Called at RENDER TIME (inside template functions), not at definition time
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  // dateStr is always a plain string "YYYY-MM-DD" at this point
+  const parts = String(dateStr).split('T')[0].split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;  // dd.mm.YYYY
+}
+
+// ── Grid columns ──────────────────────────────────────────────
 gantt.config.columns = [
   {
     name: "text", label: "Project / Task",
     tree: true, width: 220,
-    template: (task) => {
-      if (task.type === 'milestone') {
-        return `${task.text}`;
-      }
-      return `${task.text}`;
-    }
+    template: (task) => task.type === 'milestone'
+      ? `${task.text}`
+      : `${task.text}`
   },
   {
     name: "start_date", label: "Start",
-    align: "center", width: 85,
-    template: (task) => task.type === 'milestone' ? '' :
-      gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.start_date))
+    align: "center", width: 90,
+    template: (task) => task.type === 'milestone' ? '' : fmtDate(task.start_date)
   },
   {
     name: "due", label: "Due",
-    align: "center", width: 85,
+    align: "center", width: 90,
     template: (task) => task.type === 'milestone'
-      ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.start_date))
-      : (task.end_date
-          ? gantt.date.date_to_str("%d.%m.%Y")(gantt.date.str_to_date("%Y-%m-%d")(task.end_date))
-          : '')
+      ? fmtDate(task.start_date)
+      : fmtDate(task.end_date)
   },
 ];
 
-// Custom task bar color from project color
-gantt.templates.task_class = (start, end, task) => {
-  return task.type === 'milestone' ? 'gantt-milestone' : 'gantt-project-bar';
-};
+// ── Task styling ──────────────────────────────────────────────
+gantt.templates.task_class = (start, end, task) =>
+  task.type === 'milestone' ? 'gantt-milestone' : 'gantt-project-bar';
 
-gantt.templates.task_style = (start, end, task) => {
-  if (task.color) return `background:${task.color}; border-color:${task.color};`;
-  return '';
-};
+gantt.templates.task_style = (start, end, task) =>
+  task.color ? `background:${task.color}; border-color:${task.color};` : '';
 
-// Milestone label
-gantt.templates.task_text = (start, end, task) => {
-  if (task.type === 'milestone') return task.text;
-  return '';
-};
+gantt.templates.task_text = (start, end, task) =>
+  task.type === 'milestone' ? task.text : '';
 
-// Today marker
+// ── Plugins ───────────────────────────────────────────────────
 gantt.plugins({ marker: true });
+
+// ── Scale ─────────────────────────────────────────────────────
+gantt.config.scales = [
+  { unit: "month", step: 1, format: "%F %Y" },
+  { unit: "week",  step: 1, format: "KW%W"  },
+];
+
+// ── Init BEFORE parse ─────────────────────────────────────────
+gantt.init("gantt-container");
+
+// Today marker — AFTER init
 gantt.addMarker({
   start_date: new Date(),
-  css: "gantt-today-marker",
-  text: "Today",
+  css:        "gantt-today-marker",
+  text:       "Today",
 });
 
-// Click task → open detail
+// ── Events ────────────────────────────────────────────────────
 gantt.attachEvent("onTaskClick", (id, e) => {
   const task = gantt.getTask(id);
   if (task.task_id) {
-    // Open task slide-over
     htmx.ajax('GET', `/tasks/${task.task_id}/detail/`, {
       target: '#slide-over',
-      swap: 'innerHTML',
+      swap:   'innerHTML',
     });
   }
   return true;
 });
 
-// Drag & drop → save updated dates
 gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
   const task = gantt.getTask(id);
   if (task.type !== 'project') return;
-
   const fmt = gantt.date.date_to_str("%Y-%m-%d");
   fetch("{% url 'projects:calendar-update' %}", {
-    method: 'POST',
+    method:  'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken(),
+      'X-CSRFToken':  getCsrfToken(),
     },
     body: JSON.stringify({
       type:       'project',
@@ -161,34 +169,49 @@ gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
   });
 });
 
-// ── Scale helpers ─────────────────────────────────────────────
+// ── Load data ─────────────────────────────────────────────────
+fetch("{% url 'projects:calendar-data' %}")
+  .then(r => r.json())
+  .then(data => {
+    // Normalize: guarantee all date fields are plain "YYYY-MM-DD" strings
+    // This prevents DHTMLX from receiving Date objects or ISO datetime strings
+    const normalize = (dateVal) => {
+      if (!dateVal) return null;
+      return String(dateVal).split('T')[0];
+    };
 
+    data.data = data.data.map(task => ({
+      ...task,
+      start_date: normalize(task.start_date),
+      end_date:   normalize(task.end_date),
+    }));
+
+    gantt.parse({ data: data.data, links: data.links || [] });
+    window._ganttResources = data.resources || [];
+  })
+  .catch(err => console.error('Gantt data load failed:', err));
+
+// ── Scale switcher ────────────────────────────────────────────
 function setScale(mode) {
-  document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.btn-group .btn')
+    .forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
 
-  if (mode === 'month') {
-    gantt.config.scales = [
-      { unit: "month", step: 1, format: "%F %Y" },
-      { unit: "week",  step: 1, format: "KW%W" },
-    ];
-  } else if (mode === 'quarter') {
-    gantt.config.scales = [
-      { unit: "quarter", step: 1, format: "Q%q %Y" },
-      { unit: "month",   step: 1, format: "%M" },
-    ];
-  } else {
-    gantt.config.scales = [
-      { unit: "year",  step: 1, format: "%Y" },
-      { unit: "month", step: 1, format: "%M" },
-    ];
-  }
+  const scales = {
+    month:   [{ unit: "month",   step: 1, format: "%F %Y" },
+              { unit: "week",    step: 1, format: "KW%W"  }],
+    quarter: [{ unit: "quarter", step: 1, format: "Q%q %Y" },
+              { unit: "month",   step: 1, format: "%M"     }],
+    year:    [{ unit: "year",    step: 1, format: "%Y"     },
+              { unit: "month",   step: 1, format: "%M"     }],
+  };
+  gantt.config.scales = scales[mode] || scales.month;
   gantt.render();
 }
 
-// ── Resource View toggle ──────────────────────────────────────
-
+// ── Resource view toggle ──────────────────────────────────────
 let resourceMode = false;
+const baseColumns = [...gantt.config.columns];
 
 function toggleResourceView() {
   resourceMode = !resourceMode;
@@ -196,35 +219,18 @@ function toggleResourceView() {
     .classList.toggle('btn-primary', resourceMode);
 
   if (resourceMode) {
-    // Group by resource — add resource column
     gantt.config.columns = [
       { name: "resource", label: "Resource", width: 150,
         template: (task) => task.resource_label || '' },
-      ...gantt.config.columns.slice(0, 3),
+      ...baseColumns,
     ];
   } else {
-    gantt.config.columns = gantt.config.columns.slice(1);
+    gantt.config.columns = baseColumns;
   }
   gantt.render();
 }
 
-// ── Init ─────────────────────────────────────────────────────
-
-gantt.config.scales = [
-  { unit: "month", step: 1, format: "%F %Y" },
-  { unit: "week",  step: 1, format: "KW%W" },
-];
-
-gantt.init("gantt-container");
-
-// Load data from Django JSON endpoint
-fetch("{% url 'projects:calendar-data' %}")
-  .then(r => r.json())
-  .then(data => {
-    gantt.parse({ data: data.data, links: data.links });
-    window._ganttResources = data.resources;
-  });
-
+// ── CSRF helper ───────────────────────────────────────────────
 function getCsrfToken() {
   return document.cookie.split(';')
     .find(c => c.trim().startsWith('csrftoken='))
