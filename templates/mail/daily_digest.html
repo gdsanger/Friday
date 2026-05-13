@@ -1,37 +1,227 @@
 {% extends "mail/base.html" %}
+
 {% block body %}
-<h1 class="email-title">Daily Summary – {{ date }}</h1>
-<p class="email-text">Hello {{ recipient_name }},</p>
 
+<!-- Greeting -->
+<h1 class="email-title">
+  Guten Morgen, {{ recipient_name }} 👋
+</h1>
+<p class="email-text" style="color:#6b7280;">
+  {{ today_str }}
+</p>
+
+<!-- Summary Strip -->
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin:0 0 24px; border-radius:8px; overflow:hidden;
+              border:1px solid #e2e0d8;">
+  <tr>
+    <!-- Überfällig -->
+    <td width="33%" style="padding:16px; text-align:center;
+        background:{% if overdue_count > 0 %}#fee2e2{% else %}#f9fafb{% endif %};
+        border-right:1px solid #e2e0d8;">
+      <div style="font-size:24px; font-weight:700; font-family:monospace;
+                  color:{% if overdue_count > 0 %}#991b1b{% else %}#9ca3af{% endif %};">
+        {{ overdue_count }}
+      </div>
+      <div style="font-size:11px; color:#6b7280; text-transform:uppercase;
+                  letter-spacing:.5px; margin-top:4px;">
+        Überfällig
+      </div>
+    </td>
+    <!-- Diese Woche -->
+    <td width="33%" style="padding:16px; text-align:center;
+        background:{% if upcoming_count > 0 %}#fefce8{% else %}#f9fafb{% endif %};
+        border-right:1px solid #e2e0d8;">
+      <div style="font-size:24px; font-weight:700; font-family:monospace;
+                  color:{% if upcoming_count > 0 %}#92400e{% else %}#9ca3af{% endif %};">
+        {{ upcoming_count }}
+      </div>
+      <div style="font-size:11px; color:#6b7280; text-transform:uppercase;
+                  letter-spacing:.5px; margin-top:4px;">
+        Diese Woche
+      </div>
+    </td>
+    <!-- In Bearbeitung -->
+    <td width="33%" style="padding:16px; text-align:center;
+        background:#f0f9ff;">
+      <div style="font-size:24px; font-weight:700; font-family:monospace;
+                  color:#1e3a5f;">
+        {{ in_progress_count }}
+      </div>
+      <div style="font-size:11px; color:#6b7280; text-transform:uppercase;
+                  letter-spacing:.5px; margin-top:4px;">
+        In Bearbeitung
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- ── ÜBERFÄLLIG ─────────────────────────────────────────── -->
 {% if overdue_tasks %}
-<p class="email-text">
-  <strong>⚠️ You have {{ overdue_tasks|length }} overdue task{% if overdue_tasks|length != 1 %}s{% endif %}:</strong>
-</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+  <tr>
+    <td style="padding:0 0 10px;">
+      <span style="display:inline-block; background:#fee2e2; color:#991b1b;
+                   font-size:12px; font-weight:700; padding:4px 10px;
+                   border-radius:12px; text-transform:uppercase;
+                   letter-spacing:.5px;">
+        🔴 Überfällig — {{ overdue_count }} Task{% if overdue_count != 1 %}s{% endif %}
+      </span>
+    </td>
+  </tr>
+</table>
 
-<div class="info-box">
-  {% for task in overdue_tasks %}
-  <div class="info-row">
-    • <strong>{{ task.title }}</strong> ({{ task.project__name }}) – Due: {{ task.due_date }}
-  </div>
-  {% endfor %}
-</div>
+{% for task in overdue_tasks %}
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin-bottom:8px; border:1px solid #fca5a5;
+              border-left:4px solid {{ task.project_color }};
+              border-radius:6px; background:#fff5f5;">
+  <tr>
+    <td style="padding:12px 16px;">
+      <a href="{{ task.url }}"
+         style="font-size:14px; font-weight:600; color:#1a1917;
+                text-decoration:none; display:block; margin-bottom:4px;">
+        {{ task.title }}
+      </a>
+      <span style="font-size:12px; color:#6b7280;">
+        {{ task.project_name }}
+        {% if task.due_date %}
+        &nbsp;·&nbsp;
+        <span style="color:#991b1b; font-weight:600;">
+          Fällig: {{ task.due_date }}
+        </span>
+        {% endif %}
+        {% if task.is_team %}
+        &nbsp;·&nbsp; Team: {{ task.assignee }}
+        {% endif %}
+      </span>
+    </td>
+    <td style="padding:12px 16px; width:80px; text-align:right; vertical-align:middle;">
+      {% if task.priority_val >= 3 %}
+      <span style="font-size:11px; background:#fee2e2; color:#991b1b;
+                   padding:2px 8px; border-radius:10px; font-weight:600;">
+        {{ task.priority }}
+      </span>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+{% endfor %}
 {% endif %}
 
-{% if open_tasks %}
-<p class="email-text">
-  <strong>You have {{ open_tasks|length }} open task{% if open_tasks|length != 1 %}s{% endif %}:</strong>
-</p>
+<!-- ── DIESE WOCHE ────────────────────────────────────────── -->
+{% if upcoming_tasks %}
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin:{% if overdue_tasks %}24px{% else %}0{% endif %} 0 10px;">
+  <tr>
+    <td style="padding:0 0 10px;">
+      <span style="display:inline-block; background:#fef9c3; color:#92400e;
+                   font-size:12px; font-weight:700; padding:4px 10px;
+                   border-radius:12px; text-transform:uppercase;
+                   letter-spacing:.5px;">
+        🟡 Nächste 7 Tage — {{ upcoming_count }} Task{% if upcoming_count != 1 %}s{% endif %}
+      </span>
+    </td>
+  </tr>
+</table>
 
-<div class="info-box">
-  {% for task in open_tasks %}
-  <div class="info-row">
-    • {{ task.title }} ({{ task.project__name }}){% if task.due_date %} – Due: {{ task.due_date }}{% endif %}
-  </div>
-  {% endfor %}
-</div>
+{% for task in upcoming_tasks %}
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin-bottom:8px; border:1px solid #e2e0d8;
+              border-left:4px solid {{ task.project_color }};
+              border-radius:6px; background:#ffffff;">
+  <tr>
+    <td style="padding:12px 16px;">
+      <a href="{{ task.url }}"
+         style="font-size:14px; font-weight:600; color:#1a1917;
+                text-decoration:none; display:block; margin-bottom:4px;">
+        {{ task.title }}
+      </a>
+      <span style="font-size:12px; color:#6b7280;">
+        {{ task.project_name }}
+        {% if task.due_date %}
+        &nbsp;·&nbsp; Fällig: {{ task.due_date }}
+        {% endif %}
+        {% if task.is_team %}
+        &nbsp;·&nbsp; Team: {{ task.assignee }}
+        {% endif %}
+      </span>
+    </td>
+    <td style="padding:12px 16px; width:80px; text-align:right; vertical-align:middle;">
+      <span style="font-size:11px; color:#6b7280;">
+        {{ task.status }}
+      </span>
+    </td>
+  </tr>
+</table>
+{% endfor %}
 {% endif %}
 
-<p style="margin:24px 0;">
-  <a href="{{ app_url }}/dashboard/" class="email-btn">Open Dashboard</a>
+<!-- ── IN BEARBEITUNG ─────────────────────────────────────── -->
+{% if in_progress_tasks %}
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin:{% if overdue_tasks or upcoming_tasks %}24px{% else %}0{% endif %} 0 10px;">
+  <tr>
+    <td style="padding:0 0 10px;">
+      <span style="display:inline-block; background:#dbeafe; color:#1e3a5f;
+                   font-size:12px; font-weight:700; padding:4px 10px;
+                   border-radius:12px; text-transform:uppercase;
+                   letter-spacing:.5px;">
+        🔵 In Bearbeitung — {{ in_progress_count }} Task{% if in_progress_count != 1 %}s{% endif %}
+      </span>
+    </td>
+  </tr>
+</table>
+
+{% for task in in_progress_tasks %}
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="margin-bottom:8px; border:1px solid #e2e0d8;
+              border-left:4px solid {{ task.project_color }};
+              border-radius:6px; background:#ffffff;">
+  <tr>
+    <td style="padding:12px 16px;">
+      <a href="{{ task.url }}"
+         style="font-size:14px; font-weight:600; color:#1a1917;
+                text-decoration:none; display:block; margin-bottom:4px;">
+        {{ task.title }}
+      </a>
+      <span style="font-size:12px; color:#6b7280;">
+        {{ task.project_name }}
+        {% if task.due_date %}
+        &nbsp;·&nbsp; Fällig: {{ task.due_date }}
+        {% endif %}
+        {% if task.is_team %}
+        &nbsp;·&nbsp; Team: {{ task.assignee }}
+        {% endif %}
+      </span>
+    </td>
+  </tr>
+</table>
+{% endfor %}
+{% endif %}
+
+<!-- CTA -->
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+  <tr>
+    <td style="text-align:center;">
+      <a href="{{ kanban_url }}" class="email-btn"
+         style="display:inline-block; padding:12px 32px;
+                background:#2d6a4f; color:#ffffff;
+                text-decoration:none; border-radius:6px;
+                font-size:14px; font-weight:600;">
+        Zum Kanban Board →
+      </a>
+    </td>
+  </tr>
+</table>
+
+<!-- Unsubscribe -->
+<p style="margin-top:24px; font-size:12px; color:#9ca3af; text-align:center;">
+  Du möchtest keine Zusammenfassungen mehr erhalten?
+  <a href="{{ profile_url }}"
+     style="color:#2d6a4f; text-decoration:none;">
+    Benachrichtigungen verwalten
+  </a>
 </p>
+
 {% endblock %}
