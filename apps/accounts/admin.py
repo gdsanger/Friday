@@ -9,9 +9,10 @@ from .models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     """Custom User admin."""
-    list_display = ['username', 'email', 'display_name', 'is_staff', 'is_active']
+    list_display = ['username', 'email', 'display_name', 'is_staff', 'is_active','is_portal_user',"portal_client"]
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Profile', {'fields': ('avatar', 'display_name', 'job_title', 'phone')}),
+        ('Portal Access', {'fields': ('is_portal_user', 'portal_client')}),
         ('Azure SSO', {'fields': ('azure_oid', 'azure_upn')}),
         ('Preferences', {'fields': ('notify_email', 'notify_inapp', 'timezone')}),
     )
