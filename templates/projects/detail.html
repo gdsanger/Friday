@@ -64,7 +64,7 @@
 {% if project.description %}
 <div class="card mb-4">
     <div class="card-body">
-        <p class="mb-0">{{ project.description }}</p>
+        <div class="md-render" data-md="{{ project.description|escapejs }}"></div>
     </div>
 </div>
 {% endif %}
