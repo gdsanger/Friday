@@ -153,6 +153,7 @@ class TaskCreateView(LoginRequiredMixin, View):
             due_date    = request.POST.get('due_date') or None,
             deadline    = request.POST.get('deadline') or None,
             client_id   = request.POST.get('client') or None,
+            story_points = request.POST.get('story_points') or None,
         )
 
         # Optional: assign immediately
@@ -207,6 +208,9 @@ class TaskEditView(LoginRequiredMixin, View):
         if 'client' in request.POST:
             client_id = request.POST['client'].strip()
             task.client_id = client_id if client_id else None
+        if 'story_points' in request.POST:
+            story_points = request.POST['story_points'].strip()
+            task.story_points = story_points if story_points else None
 
         task.save()
         return HttpResponse(status=204)

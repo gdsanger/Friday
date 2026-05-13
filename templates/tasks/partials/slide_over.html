@@ -224,6 +224,26 @@
                 </div>
             </div>
 
+            <!-- Story Points -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Story Points:</div>
+                <div class="col-8">
+                    <input type="number"
+                           class="form-control form-control-sm"
+                           name="story_points"
+                           value="{% if task.story_points %}{{ task.story_points }}{% endif %}"
+                           min="0.5"
+                           max="40"
+                           step="0.5"
+                           style="max-width:100px;"
+                           placeholder="z.B. 3"
+                           hx-post="{% url 'tasks:task-edit' task.pk %}"
+                           hx-trigger="change"
+                           hx-include="this">
+                    <div class="form-text">1 SP = 1 Stunde</div>
+                </div>
+            </div>
+
             <!-- Watchers -->
             <div class="row">
                 <div class="col-4 fw-semibold">Watchers:</div>

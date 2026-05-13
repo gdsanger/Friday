@@ -18,4 +18,5 @@ urlpatterns = [
     path('widgets/activity/', views.WidgetActivityView.as_view(), name='widget-activity'),
     path('widgets/due-week/', views.WidgetDueWeekView.as_view(), name='widget-due-week'),
     path('widgets/my-projects/', views.WidgetMyProjectsView.as_view(), name='widget-my-projects'),
+    path('widgets/capacity/', views.WidgetCapacityView.as_view(), name='widget-capacity'),
 ]

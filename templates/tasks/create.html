@@ -136,6 +136,24 @@
                             </div>
                         </div>
 
+                        <!-- Story Points -->
+                        <div class="mb-4">
+                            <label for="story_points" class="form-label">
+                                Story Points
+                                <span class="text-muted">(1 SP = 1h)</span>
+                            </label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="story_points"
+                                   name="story_points"
+                                   min="0.5"
+                                   max="40"
+                                   step="0.5"
+                                   style="max-width:200px;"
+                                   placeholder="z.B. 3">
+                            <div class="form-text">Schätzung des Aufwands in Story Points</div>
+                        </div>
+
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{% url 'kanban:kanban-board' %}" class="btn btn-outline-secondary">Cancel</a>

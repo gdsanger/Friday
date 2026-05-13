@@ -60,6 +60,9 @@
                     {{ task.effective_client.short_name|default:task.effective_client.name|slice:":3"|upper }}
                 </span>
                 {% endif %}
+                {% if task.story_points %}
+                <span><i class="bi bi-hourglass-split" style="font-size:11px;"></i> {{ task.story_points }} SP</span>
+                {% endif %}
                 {% with total=task|subtask_count done=task|done_subtask_count %}
                 {% if total > 0 %}
                 <span><i class="bi bi-list-task" style="font-size:11px;"></i> {{ done }}/{{ total }}</span>
