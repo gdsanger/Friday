@@ -78,6 +78,64 @@ class AzureDirectoryTests(TestCase):
 
     @patch('apps.accounts.azure_directory.MailService._get_token')
     @patch('apps.accounts.azure_directory.httpx.Client')
+    def test_search_azure_users_filter_syntax(self, mock_client, mock_get_token):
+        """Test that Graph API $filter syntax is correct (not $search with colons)."""
+        mock_get_token.return_value = 'fake-token'
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'value': []}
+
+        mock_client_instance = Mock()
+        mock_client_instance.get.return_value = mock_response
+        mock_client.return_value.__enter__.return_value = mock_client_instance
+
+        search_azure_users('angermeier')
+
+        # Verify the API was called with correct $filter syntax
+        call_args = mock_client_instance.get.call_args
+        params = call_args[1]['params']
+
+        # Should use $filter with startswith(), not $search with colons
+        assert '$filter' in params
+        assert '$search' not in params
+
+        # Filter should use startswith() function with single quotes
+        filter_value = params['$filter']
+        assert "startswith(displayName,'angermeier')" in filter_value
+        assert "startswith(mail,'angermeier')" in filter_value
+        assert "startswith(userPrincipalName,'angermeier')" in filter_value
+
+        # Should NOT contain the old broken syntax with colons
+        assert ':' not in filter_value  # No colons in OData filter functions
+
+    @patch('apps.accounts.azure_directory.MailService._get_token')
+    @patch('apps.accounts.azure_directory.httpx.Client')
+    def test_search_azure_users_escapes_single_quotes(self, mock_client, mock_get_token):
+        """Test that single quotes in query are properly escaped for OData."""
+        mock_get_token.return_value = 'fake-token'
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'value': []}
+
+        mock_client_instance = Mock()
+        mock_client_instance.get.return_value = mock_response
+        mock_client.return_value.__enter__.return_value = mock_client_instance
+
+        # Search for a name with a single quote (e.g., O'Brien)
+        search_azure_users("o'brien")
+
+        # Verify single quotes are doubled (OData escape syntax)
+        call_args = mock_client_instance.get.call_args
+        params = call_args[1]['params']
+        filter_value = params['$filter']
+
+        # Single quotes should be escaped by doubling them
+        assert "o''brien" in filter_value
+
+    @patch('apps.accounts.azure_directory.MailService._get_token')
+    @patch('apps.accounts.azure_directory.httpx.Client')
     def test_get_azure_user_success(self, mock_client, mock_get_token):
         """Test successful single user retrieval."""
         mock_get_token.return_value = 'fake-token'
