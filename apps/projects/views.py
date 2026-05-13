@@ -259,12 +259,12 @@ class CalendarDataView(LoginRequiredMixin, View):
         user = request.user
         my_teams = user.teams
 
-        # Accessible projects
+        # Accessible projects - select_related client for filter options
         projects = Project.objects.filter(
             models.Q(user_members=user) |
             models.Q(team_members__in=my_teams) |
             models.Q(visibility='organisation')
-        ).exclude(status='archived').distinct()
+        ).exclude(status='archived').select_related('client').distinct()
 
         gantt_tasks = []
         gantt_links = []
@@ -288,7 +288,10 @@ class CalendarDataView(LoginRequiredMixin, View):
                 'type': 'project',
                 'open': True,
                 'readonly': False,
-                'project_id': project.pk,
+                'project_id': str(project.pk),
+                'client_id': str(project.client_id) if project.client_id else None,
+                'team_id': None,
+                'user_id': None,
             })
 
             # Task deadlines as milestones (children of project bar)
@@ -356,6 +359,11 @@ class CalendarDataView(LoginRequiredMixin, View):
                     'task_id': task.pk,
                     # Farbe: Projektfarbe für Balken
                     'color': project.color,
+                    # Filter fields
+                    'project_id': str(project.pk),
+                    'team_id': str(task.assigned_to_team_id) if task.assigned_to_team_id else None,
+                    'user_id': str(task.assigned_to_user_id) if task.assigned_to_user_id else None,
+                    'client_id': str(project.client_id) if project.client_id else None,
                 })
 
         # Add dependency links for Gantt
@@ -371,10 +379,69 @@ class CalendarDataView(LoginRequiredMixin, View):
                 'type':   '0',  # finish-to-start
             })
 
+        # ── Generate filter options for dropdowns ─────────────────────
+
+        # Projects list
+        accessible_projects_list = [
+            {'id': str(p.pk), 'name': p.name, 'color': p.color}
+            for p in projects
+        ]
+
+        # Teams from tasks - get unique teams assigned to tasks
+        from apps.tasks.models import Task
+        team_ids = set()
+        teams_list = []
+        for task_obj in Task.objects.filter(
+            project__in=projects,
+            assigned_to_team__isnull=False,
+            deadline__isnull=False,
+        ).select_related('assigned_to_team').distinct():
+            if task_obj.assigned_to_team_id not in team_ids:
+                team_ids.add(task_obj.assigned_to_team_id)
+                teams_list.append({
+                    'id': str(task_obj.assigned_to_team_id),
+                    'name': task_obj.assigned_to_team.name,
+                    'color': task_obj.assigned_to_team.color,
+                })
+
+        # Users from tasks - get unique users assigned to tasks
+        user_ids = set()
+        users_list = []
+        for task_obj in Task.objects.filter(
+            project__in=projects,
+            assigned_to_user__isnull=False,
+            deadline__isnull=False,
+        ).select_related('assigned_to_user').distinct():
+            if task_obj.assigned_to_user_id not in user_ids:
+                user_ids.add(task_obj.assigned_to_user_id)
+                users_list.append({
+                    'id': str(task_obj.assigned_to_user_id),
+                    'name': task_obj.assigned_to_user.full_name,
+                    'initials': task_obj.assigned_to_user.initials,
+                })
+
+        # Clients from projects - get unique clients
+        client_ids = set()
+        clients_list = []
+        for p in projects:
+            if p.client_id and p.client_id not in client_ids:
+                client_ids.add(p.client_id)
+                clients_list.append({
+                    'id': str(p.client_id),
+                    'name': p.client.name,
+                    'color': p.client.color,
+                })
+
         return JsonResponse({
             'data': gantt_tasks,
             'links': gantt_links,
             'resources': gantt_resources,
+            'filter_options': {
+                'projects': accessible_projects_list,
+                'teams': teams_list,
+                'users': users_list,
+                'clients': clients_list,
+            },
         })
 
 
