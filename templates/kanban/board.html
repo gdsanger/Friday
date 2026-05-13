@@ -16,14 +16,14 @@
 </div>
 
 <!-- View Mode Tabs -->
-<div class="mb-3">
+<div class="mb-3 d-flex gap-3 align-items-center">
     <ul class="nav nav-pills">
         <li class="nav-item">
             <a class="nav-link {% if view_mode == 'all' %}active{% endif %}"
                href="?view=all"
                hx-get="{% url 'kanban:kanban-board' %}?view=all"
                hx-target="#kanban-board"
-               hx-include="[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+               hx-include="[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                hx-push-url="true">
                 All
             </a>
@@ -33,7 +33,7 @@
                href="?view=mine_created"
                hx-get="{% url 'kanban:kanban-board' %}?view=mine_created"
                hx-target="#kanban-board"
-               hx-include="[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+               hx-include="[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                hx-push-url="true">
                 Created by me
             </a>
@@ -43,7 +43,7 @@
                href="?view=mine_assigned"
                hx-get="{% url 'kanban:kanban-board' %}?view=mine_assigned"
                hx-target="#kanban-board"
-               hx-include="[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+               hx-include="[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                hx-push-url="true">
                 Assigned to me
             </a>
@@ -53,7 +53,7 @@
                href="?view=team_assigned"
                hx-get="{% url 'kanban:kanban-board' %}?view=team_assigned"
                hx-target="#kanban-board"
-               hx-include="[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+               hx-include="[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                hx-push-url="true">
                 Assigned to my team
             </a>
@@ -63,12 +63,25 @@
                href="?view=watching"
                hx-get="{% url 'kanban:kanban-board' %}?view=watching"
                hx-target="#kanban-board"
-               hx-include="[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+               hx-include="[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                hx-push-url="true">
                 Watching
             </a>
         </li>
     </ul>
+    <!-- "Nur meine" quick filter button -->
+    <button class="btn btn-sm {% if active_filters.assignee == request.user.pk|stringformat:'s' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+            {% if active_filters.assignee == request.user.pk|stringformat:"s" %}
+            hx-vals='{"assignee": ""}'
+            {% else %}
+            hx-vals='{"assignee": "{{ request.user.pk }}"}'
+            {% endif %}
+            hx-push-url="true">
+        <i class="bi bi-person-check"></i> Nur meine
+    </button>
 </div>
 
 <!-- Filters -->
@@ -80,7 +93,7 @@
                 <select id="filter-project" name="project" class="form-select"
                         hx-get="{% url 'kanban:kanban-board' %}"
                         hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='team'],[name='client'],[name='priority'],[name='due'],[name='show_subtasks']"
+                        hx-include="[name='view'],[name='team'],[name='client'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                         hx-push-url="true">
                     <option value="">All Projects</option>
                     {% for p in projects %}
@@ -95,7 +108,7 @@
                 <select id="filter-client" name="client" class="form-select"
                         hx-get="{% url 'kanban:kanban-board' %}"
                         hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+                        hx-include="[name='view'],[name='project'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                         hx-push-url="true">
                     <option value="">All Clients</option>
                     {% for c in clients %}
@@ -110,7 +123,7 @@
                 <select id="filter-team" name="team" class="form-select"
                         hx-get="{% url 'kanban:kanban-board' %}"
                         hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='priority'],[name='due'],[name='show_subtasks']"
+                        hx-include="[name='view'],[name='project'],[name='client'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
                         hx-push-url="true">
                     <option value="">All Teams</option>
                     {% for t in teams %}
@@ -121,11 +134,26 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <label for="filter-assignee" class="form-label small text-muted">Assignee</label>
+                <select id="filter-assignee" name="assignee" class="form-select"
+                        hx-get="{% url 'kanban:kanban-board' %}"
+                        hx-target="#kanban-board"
+                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='priority'],[name='due'],[name='show_subtasks']"
+                        hx-push-url="true">
+                    <option value="">Alle Bearbeiter</option>
+                    {% for user in assignees %}
+                    <option value="{{ user.pk }}" {% if active_filters.assignee == user.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ user.full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label for="filter-priority" class="form-label small text-muted">Priority</label>
                 <select id="filter-priority" name="priority" class="form-select"
                         hx-get="{% url 'kanban:kanban-board' %}"
                         hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='due'],[name='show_subtasks']"
+                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='assignee'],[name='due'],[name='show_subtasks']"
                         hx-push-url="true">
                     <option value="">All Priorities</option>
                     {% for value, label in priority_choices %}
@@ -140,7 +168,7 @@
                 <select id="filter-due" name="due" class="form-select"
                         hx-get="{% url 'kanban:kanban-board' %}"
                         hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='priority'],[name='show_subtasks']"
+                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='show_subtasks']"
                         hx-push-url="true">
                     <option value="">All</option>
                     <option value="overdue" {% if active_filters.due == 'overdue' %}selected{% endif %}>Overdue</option>
@@ -158,7 +186,7 @@
                            hx-get="{% url 'kanban:kanban-board' %}"
                            hx-trigger="change"
                            hx-target="#kanban-board"
-                           hx-include="[name='view'],[name='project'],[name='team'],[name='priority'],[name='due'],[name='client']"
+                           hx-include="[name='view'],[name='project'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='client']"
                            hx-push-url="true">
                     <label class="form-check-label" for="show-subtasks"
                            style="font-size:13px;">

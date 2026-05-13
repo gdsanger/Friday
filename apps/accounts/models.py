@@ -22,6 +22,12 @@ class User(AbstractUser):
     notify_inapp = models.BooleanField(default=True)
     timezone = models.CharField(max_length=50, default='Europe/Berlin')
 
+    # Portal access
+    is_portal_user = models.BooleanField(
+        default=False,
+        help_text='Portal users have limited access and are not shown in assignee dropdowns'
+    )
+
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'
