@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de" xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!--[if mso]>
+  <noscript>
+    <xml><o:OfficeDocumentSettings>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings></xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    /* Reset */
+    body, table, td, p, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table, td { mso-table-lspace:0; mso-table-rspace:0; }
+    img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
+    body { margin:0; padding:0; background-color:#f5f4f0; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; }
+
+    /* Layout */
+    .email-wrapper  { width:100%; background:#f5f4f0; padding:32px 0; }
+    .email-container{ max-width:600px; margin:0 auto; background:#ffffff;
+                      border-radius:8px; overflow:hidden;
+                      border:1px solid #e2e0d8; }
+
+    /* Header */
+    .email-header   { background:#1a1917; padding:24px 32px;
+                      border-bottom:3px solid #2d6a4f; }
+    .email-logo     { font-size:20px; font-weight:700; color:#ffffff;
+                      text-decoration:none; letter-spacing:-0.3px; }
+    .email-tagline  { font-size:11px; color:#6b6960; margin-top:2px; }
+
+    /* Body */
+    .email-body     { padding:32px; }
+    .email-title    { font-size:20px; font-weight:600; color:#1a1917;
+                      margin:0 0 16px; }
+    .email-text     { font-size:15px; color:#374151; line-height:1.6;
+                      margin:0 0 16px; }
+
+    /* Button */
+    .email-btn      { display:inline-block; padding:12px 24px;
+                      background:#2d6a4f; color:#ffffff !important;
+                      text-decoration:none; border-radius:6px;
+                      font-size:14px; font-weight:600;
+                      mso-padding-alt:12px 24px; }
+
+    /* Info Box */
+    .info-box       { background:#f0efe9; border-radius:6px;
+                      padding:16px; margin:16px 0;
+                      border-left:3px solid #2d6a4f; }
+    .info-row       { font-size:13px; color:#374151;
+                      padding:4px 0; }
+    .info-label     { color:#6b6960; min-width:120px;
+                      display:inline-block; }
+
+    /* Status Badge */
+    .badge          { display:inline-block; padding:3px 10px;
+                      border-radius:12px; font-size:12px;
+                      font-weight:600; }
+    .badge-green    { background:#d8f3dc; color:#166534; }
+    .badge-blue     { background:#dbeafe; color:#1e3a5f; }
+    .badge-yellow   { background:#fef9c3; color:#92400e; }
+    .badge-red      { background:#fee2e2; color:#991b1b; }
+
+    /* Footer */
+    .email-footer   { background:#f0efe9; padding:20px 32px;
+                      border-top:1px solid #e2e0d8; }
+    .footer-text    { font-size:12px; color:#9ca3af; line-height:1.5; }
+    .footer-link    { color:#2d6a4f; text-decoration:none; }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+  <table class="email-container" cellpadding="0" cellspacing="0" role="presentation">
+
+    <!-- Header -->
+    <tr>
+      <td class="email-header">
+        <a href="{{ app_url }}" class="email-logo">Friday</a>
+        <div class="email-tagline">Get to Friday.</div>
+      </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+      <td class="email-body">
+        {% block body %}{% endblock %}
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td class="email-footer">
+        <p class="footer-text">
+          This email was sent by <strong>{{ app_name }}</strong>.
+          <a href="{{ app_url }}/accounts/profile/" class="footer-link">
+            Manage notifications
+          </a>
+        </p>
+        <p class="footer-text" style="margin-top:4px;">
+          {{ from_name }} · {{ from_address }}
+        </p>
+      </td>
+    </tr>
+
+  </table>
+</div>
+</body>
+</html>

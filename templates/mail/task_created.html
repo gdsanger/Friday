@@ -1,0 +1,33 @@
+{% extends "mail/base.html" %}
+{% block body %}
+<h1 class="email-title">New task created</h1>
+<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">
+  A new task has been created:
+</p>
+
+<div class="info-box">
+  <div class="info-row">
+    Task:
+    <strong>{{ task_title }}</strong>
+  </div>
+  <div class="info-row">
+    Project:
+    {{ project_name }}
+  </div>
+  <div class="info-row">
+    Created by:
+    {{ created_by }}
+  </div>
+  {% if due_date %}
+  <div class="info-row">
+    Due:
+    {{ due_date }}
+  </div>
+  {% endif %}
+</div>
+
+<p style="margin:24px 0;">
+  <a href="{{ task_url }}" class="email-btn">View Task</a>
+</p>
+{% endblock %}

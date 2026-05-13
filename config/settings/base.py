@@ -156,6 +156,15 @@ AZURE_REDIRECT_URI = env('AZURE_REDIRECT_URI', default='http://localhost:8000/ac
 GRAPH_WEBHOOK_URL = env('GRAPH_WEBHOOK_URL', default='')
 MSAL_SCOPES = ['User.Read', 'Mail.ReadWrite', 'Mail.Send']
 
+# Mail Service (separate from SSO) — Client Credentials Flow
+MAIL_AZURE_CLIENT_ID = env('MAIL_AZURE_CLIENT_ID', default='')
+MAIL_AZURE_CLIENT_SECRET = env('MAIL_AZURE_CLIENT_SECRET', default='')
+MAIL_AZURE_TENANT_ID = env('MAIL_AZURE_TENANT_ID', default='common')
+MAIL_FROM_ADDRESS = env('MAIL_FROM_ADDRESS', default='friday@isartec.de')
+MAIL_FROM_NAME = env('MAIL_FROM_NAME', default='Friday')
+MAIL_SHARED_MAILBOX = env('MAIL_SHARED_MAILBOX', default='friday@isartec.de')
+SITE_URL = env('SITE_URL', default='http://localhost:8011')
+
 # AI Configuration (used for initial seeding only)
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
 OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-4o')

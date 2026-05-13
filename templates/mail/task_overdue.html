@@ -1,0 +1,27 @@
+{% extends "mail/base.html" %}
+{% block body %}
+<h1 class="email-title">⚠️ Overdue task</h1>
+<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">
+  The following task is overdue:
+</p>
+
+<div class="info-box">
+  <div class="info-row">
+    Task:
+    <strong>{{ task_title }}</strong>
+  </div>
+  <div class="info-row">
+    Project:
+    {{ project_name }}
+  </div>
+  <div class="info-row">
+    Due date:
+    <strong style="color:#991b1b;">{{ due_date }}</strong>
+  </div>
+</div>
+
+<p style="margin:24px 0;">
+  <a href="{{ task_url }}" class="email-btn">Open Task</a>
+</p>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "mail/base.html" %}
+{% block body %}
+<h1 class="email-title">✓ Your request has been completed</h1>
+<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">
+  Your request has been completed.
+</p>
+
+<div class="info-box">
+  <div class="info-row">
+    Subject:
+    <strong>{{ task_title }}</strong>
+  </div>
+  <div class="info-row">
+    Reference number:
+    #{{ task_id }}
+  </div>
+  <div class="info-row">
+    Status:
+    <span class="badge badge-green">Completed</span>
+  </div>
+  {% if resolution_note %}
+  <div class="info-row" style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e0d8;">
+    Note: {{ resolution_note }}
+  </div>
+  {% endif %}
+</div>
+
+<p class="email-text">
+  Thank you for using our service!
+</p>
+
+<p style="margin:24px 0;">
+  <a href="{{ support_url }}" class="email-btn">View Portal</a>
+</p>
+{% endblock %}
