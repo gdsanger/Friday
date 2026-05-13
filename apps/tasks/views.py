@@ -667,3 +667,315 @@ class DependencyRemoveView(LoginRequiredMixin, View):
         project_tasks = task.project.tasks.exclude(pk=task.pk).order_by('title')
         return render(request, 'tasks/partials/dependency_list.html',
                       {'task': task, 'project_tasks': project_tasks})
+
+
+# ==================== TaskTemplate Views ====================
+
+class TemplateListView(LoginRequiredMixin, View):
+    """Alle aktiven Templates — für interne User."""
+    def get(self, request):
+        from .models import TaskTemplate
+        templates = TaskTemplate.objects.filter(
+            is_active=True
+        ).select_related('default_project', 'default_assigned_to_team', 'client')
+        return render(request, 'tasks/templates/list.html', {
+            'templates': templates,
+        })
+
+
+class TemplateDetailView(LoginRequiredMixin, View):
+    """Template detail view."""
+    def get(self, request, slug):
+        from .models import TaskTemplate
+        template = get_object_or_404(TaskTemplate, slug=slug, is_active=True)
+        extra_fields = template.get_extra_fields()
+        return render(request, 'tasks/templates/detail.html', {
+            'template': template,
+            'extra_fields': extra_fields,
+        })
+
+
+class TemplateCreateView(View):
+    """Create a new template — staff only."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        from apps.projects.models import Project
+        from apps.teams.models import Team
+        from apps.core.models import Client
+        projects = Project.objects.exclude(status='archived').order_by('name')
+        teams    = Team.objects.filter(is_active=True).order_by('name')
+        clients  = Client.objects.filter(is_active=True).order_by('name')
+        return render(request, 'tasks/templates/form.html', {
+            'projects': projects, 'teams': teams, 'clients': clients,
+            'priority_choices': Task.PRIORITY_CHOICES,
+        })
+
+    def post(self, request):
+        from .models import TaskTemplate
+        from apps.projects.models import Project
+        from apps.teams.models import Team
+        from apps.core.models import Client
+
+        name     = request.POST.get('name', '').strip()
+        yaml_str = request.POST.get('extra_fields_yaml', '').strip()
+
+        if not name:
+            projects = Project.objects.exclude(status='archived').order_by('name')
+            teams    = Team.objects.filter(is_active=True).order_by('name')
+            clients  = Client.objects.filter(is_active=True).order_by('name')
+            return render(request, 'tasks/templates/form.html', {
+                'error': 'Name ist ein Pflichtfeld.',
+                'post': request.POST,
+                'projects': projects,
+                'teams': teams,
+                'clients': clients,
+                'priority_choices': Task.PRIORITY_CHOICES,
+            })
+
+        template = TaskTemplate(
+            name                    = name,
+            description             = request.POST.get('description', ''),
+            default_project_id      = request.POST.get('default_project') or None,
+            default_priority        = int(request.POST.get('default_priority', 0)),
+            default_assigned_to_team_id = request.POST.get('default_team') or None,
+            extra_fields_yaml       = yaml_str,
+            is_portal_visible       = 'is_portal_visible' in request.POST,
+            client_id               = request.POST.get('client') or None,
+            created_by              = request.user,
+        )
+
+        # YAML validieren
+        valid, error = template.validate_yaml()
+        if not valid:
+            projects = Project.objects.exclude(status='archived').order_by('name')
+            teams    = Team.objects.filter(is_active=True).order_by('name')
+            clients  = Client.objects.filter(is_active=True).order_by('name')
+            return render(request, 'tasks/templates/form.html', {
+                'error': error, 'post': request.POST,
+                'projects': projects,
+                'teams': teams,
+                'clients': clients,
+                'priority_choices': Task.PRIORITY_CHOICES,
+            })
+
+        # Slug generieren
+        from django.utils.text import slugify
+        slug = slugify(name)
+        base, n = slug, 1
+        while TaskTemplate.objects.filter(slug=slug).exists():
+            slug = f'{base}-{n}'; n += 1
+        template.slug = slug
+        template.save()
+
+        return redirect('tasks:template-detail', slug=template.slug)
+
+
+class TemplateEditView(View):
+    """Edit an existing template — staff only."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, slug):
+        from .models import TaskTemplate
+        from apps.projects.models import Project
+        from apps.teams.models import Team
+        from apps.core.models import Client
+
+        template = get_object_or_404(TaskTemplate, slug=slug)
+        projects = Project.objects.exclude(status='archived').order_by('name')
+        teams    = Team.objects.filter(is_active=True).order_by('name')
+        clients  = Client.objects.filter(is_active=True).order_by('name')
+
+        return render(request, 'tasks/templates/form.html', {
+            'template': template,
+            'projects': projects,
+            'teams': teams,
+            'clients': clients,
+            'priority_choices': Task.PRIORITY_CHOICES,
+        })
+
+    def post(self, request, slug):
+        from .models import TaskTemplate
+        from apps.projects.models import Project
+        from apps.teams.models import Team
+        from apps.core.models import Client
+
+        template = get_object_or_404(TaskTemplate, slug=slug)
+
+        name     = request.POST.get('name', '').strip()
+        yaml_str = request.POST.get('extra_fields_yaml', '').strip()
+
+        if not name:
+            projects = Project.objects.exclude(status='archived').order_by('name')
+            teams    = Team.objects.filter(is_active=True).order_by('name')
+            clients  = Client.objects.filter(is_active=True).order_by('name')
+            return render(request, 'tasks/templates/form.html', {
+                'error': 'Name ist ein Pflichtfeld.',
+                'template': template,
+                'post': request.POST,
+                'projects': projects,
+                'teams': teams,
+                'clients': clients,
+                'priority_choices': Task.PRIORITY_CHOICES,
+            })
+
+        template.name                    = name
+        template.description             = request.POST.get('description', '')
+        template.default_project_id      = request.POST.get('default_project') or None
+        template.default_priority        = int(request.POST.get('default_priority', 0))
+        template.default_assigned_to_team_id = request.POST.get('default_team') or None
+        template.extra_fields_yaml       = yaml_str
+        template.is_portal_visible       = 'is_portal_visible' in request.POST
+        template.client_id               = request.POST.get('client') or None
+
+        # YAML validieren
+        valid, error = template.validate_yaml()
+        if not valid:
+            projects = Project.objects.exclude(status='archived').order_by('name')
+            teams    = Team.objects.filter(is_active=True).order_by('name')
+            clients  = Client.objects.filter(is_active=True).order_by('name')
+            return render(request, 'tasks/templates/form.html', {
+                'error': error,
+                'template': template,
+                'post': request.POST,
+                'projects': projects,
+                'teams': teams,
+                'clients': clients,
+                'priority_choices': Task.PRIORITY_CHOICES,
+            })
+
+        # Update slug if name changed
+        if template.name != name:
+            from django.utils.text import slugify
+            slug = slugify(name)
+            base, n = slug, 1
+            while TaskTemplate.objects.filter(slug=slug).exclude(pk=template.pk).exists():
+                slug = f'{base}-{n}'; n += 1
+            template.slug = slug
+
+        template.save()
+        return redirect('tasks:template-detail', slug=template.slug)
+
+
+class TemplateUseView(LoginRequiredMixin, View):
+    """
+    GET  → rendert das Template-Formular (Standard + Zusatzfelder)
+    POST → erstellt einen Task aus dem Template
+    """
+    def get(self, request, slug):
+        from .models import TaskTemplate
+        from apps.projects.models import Project
+
+        template = get_object_or_404(TaskTemplate, slug=slug, is_active=True)
+        extra_fields = template.get_extra_fields()
+
+        # Zugängliche Projekte
+        user     = request.user
+        my_teams = user.team_memberships.all().values_list('team', flat=True)
+        projects = Project.objects.filter(
+            models.Q(projectusermembership__user=user) |
+            models.Q(projectteammembership__team__in=my_teams)
+        ).exclude(status='archived').distinct().order_by('name')
+
+        return render(request, 'tasks/templates/use.html', {
+            'template':    template,
+            'extra_fields': extra_fields,
+            'projects':    projects,
+            'priority_choices': Task.PRIORITY_CHOICES,
+        })
+
+    def post(self, request, slug):
+        from .models import TaskTemplate
+        from apps.projects.models import Project
+        from apps.tasks.template_utils import (
+            validate_extra_fields,
+            render_extra_fields_to_description,
+        )
+
+        template     = get_object_or_404(TaskTemplate, slug=slug, is_active=True)
+        extra_fields = template.get_extra_fields()
+
+        # Zusatzfelder validieren
+        errors = validate_extra_fields(extra_fields, request.POST)
+
+        title = request.POST.get('title', '').strip()
+        if not title:
+            errors.insert(0, 'Titel ist ein Pflichtfeld.')
+
+        project_id = request.POST.get('project') or template.default_project_id
+        if not project_id:
+            errors.insert(0, 'Projekt ist ein Pflichtfeld.')
+
+        if errors:
+            user     = request.user
+            my_teams = user.team_memberships.all().values_list('team', flat=True)
+            projects = Project.objects.filter(
+                models.Q(projectusermembership__user=user) |
+                models.Q(projectteammembership__team__in=my_teams)
+            ).exclude(status='archived').distinct().order_by('name')
+            return render(request, 'tasks/templates/use.html', {
+                'template':     template,
+                'extra_fields': extra_fields,
+                'errors':       errors,
+                'projects':     projects,
+                'post':         request.POST,
+                'priority_choices': Task.PRIORITY_CHOICES,
+            })
+
+        # Beschreibung aus Zusatzfeldern aufbauen
+        extra_description = render_extra_fields_to_description(
+            extra_fields, request.POST
+        )
+        manual_description = request.POST.get('description', '').strip()
+
+        # Beschreibung zusammensetzen
+        if manual_description and extra_description:
+            full_description = f'{extra_description}\n\n---\n\n{manual_description}'
+        else:
+            full_description = extra_description or manual_description
+
+        project = get_object_or_404(Project, pk=project_id)
+
+        if not project.is_member(request.user):
+            raise PermissionDenied
+
+        task = Task.objects.create(
+            title       = title,
+            description = full_description,
+            project     = project,
+            priority    = int(request.POST.get('priority', template.default_priority)),
+            due_date    = request.POST.get('due_date') or None,
+            deadline    = request.POST.get('deadline') or None,
+            created_by  = request.user,
+            requester   = request.user,
+            client      = template.client or project.client,
+            assigned_to_team = template.default_assigned_to_team,
+            template    = template,
+        )
+
+        return redirect('tasks:task-detail-full', pk=task.pk)
+
+
+class TemplatePreviewView(LoginRequiredMixin, View):
+    """
+    HTMX — live Vorschau des generierten Beschreibungsblocks.
+    Wird beim Ausfüllen des Formulars aufgerufen.
+    """
+    def post(self, request, slug):
+        from .models import TaskTemplate
+        from apps.tasks.template_utils import render_extra_fields_to_description
+
+        template     = get_object_or_404(TaskTemplate, slug=slug)
+        extra_fields = template.get_extra_fields()
+
+        preview = render_extra_fields_to_description(extra_fields, request.POST)
+
+        return render(request, 'tasks/templates/partials/description_preview.html', {
+            'preview': preview,
+        })

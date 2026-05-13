@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static friday_tags %}
+
+{% block title %}Neuer Task: {{ template.name }} - Friday{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="mb-4">
+                <a href="{% url 'tasks:template-list' %}" class="text-decoration-none text-muted">
+                    <i class="bi bi-arrow-left"></i> Zurück zur Vorlagen-Liste
+                </a>
+            </div>
+
+            <h2 class="mb-4">Neuer Task: {{ template.name }}</h2>
+
+            {% if errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <ul class="mb-0">
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <form method="post" id="template-form">
+                {% csrf_token %}
+
+                <div class="row g-4">
+                    <!-- Standard-Felder -->
+                    <div class="col-lg-7">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Standard-Felder</h5>
+
+                                <div class="mb-3">
+                                    <label for="title" class="form-label fw-medium">
+                                        Titel <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text"
+                                           id="title"
+                                           name="title"
+                                           class="form-control"
+                                           value="{{ post.title|default:'' }}"
+                                           required
+                                           autofocus>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="project" class="form-label fw-medium">
+                                        Projekt <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="project" name="project" class="form-select" required>
+                                        <option value="">— Bitte wählen —</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.pk }}"
+                                                {% if post.project == project.pk|stringformat:"s" or template.default_project_id == project.pk and not post %}selected{% endif %}>
+                                            {{ project.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="priority" class="form-label fw-medium">Priorität</label>
+                                        <select id="priority" name="priority" class="form-select">
+                                            {% for value, label in priority_choices %}
+                                            <option value="{{ value }}"
+                                                    {% if post.priority == value|stringformat:"s" or template.default_priority == value and not post %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="due_date" class="form-label fw-medium">Fällig am</label>
+                                        <input type="date"
+                                               id="due_date"
+                                               name="due_date"
+                                               class="form-control"
+                                               value="{{ post.due_date|default:'' }}">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="deadline" class="form-label fw-medium">Deadline</label>
+                                    <input type="date"
+                                           id="deadline"
+                                           name="deadline"
+                                           class="form-control"
+                                           value="{{ post.deadline|default:'' }}">
+                                    <div class="form-text">Hard deadline — wird als Milestone im Kalender angezeigt.</div>
+                                </div>
+
+                                <div class="mb-0">
+                                    <label for="description" class="form-label fw-medium">Zusätzliche Beschreibung</label>
+                                    <textarea id="description"
+                                              name="description"
+                                              class="form-control"
+                                              rows="4">{{ post.description|default:'' }}</textarea>
+                                    <div class="form-text">Zusätzliche Informationen. Die Briefing-Felder werden automatisch in die Beschreibung eingefügt.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Zusatzfelder -->
+                        {% if extra_fields %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Briefing</h5>
+                                {% for field in extra_fields %}
+                                    {% include 'tasks/templates/partials/_field.html' with field=field %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Vorschau -->
+                    <div class="col-lg-5">
+                        <div class="card sticky-top" style="top: 1rem;">
+                            <div class="card-body">
+                                <label class="form-label-sm text-muted mb-2"
+                                       style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">
+                                    Vorschau Beschreibung
+                                </label>
+                                <div id="description-preview-container"
+                                     hx-post="{% url 'tasks:template-preview' template.slug %}"
+                                     hx-trigger="change from:.extra-field delay:300ms"
+                                     hx-include=".extra-field"
+                                     hx-swap="innerHTML">
+                                    {% include 'tasks/templates/partials/description_preview.html' with preview='' %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'tasks:template-list' %}" class="btn btn-outline-secondary">
+                        Abbrechen
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Task erstellen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

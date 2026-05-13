@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if template %}{{ template.name }} bearbeiten{% else %}Neue Vorlage{% endif %} - Friday{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'tasks:template-list' %}" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left"></i> Zurück zur Liste
+    </a>
+</div>
+
+<h2 class="mb-4">{% if template %}{{ template.name }} bearbeiten{% else %}Neue Vorlage erstellen{% endif %}</h2>
+
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<form method="post" class="row g-4">
+    {% csrf_token %}
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Allgemeine Informationen</h5>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-medium">
+                        Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text"
+                           id="name"
+                           name="name"
+                           class="form-control"
+                           value="{{ template.name|default:'' }}"
+                           required>
+                </div>
+
+                <div class="mb-0">
+                    <label for="description" class="form-label fw-medium">Beschreibung</label>
+                    <textarea id="description"
+                              name="description"
+                              class="form-control"
+                              rows="3">{{ template.description|default:'' }}</textarea>
+                    <div class="form-text">Interne Beschreibung der Vorlage.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Standard-Werte</h5>
+
+                <div class="mb-3">
+                    <label for="default_project" class="form-label fw-medium">Standard-Projekt</label>
+                    <select id="default_project" name="default_project" class="form-select">
+                        <option value="">— Kein Standard —</option>
+                        {% for project in projects %}
+                        <option value="{{ project.pk }}"
+                                {% if template and template.default_project_id == project.pk %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="default_priority" class="form-label fw-medium">Standard-Priorität</label>
+                    <select id="default_priority" name="default_priority" class="form-select">
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}"
+                                {% if template and template.default_priority == value %}selected{% elif not template and value == 0 %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-0">
+                    <label for="default_team" class="form-label fw-medium">Standard-Team</label>
+                    <select id="default_team" name="default_team" class="form-select">
+                        <option value="">— Kein Standard —</option>
+                        {% for team in teams %}
+                        <option value="{{ team.pk }}"
+                                {% if template and template.default_assigned_to_team_id == team.pk %}selected{% endif %}>
+                            {{ team.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Sichtbarkeit</h5>
+
+                <div class="mb-3">
+                    <label for="client" class="form-label fw-medium">Mandant</label>
+                    <select id="client" name="client" class="form-select">
+                        <option value="">— Alle Mandanten —</option>
+                        {% for client in clients %}
+                        <option value="{{ client.pk }}"
+                                {% if template and template.client_id == client.pk %}selected{% endif %}>
+                            {{ client.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Vorlage nur für einen bestimmten Mandanten sichtbar machen.</div>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="is_portal_visible"
+                           name="is_portal_visible"
+                           {% if template.is_portal_visible %}checked{% endif %}>
+                    <label class="form-check-label" for="is_portal_visible">
+                        Im Customer Portal anzeigen
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Zusatzfelder (YAML)</h5>
+
+                <div class="mb-0">
+                    <textarea id="extra_fields_yaml"
+                              name="extra_fields_yaml"
+                              class="form-control font-monospace"
+                              rows="15"
+                              style="font-size: 13px;">{{ template.extra_fields_yaml|default:'' }}</textarea>
+                    <div class="form-text">
+                        YAML-Definition der Zusatzfelder. Beispiel:
+                        <pre class="mt-2 p-2 bg-light border rounded" style="font-size: 12px;">- name: zielgruppe
+  label: Zielgruppe
+  type: text
+  required: true
+
+- name: ton
+  label: Ton der Kommunikation
+  type: select
+  required: true
+  options:
+    - Formell
+    - Informell
+    - Neutral</pre>
+                        <strong>Erlaubte Typen:</strong> text, textarea, number, select, multiselect, date, checkbox
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'tasks:template-list' %}" class="btn btn-outline-secondary">
+                Abbrechen
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Speichern
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Task-Vorlagen - Friday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Task-Vorlagen</h2>
+    {% if request.user.is_staff %}
+    <a href="{% url 'tasks:template-create' %}"
+       class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg"></i> Neue Vorlage
+    </a>
+    {% endif %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for template in templates %}
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title">{{ template.name }}</h5>
+                    {% if request.user.is_staff %}
+                    <a href="{% url 'tasks:template-edit' template.slug %}"
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if template.description %}
+                <p class="card-text text-muted small mb-3">{{ template.description|truncatewords:20 }}</p>
+                {% endif %}
+
+                <div class="d-flex flex-wrap gap-2 mb-3 small text-muted">
+                    {% if template.default_project %}
+                    <span><i class="bi bi-folder"></i> {{ template.default_project.name }}</span>
+                    {% endif %}
+                    {% if template.client %}
+                    <span><i class="bi bi-building"></i> {{ template.client.short_name }}</span>
+                    {% else %}
+                    <span><i class="bi bi-building"></i> Alle</span>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if template.is_portal_visible %}
+                    <span class="badge bg-info">Portal</span>
+                    {% endif %}
+                    {% if template.get_extra_fields %}
+                    <span class="badge bg-secondary">{{ template.get_extra_fields|length }} Zusatzfeld{{ template.get_extra_fields|length|pluralize:"er" }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'tasks:template-use' template.slug %}"
+                       class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Verwenden
+                    </a>
+                    <a href="{% url 'tasks:template-detail' template.slug %}"
+                       class="btn btn-outline-secondary btn-sm">
+                        Details anzeigen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-file-earmark-text fs-1 mb-3"></i>
+                <p>Keine Vorlagen vorhanden.</p>
+                {% if request.user.is_staff %}
+                <a href="{% url 'tasks:template-create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Erste Vorlage erstellen
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

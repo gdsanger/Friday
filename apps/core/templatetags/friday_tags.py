@@ -95,3 +95,19 @@ def done_subtask_count(task):
         return task.subtasks.filter(status='done').count()
     except (AttributeError, TypeError):
         return 0
+
+
+@register.filter
+def get_item(dictionary, key):
+    """{{ post|get_item:'field_name' }}"""
+    if hasattr(dictionary, 'get'):
+        return dictionary.get(key, '')
+    return ''
+
+
+@register.filter
+def getlist(post_data, key):
+    """{{ post|getlist:'field_name' }} — für Multiselect"""
+    if hasattr(post_data, 'getlist'):
+        return post_data.getlist(key)
+    return []
