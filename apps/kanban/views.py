@@ -85,6 +85,9 @@ class KanbanBoardView(LoginRequiredMixin, View):
                     due_date__lte=timezone.now().date() + timedelta(days=7)
                 )
 
+        if assignee_id := request.GET.get('assignee'):
+            tasks = tasks.filter(assigned_to_user_id=assignee_id)
+
         # ── Subtask filter ────────────────────────────────────────
         show_subtasks = request.GET.get('show_subtasks', '')
         if not show_subtasks:
@@ -97,6 +100,8 @@ class KanbanBoardView(LoginRequiredMixin, View):
             columns[task.status].append(task)
 
         from apps.core.models import Client
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
 
         ctx = {
             'columns':        columns,
@@ -106,12 +111,17 @@ class KanbanBoardView(LoginRequiredMixin, View):
             'teams':          Team.objects.filter(is_active=True),
             'clients':        Client.objects.filter(is_active=True).order_by('name'),
             'priority_choices': Task.PRIORITY_CHOICES,
+            'assignees':      User.objects.filter(
+                is_active=True,
+                is_portal_user=False,
+            ).order_by('display_name', 'username'),
             'active_filters': {
                 'project':  request.GET.get('project', ''),
                 'team':     request.GET.get('team', ''),
                 'client':   request.GET.get('client', ''),
                 'priority': request.GET.get('priority', ''),
                 'due':      request.GET.get('due', ''),
+                'assignee': request.GET.get('assignee', ''),
                 'show_subtasks': request.GET.get('show_subtasks', ''),
             },
         }
