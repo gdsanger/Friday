@@ -1,4 +1,10 @@
-{% if hint %}
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>Fehler:</strong> {{ error }}
+</div>
+
+{% elif hint %}
 <p class="text-muted fst-italic">{{ hint }}</p>
 
 {% elif not results %}

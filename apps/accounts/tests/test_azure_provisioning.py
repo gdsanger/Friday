@@ -7,7 +7,11 @@ from django.test import TestCase, Client as TestClient
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from apps.accounts.azure_directory import search_azure_users, get_azure_user
+from apps.accounts.azure_directory import (
+    search_azure_users,
+    get_azure_user,
+    AzureDirectoryError,
+)
 from apps.core.models import Client
 from apps.teams.models import Team, TeamMembership
 
@@ -136,6 +140,72 @@ class AzureDirectoryTests(TestCase):
 
     @patch('apps.accounts.azure_directory.MailService._get_token')
     @patch('apps.accounts.azure_directory.httpx.Client')
+    def test_search_azure_users_403_permission_denied(self, mock_client, mock_get_token):
+        """Test that 403 errors raise AzureDirectoryError with helpful message."""
+        mock_get_token.return_value = 'fake-token'
+
+        mock_response = Mock()
+        mock_response.status_code = 403
+        mock_response.text = '{"error":{"code":"Authorization_RequestDenied","message":"Insufficient privileges"}}'
+        mock_response.json.return_value = {
+            'error': {
+                'code': 'Authorization_RequestDenied',
+                'message': 'Insufficient privileges to complete the operation.'
+            }
+        }
+
+        mock_client_instance = Mock()
+        mock_client_instance.get.return_value = mock_response
+        mock_client.return_value.__enter__.return_value = mock_client_instance
+
+        with pytest.raises(AzureDirectoryError) as exc_info:
+            search_azure_users('test')
+
+        # Check error message mentions permissions
+        error_message = str(exc_info.value)
+        assert 'permission denied' in error_message.lower()
+        assert 'User.Read.All' in error_message
+
+    @patch('apps.accounts.azure_directory.MailService._get_token')
+    @patch('apps.accounts.azure_directory.httpx.Client')
+    def test_search_azure_users_401_auth_failed(self, mock_client, mock_get_token):
+        """Test that 401 errors raise AzureDirectoryError."""
+        mock_get_token.return_value = 'fake-token'
+
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_response.text = '{"error":{"code":"InvalidAuthenticationToken"}}'
+        mock_response.json.return_value = {
+            'error': {
+                'code': 'InvalidAuthenticationToken',
+                'message': 'Access token is invalid'
+            }
+        }
+
+        mock_client_instance = Mock()
+        mock_client_instance.get.return_value = mock_response
+        mock_client.return_value.__enter__.return_value = mock_client_instance
+
+        with pytest.raises(AzureDirectoryError) as exc_info:
+            search_azure_users('test')
+
+        error_message = str(exc_info.value)
+        assert 'authentication failed' in error_message.lower()
+
+    @patch('apps.accounts.azure_directory.settings')
+    def test_search_azure_users_missing_config(self, mock_settings):
+        """Test that missing configuration raises AzureDirectoryError."""
+        mock_settings.MAIL_AZURE_CLIENT_ID = ''
+        mock_settings.MAIL_AZURE_CLIENT_SECRET = 'secret'
+
+        with pytest.raises(AzureDirectoryError) as exc_info:
+            search_azure_users('test')
+
+        error_message = str(exc_info.value)
+        assert 'not properly configured' in error_message.lower()
+
+    @patch('apps.accounts.azure_directory.MailService._get_token')
+    @patch('apps.accounts.azure_directory.httpx.Client')
     def test_get_azure_user_success(self, mock_client, mock_get_token):
         """Test successful single user retrieval."""
         mock_get_token.return_value = 'fake-token'
@@ -228,6 +298,26 @@ class UserInviteViewTests(TestCase):
         assert b'john.doe@example.com' in response.content
         content = response.content.decode('utf-8')
         assert 'Verfügbar' in content
+
+    @patch('apps.admin_panel.views.search_azure_users')
+    def test_user_invite_search_handles_permission_error(self, mock_search):
+        """Test that search view handles AzureDirectoryError gracefully."""
+        self.client.login(username='admin', password='password')
+
+        # Simulate permission error
+        mock_search.side_effect = AzureDirectoryError(
+            'Azure AD permission denied. The application needs "User.Read.All" '
+            'permission with admin consent. Please contact your administrator.'
+        )
+
+        url = reverse('admin_panel:admin-user-invite-search')
+        response = self.client.get(url, {'q': 'test'})
+
+        assert response.status_code == 200
+        content = response.content.decode('utf-8')
+        # Should show error message to user
+        assert 'Fehler' in content or 'error' in content.lower()
+        assert 'User.Read.All' in content or 'permission' in content.lower()
 
     @patch('apps.admin_panel.views.search_azure_users')
     def test_user_invite_search_marks_existing_users(self, mock_search):
