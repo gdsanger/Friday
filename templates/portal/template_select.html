@@ -1,0 +1,70 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Neue Anfrage - Friday Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'portal-home' %}" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left me-1"></i> Zurück zur Startseite
+    </a>
+</div>
+
+<h1 class="h3 mb-4">Neue Anfrage stellen</h1>
+
+{% if not has_templates %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Aktuell sind keine Anfragetypen verfügbar. Bitte kontaktieren Sie den Support.
+</div>
+{% else %}
+
+{% if client_templates %}
+<div class="mb-4">
+    <h5 class="mb-3">{{ user.portal_client.name }}</h5>
+    <div class="row g-3">
+        {% for template in client_templates %}
+        <div class="col-md-4">
+            <a href="{% url 'portal-ticket-create' template.slug %}" class="text-decoration-none">
+                <div class="portal-template-card">
+                    <div class="portal-template-icon">📄</div>
+                    <div class="portal-template-name">{{ template.name }}</div>
+                    {% if template.description %}
+                    <div class="portal-template-desc">{{ template.description|truncatewords:10 }}</div>
+                    {% endif %}
+                    <div class="portal-template-fields">
+                        {{ template.get_extra_fields|length }} {% if template.get_extra_fields|length == 1 %}Feld{% else %}Felder{% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if global_templates %}
+<div class="mb-4">
+    <h5 class="mb-3">Allgemeine Anfragen</h5>
+    <div class="row g-3">
+        {% for template in global_templates %}
+        <div class="col-md-4">
+            <a href="{% url 'portal-ticket-create' template.slug %}" class="text-decoration-none">
+                <div class="portal-template-card">
+                    <div class="portal-template-icon">📋</div>
+                    <div class="portal-template-name">{{ template.name }}</div>
+                    {% if template.description %}
+                    <div class="portal-template-desc">{{ template.description|truncatewords:10 }}</div>
+                    {% endif %}
+                    <div class="portal-template-fields">
+                        {{ template.get_extra_fields|length }} {% if template.get_extra_fields|length == 1 %}Feld{% else %}Felder{% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

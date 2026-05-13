@@ -27,6 +27,14 @@ class User(AbstractUser):
         default=False,
         help_text='Portal users have limited access and are not shown in assignee dropdowns'
     )
+    portal_client = models.ForeignKey(
+        'core.Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='portal_users',
+        help_text='Client/Mandant assignment for portal users'
+    )
 
     class Meta:
         verbose_name = 'User'
