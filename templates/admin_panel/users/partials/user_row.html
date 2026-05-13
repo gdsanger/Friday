@@ -10,7 +10,12 @@
             </div>
             {% endif %}
             <div>
-                <div class="fw-medium">{{ u.full_name }}</div>
+                <div class="fw-medium">
+                    {{ u.full_name }}
+                    {% if u.is_portal_user %}
+                    <span class="badge bg-info ms-1">Portal</span>
+                    {% endif %}
+                </div>
                 <small class="text-muted">@{{ u.username }}</small>
             </div>
         </div>

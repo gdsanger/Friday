@@ -65,6 +65,45 @@
 <!-- Teams -->
 <div class="card mb-4">
     <div class="card-header">
+        <h5 class="mb-0">Portal Settings</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'admin_panel:admin-user-portal' user_obj.pk %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input type="checkbox" name="is_portal_user"
+                           class="form-check-input"
+                           {% if user_obj.is_portal_user %}checked{% endif %}
+                           id="portal_{{ user_obj.pk }}"
+                           onchange="document.getElementById('portal_client_select').style.display = this.checked ? 'block' : 'none';">
+                    <label class="form-check-label" for="portal_{{ user_obj.pk }}">Portal User</label>
+                    <div class="form-text">Portal users have restricted access and can only view their own tickets.</div>
+                </div>
+            </div>
+            <div id="portal_client_select" class="mb-3" {% if not user_obj.is_portal_user %}style="display:none"{% endif %}>
+                <label for="portal_client" class="form-label">Portal Client</label>
+                <select name="portal_client" id="portal_client" class="form-select">
+                    <option value="">— Kein Mandant —</option>
+                    {% for client in clients %}
+                    <option value="{{ client.pk }}"
+                            {% if user_obj.portal_client_id == client.pk %}selected{% endif %}>
+                        {{ client.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Restricts portal user to templates and tickets for this client.</div>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Save Portal Settings
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Teams -->
+<div class="card mb-4">
+    <div class="card-header">
         <h5 class="mb-0">Team Memberships</h5>
     </div>
     <div class="card-body">

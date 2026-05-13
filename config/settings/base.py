@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.ai',
     'apps.notifications',
     'apps.admin_panel',
+    'apps.portal',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'apps.portal.middleware.PortalUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

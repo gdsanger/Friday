@@ -10,6 +10,7 @@ urlpatterns = [
     path('users/', views.AdminUserListView.as_view(), name='admin-users'),
     path('users/<int:pk>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('users/invite/', views.AdminUserInviteView.as_view(), name='admin-user-invite'),
+    path('users/<int:pk>/portal/', views.AdminUserPortalSettingsView.as_view(), name='admin-user-portal'),
     path('users/<int:pk>/toggle-active/', views.AdminUserToggleActiveView.as_view(), name='admin-user-toggle'),
 
     # Team management

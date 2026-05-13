@@ -160,6 +160,8 @@ class AzureCallbackView(View):
         )
 
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        if user.is_portal_user:
+            return redirect('portal-home')
         return redirect(settings.LOGIN_REDIRECT_URL)
 
 
@@ -168,6 +170,8 @@ class StandardLoginView(View):
 
     def get(self, request):
         if request.user.is_authenticated:
+            if request.user.is_portal_user:
+                return redirect('portal-home')
             return redirect(settings.LOGIN_REDIRECT_URL)
         return render(request, self.template_name)
 
@@ -177,6 +181,8 @@ class StandardLoginView(View):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            if user.is_portal_user:
+                return redirect('portal-home')
             next_url = request.GET.get('next') or settings.LOGIN_REDIRECT_URL
             return redirect(next_url)
         return render(request, self.template_name, {'error': 'Invalid username or password.'})

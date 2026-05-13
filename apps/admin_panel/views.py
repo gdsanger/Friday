@@ -75,6 +75,7 @@ class AdminUserDetailView(StaffRequiredMixin, View):
 
     def get(self, request, pk):
         user = get_object_or_404(User, pk=pk)
+        from apps.core.models import Client
         return render(request, self.template_name, {
             'user_obj': user,
             'teams': user.teams,
@@ -83,6 +84,7 @@ class AdminUserDetailView(StaffRequiredMixin, View):
             ).distinct()[:10],
             'created_tasks': user.created_tasks.all()[:10],
             'assigned_tasks': user.assigned_tasks.all()[:10],
+            'clients': Client.objects.filter(is_active=True).order_by('name'),
         })
 
 
@@ -313,3 +315,14 @@ class AdminAuditLogView(StaffRequiredMixin, TemplateView):
         # Placeholder - in future, this would show audit logs
         ctx['logs'] = []
         return ctx
+
+
+class AdminUserPortalSettingsView(StaffRequiredMixin, View):
+    """Update portal settings for a user."""
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        user.is_portal_user = 'is_portal_user' in request.POST
+        user.portal_client_id = request.POST.get('portal_client') or None
+        user.save(update_fields=['is_portal_user', 'portal_client'])
+        messages.success(request, f'Portal settings updated for {user.full_name}.')
+        return redirect('admin_panel:admin-user-detail', pk=pk)

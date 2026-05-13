@@ -1,0 +1,110 @@
+{% extends 'portal/base_portal.html' %}
+{% load friday_tags %}
+
+{% block title %}Neue Anfrage: {{ template.name }} - Friday Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'portal-template-select' %}" class="text-decoration-none text-muted">
+        <i class="bi bi-arrow-left me-1"></i> Zurück zur Auswahl
+    </a>
+</div>
+
+<h1 class="h4 mb-4">Neue Anfrage: {{ template.name }}</h1>
+
+{% if errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <ul class="mb-0">
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="title" class="form-label fw-medium">
+                    Titel <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       class="form-control"
+                       value="{{ post.title|default:'' }}"
+                       required
+                       autofocus>
+            </div>
+
+            <div class="mb-3">
+                <label for="description" class="form-label fw-medium">Beschreibung</label>
+                <textarea id="description"
+                          name="description"
+                          class="form-control md-editor"
+                          rows="6">{{ post.description|default:'' }}</textarea>
+                <div class="form-text">Sie können Markdown verwenden für Formatierung.</div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="due_date" class="form-label fw-medium">Wunschtermin</label>
+                    <input type="date"
+                           id="due_date"
+                           name="due_date"
+                           class="form-control"
+                           value="{{ post.due_date|default:'' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="priority" class="form-label fw-medium">Priorität</label>
+                    <select id="priority" name="priority" class="form-select">
+                        {% for value, label in priority_choices %}
+                        <option value="{{ value }}"
+                                {% if post.priority == value|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if extra_fields %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-3">{{ template.name }}</h5>
+            {% for field in extra_fields %}
+                {% include 'tasks/templates/partials/_field.html' with field=field %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <label for="attachments" class="form-label fw-medium">Anhänge</label>
+            <input type="file"
+                   id="attachments"
+                   name="attachments"
+                   class="form-control"
+                   multiple>
+            <div class="form-text">Sie können mehrere Dateien auswählen.</div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'portal-template-select' %}" class="btn btn-outline-secondary">
+            Abbrechen
+        </a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send me-1"></i> Anfrage absenden
+        </button>
+    </div>
+</form>
+{% endblock %}
