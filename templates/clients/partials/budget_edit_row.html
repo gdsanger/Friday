@@ -1,0 +1,65 @@
+{% load static %}
+<tr id="budget-row-{{ budget.pk }}">
+  <td colspan="6">
+    <form hx-post="{% url 'core:budget-edit' client.slug budget.pk %}"
+          hx-target="#budget-section"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="row g-2 align-items-center">
+
+        <div class="col-md-3">
+          <select name="team_id" class="form-select form-select-sm">
+            {% for team in all_teams %}
+            <option value="{{ team.pk }}"
+              {% if team.pk == budget.team_id %}selected{% endif %}>
+              {{ team.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <input type="number" name="weekly_sp_budget"
+                 value="{{ budget.weekly_sp_budget }}"
+                 min="1" max="200" step="0.5"
+                 class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-2">
+          <input type="date" name="valid_from"
+                 value="{{ budget.valid_from|date:'Y-m-d' }}"
+                 class="form-control form-control-sm" required>
+        </div>
+
+        <div class="col-md-2">
+          <input type="date" name="valid_until"
+                 value="{{ budget.valid_until|date:'Y-m-d'|default:'' }}"
+                 class="form-control form-control-sm">
+        </div>
+
+        <div class="col-md-2">
+          <input type="text" name="notes"
+                 value="{{ budget.notes }}"
+                 class="form-control form-control-sm"
+                 placeholder="Notiz">
+        </div>
+
+        <div class="col-md-1">
+          <div class="d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-check-lg"></i>
+            </button>
+            <button type="button"
+                    hx-get="{% url 'core:budget-list' client.slug %}"
+                    hx-target="#budget-section"
+                    hx-swap="outerHTML"
+                    class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </td>
+</tr>
