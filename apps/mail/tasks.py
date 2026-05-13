@@ -130,42 +130,101 @@ def send_hook_mail(self, template_name: str, to: str, subject: str, context: dic
 @shared_task
 def send_daily_digest():
     """
-    Celery Beat — daily at 07:00.
-    Sends each user a summary of their open/overdue tasks.
+    Täglich 07:00 Uhr.
+    Sendet jedem aktiven User (notify_email=True) einen personalisierten
+    Digest seiner Tasks in 3 Kategorien.
+    Kein Digest wenn alle Kategorien leer sind.
     """
     from django.contrib.auth import get_user_model
     from apps.tasks.models import Task
+    from apps.mail.dispatcher import dispatch
+    from apps.mail.models import MailHook
     from django.conf import settings
-    from .dispatcher import dispatch
+    from django.db import models
+
+    # Hook aktiv?
+    try:
+        hook = MailHook.objects.get(event=MailHook.EVENT_DAILY_DIGEST, is_active=True)
+    except MailHook.DoesNotExist:
+        logger.info('Daily digest hook is disabled')
+        return  # Hook deaktiviert
 
     User = get_user_model()
     today = timezone.now().date()
+    in_7 = today + timedelta(days=7)
 
     for user in User.objects.filter(
         is_active=True,
         notify_email=True,
         is_portal_user=False,
-    ):
+    ).prefetch_related('team_memberships__team'):
+
+        my_teams = list(user.teams)
+
+        # ── Kategorie 1: Überfällig ───────────────────────────────
         overdue = Task.objects.filter(
-            assigned_to_user=user,
+            models.Q(assigned_to_user=user) |
+            models.Q(assigned_to_team__in=my_teams),
             due_date__lt=today,
-        ).exclude(status='done')
+        ).exclude(status='done').select_related(
+            'project', 'assigned_to_team', 'assigned_to_user'
+        ).order_by('due_date')
 
-        open_tasks = Task.objects.filter(
-            assigned_to_user=user,
-        ).exclude(status='done').exclude(due_date__lt=today)
+        # ── Kategorie 2: Nächste 7 Tage ──────────────────────────
+        upcoming = Task.objects.filter(
+            models.Q(assigned_to_user=user) |
+            models.Q(assigned_to_team__in=my_teams),
+            due_date__range=(today, in_7),
+        ).exclude(status='done').select_related(
+            'project', 'assigned_to_team', 'assigned_to_user'
+        ).order_by('due_date')
 
-        if not overdue.exists() and not open_tasks.exists():
+        # ── Kategorie 3: In Bearbeitung ───────────────────────────
+        in_progress = Task.objects.filter(
+            models.Q(assigned_to_user=user) |
+            models.Q(assigned_to_team__in=my_teams),
+            status='in_progress',
+        ).select_related(
+            'project', 'assigned_to_team', 'assigned_to_user'
+        ).order_by('-updated_at')[:10]
+
+        # Kein Digest wenn alles leer
+        if not overdue.exists() and not upcoming.exists() and not in_progress.exists():
             continue
 
+        # Task-Daten serialisieren (Celery überträgt keine ORM-Objekte)
+        def serialize_tasks(qs):
+            return [
+                {
+                    'title': t.title,
+                    'project_name': t.project.name,
+                    'project_color': t.project.color,
+                    'due_date': t.due_date.strftime('%d.%m.%Y') if t.due_date else '',
+                    'priority': t.get_priority_display(),
+                    'priority_val': t.priority,
+                    'status': t.get_status_display(),
+                    'assignee': t.assigned_to_team.name if t.assigned_to_team
+                                else (t.assigned_to_user.full_name if t.assigned_to_user else ''),
+                    'url': f'{settings.SITE_URL}/tasks/{t.pk}/',
+                    'is_team': t.assigned_to_team_id is not None,
+                }
+                for t in qs
+            ]
+
         dispatch(
-            event='daily_digest',
+            event=MailHook.EVENT_DAILY_DIGEST,
             context={
                 'recipient_name': user.full_name,
-                'overdue_tasks': list(overdue.values('title', 'project__name', 'due_date')),
-                'open_tasks': list(open_tasks.values('title', 'project__name', 'due_date')[:10]),
+                'today_str': today.strftime('%A, %d. %B %Y'),
                 'date': today.strftime('%d.%m.%Y'),
-                'app_url': settings.SITE_URL,
+                'overdue_tasks': serialize_tasks(overdue),
+                'upcoming_tasks': serialize_tasks(upcoming),
+                'in_progress_tasks': serialize_tasks(in_progress),
+                'overdue_count': overdue.count(),
+                'upcoming_count': upcoming.count(),
+                'in_progress_count': in_progress.count(),
+                'kanban_url': f'{settings.SITE_URL}/kanban/?view=mine_assigned',
+                'profile_url': f'{settings.SITE_URL}/accounts/profile/',
             },
             recipients_override=[user.email],
         )
