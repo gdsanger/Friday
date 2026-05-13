@@ -41,6 +41,13 @@
   [data-bs-theme="dark"] .weekend-cell {
     background: rgba(255, 255, 255, 0.03) !important;
   }
+  /* Minimum bar width for narrow tasks (Fix 5) */
+  .gantt-task-narrow .gantt_task_content {
+    min-width: 24px;
+  }
+  .gantt_task_line.gantt-task-narrow {
+    min-width: 24px !important;
+  }
 </style>
 {% endblock %}
 
@@ -50,9 +57,9 @@
   <div class="d-flex gap-2">
     <!-- View switcher -->
     <div class="btn-group btn-group-sm">
-      <button class="btn btn-outline-secondary active"
-              onclick="setScale('month')">Month</button>
       <button class="btn btn-outline-secondary"
+              onclick="setScale('month')">Month</button>
+      <button class="btn btn-outline-secondary active"
               onclick="setScale('quarter')">Quarter</button>
       <button class="btn btn-outline-secondary"
               onclick="setScale('year')">Year</button>
@@ -93,6 +100,14 @@ function fmtDate(dateStr) {
   return `${parts[2]}.${parts[1]}.${parts[0]}`;  // dd.mm.YYYY
 }
 
+// Fix 3: Short date format for grid columns (dd.mm.YY)
+function fmtShort(dateStr) {
+  if (!dateStr) return '—';
+  const parts = String(dateStr).split('T')[0].split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}.${parts[1]}.${parts[0].slice(2)}`; // dd.mm.YY
+}
+
 // ── Grid columns ──────────────────────────────────────────────
 gantt.config.columns = [
   {
@@ -106,26 +121,42 @@ gantt.config.columns = [
   },
   {
     name: "start_date", label: "Start",
-    align: "center", width: 85,
-    template: (task) => task.type === 'milestone' ? '' : fmtDate(task.start_date)
+    align: "center", width: 70,
+    template: (task) => (task.type === 'milestone' || task.type === 'project')
+      ? '' : fmtShort(task.start_date)
   },
   {
     name: "due", label: "Deadline",
-    align: "center", width: 85,
-    template: (task) => fmtDate(task.end_date || task.start_date)
+    align: "center", width: 70,
+    template: (task) => fmtShort(task.end_date || task.start_date)
   },
   {
     name: "sp", label: "SP",
-    align: "center", width: 45,
-    template: (task) => task.story_points
-      ? `<span style="font-family:monospace;font-size:12px">${task.story_points}</span>`
-      : ''
+    align: "center", width: 50,
+    template: (task) => {
+      if (!task.story_points) return '';
+      // Fix 6: Highlight SP > 40 in red/bold
+      const warn = task.story_points > 40
+        ? 'style="color:#e55039; font-weight:700;"' : '';
+      return `<span ${warn} style="font-family:monospace;font-size:12px;">${task.story_points}</span>`;
+    }
   },
 ];
 
 // ── Task styling ──────────────────────────────────────────────
-gantt.templates.task_class = (start, end, task) =>
-  task.type === 'milestone' ? 'gantt-milestone' : 'gantt-project-bar';
+gantt.templates.task_class = (start, end, task) => {
+  const classes = [];
+  if (task.type === 'milestone') classes.push('gantt-milestone');
+  if (task.type === 'project')   classes.push('gantt-project-bar');
+  if (task.type === 'task')      classes.push('gantt-task-bar');
+
+  // Fix 5: Very short tasks → extra class for minimum width
+  const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+  if (diffDays < 2 && task.type === 'task') {
+    classes.push('gantt-task-narrow');
+  }
+  return classes.join(' ');
+};
 
 gantt.templates.task_style = (start, end, task) => {
   // Projektbalken: Projektfarbe
@@ -155,16 +186,23 @@ gantt.plugins({ marker: true, tooltip: true });
 
 // ── Tooltip ───────────────────────────────────────────────────
 gantt.templates.tooltip_text = (start, end, task) => {
+  if (task.type === 'project') {
+    return `<b>${task.text}</b>`;
+  }
   if (task.type === 'milestone') {
     return `<b>${task.text}</b><br>Deadline: ${fmtDate(task.start_date)}`;
   }
-  const sp = task.story_points ? `${task.story_points} SP` : '—';
-  const days = task.working_days ? `${task.working_days} AT` : '—';
+
+  const sp    = task.story_points;
+  const days  = task.working_days;
+  const warn  = sp && sp > 40 ? ' ⚠️ Sehr hoher Aufwand!' : '';
+  const spStr = sp ? `${sp} SP (${days} AT)${warn}` : '—';
+
   return `
     <b>${task.text}</b><br>
     Start: ${fmtDate(task.start_date)}<br>
     Deadline: ${fmtDate(task.end_date)}<br>
-    Aufwand: ${sp} (${days})<br>
+    Aufwand: ${spStr}<br>
     Status: ${task.status_label || '—'}<br>
     ${task.resource_label ? `Bearbeiter: ${task.resource_label}` : ''}
   `.trim();
@@ -186,10 +224,41 @@ gantt.templates.timeline_cell_class = (task, date) => {
 };
 
 // ── Scale ─────────────────────────────────────────────────────
-gantt.config.scales = [
-  { unit: "month", step: 1, format: "%F %Y" },
-  { unit: "week",  step: 1, format: "KW%W"  },
-];
+// Fix 2: Define SCALES object with custom format functions
+const SCALES = {
+  month: [
+    { unit: "month", step: 1, format: "%B %Y" },
+    { unit: "week",  step: 1, format: function(date) {
+        // KW-Nummer berechnen (ISO 8601 week number)
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return `KW ${weekNo}`;
+    }},
+  ],
+  quarter: [
+    { unit: "quarter", step: 1, format: function(date) {
+        const q = Math.floor(date.getMonth() / 3) + 1;
+        return `Q${q} ${date.getFullYear()}`;
+    }},
+    { unit: "month", step: 1, format: function(date) {
+        const months = ['Jan','Feb','Mär','Apr','Mai','Jun',
+                        'Jul','Aug','Sep','Okt','Nov','Dez'];
+        return months[date.getMonth()];
+    }},
+  ],
+  year: [
+    { unit: "year",  step: 1, format: "%Y" },
+    { unit: "quarter", step: 1, format: function(date) {
+        const q = Math.floor(date.getMonth() / 3) + 1;
+        return `Q${q}`;
+    }},
+  ],
+};
+
+// Initial scale: Quarter view
+gantt.config.scales = SCALES.quarter;
 
 // ── Init BEFORE parse ─────────────────────────────────────────
 gantt.init("gantt-container");
@@ -251,6 +320,15 @@ fetch("{% url 'projects:calendar-data' %}")
 
     gantt.parse({ data: data.data, links: data.links || [] });
     window._ganttResources = data.resources || [];
+
+    // Fix 1: Center today's date in view (scroll to show today at ~25% from left)
+    setTimeout(() => {
+      const today = new Date();
+      const posX = gantt.posFromDate(today);
+      const chartWidth = gantt.$container?.querySelector('.gantt_task')?.offsetWidth || 800;
+      const scrollTo = Math.max(0, posX - chartWidth * 0.25);
+      gantt.scrollTo(scrollTo, 0);
+    }, 100); // Small delay to ensure gantt is fully rendered
   })
   .catch(err => console.error('Gantt data load failed:', err));
 
@@ -259,16 +337,7 @@ function setScale(mode) {
   document.querySelectorAll('.btn-group .btn')
     .forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
-
-  const scales = {
-    month:   [{ unit: "month",   step: 1, format: "%F %Y" },
-              { unit: "week",    step: 1, format: "KW%W"  }],
-    quarter: [{ unit: "quarter", step: 1, format: "Q%q %Y" },
-              { unit: "month",   step: 1, format: "%M"     }],
-    year:    [{ unit: "year",    step: 1, format: "%Y"     },
-              { unit: "month",   step: 1, format: "%M"     }],
-  };
-  gantt.config.scales = scales[mode] || scales.month;
+  gantt.config.scales = SCALES[mode] || SCALES.quarter;
   gantt.render();
 }
 
@@ -283,8 +352,19 @@ function toggleResourceView() {
 
   if (resourceMode) {
     gantt.config.columns = [
-      { name: "resource", label: "Resource", width: 150,
-        template: (task) => task.resource_label || '' },
+      { name: "resource", label: "Ressource", width: 130,
+        template: (task) => {
+          // Fix 4: Show "Projekt" for project rows
+          if (task.type === 'project') {
+            return `<span style="font-size:11px; color:var(--bs-secondary-color);
+                             font-style:italic;">Projekt</span>`;
+          }
+          if (task.resource_label) {
+            return `<span style="font-size:12px;">${task.resource_label}</span>`;
+          }
+          return `<span style="font-size:11px; color:var(--bs-secondary-color);">—</span>`;
+        }
+      },
       ...baseColumns,
     ];
   } else {
