@@ -63,6 +63,12 @@ class KanbanBoardView(LoginRequiredMixin, View):
                 models.Q(assigned_to_user__team_memberships__team_id=team_id)
             ).distinct()
 
+        if client_id := request.GET.get('client'):
+            tasks = tasks.filter(
+                models.Q(client_id=client_id) |
+                models.Q(project__client_id=client_id)
+            )
+
         if priority := request.GET.get('priority'):
             tasks = tasks.filter(priority=priority)
 
@@ -84,16 +90,20 @@ class KanbanBoardView(LoginRequiredMixin, View):
         for task in tasks:
             columns[task.status].append(task)
 
+        from apps.core.models import Client
+
         ctx = {
             'columns':        columns,
             'status_choices': Task.STATUS_CHOICES,
             'view_mode':      view_mode,
             'projects':       accessible_projects.order_by('name'),
             'teams':          Team.objects.filter(is_active=True),
+            'clients':        Client.objects.filter(is_active=True).order_by('name'),
             'priority_choices': Task.PRIORITY_CHOICES,
             'active_filters': {
                 'project':  request.GET.get('project', ''),
                 'team':     request.GET.get('team', ''),
+                'client':   request.GET.get('client', ''),
                 'priority': request.GET.get('priority', ''),
                 'due':      request.GET.get('due', ''),
             },

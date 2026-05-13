@@ -157,6 +157,36 @@
                 </div>
             </div>
 
+            <!-- Client -->
+            <div class="row mb-3">
+                <div class="col-4 fw-semibold">Client:</div>
+                <div class="col-8">
+                    {% if task.effective_client %}
+                    <span class="badge me-1" style="background-color: {{ task.effective_client.color }};">
+                        {{ task.effective_client.short_name|default:task.effective_client.name }}
+                    </span>
+                    {% if task.client %}
+                    <small class="text-muted">(Direct)</small>
+                    {% else %}
+                    <small class="text-muted">(From project)</small>
+                    {% endif %}
+                    {% endif %}
+                    <select class="form-select form-select-sm mt-2"
+                            name="client"
+                            hx-post="{% url 'tasks:task-edit' task.pk %}"
+                            hx-trigger="change"
+                            hx-include="this">
+                        <option value="">— Inherit from project —</option>
+                        {% for client in clients %}
+                        <option value="{{ client.pk }}" {% if task.client_id == client.pk %}selected{% endif %}>
+                            {{ client.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Override project's client if needed</div>
+                </div>
+            </div>
+
             <!-- Watchers -->
             <div class="row">
                 <div class="col-4 fw-semibold">Watchers:</div>
