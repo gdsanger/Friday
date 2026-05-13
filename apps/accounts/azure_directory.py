@@ -42,13 +42,19 @@ def search_azure_users(query: str, limit: int = 20) -> list[dict]:
 
     headers = {
         'Authorization': f'Bearer {token}',
-        'ConsistencyLevel': 'eventual',  # Required for $search
+        'ConsistencyLevel': 'eventual',  # Required for $count
     }
 
-    # Graph API $search - searches across multiple fields
-    search_query = f'"{query}"'
+    # Graph API $filter - searches across multiple fields
+    # Escape single quotes in query to prevent OData syntax errors
+    escaped_query = query.replace("'", "''")
+
     params = {
-        '$search': f'displayName:{search_query} OR mail:{search_query} OR userPrincipalName:{search_query}',
+        '$filter': (
+            f"startswith(displayName,'{escaped_query}') or "
+            f"startswith(mail,'{escaped_query}') or "
+            f"startswith(userPrincipalName,'{escaped_query}')"
+        ),
         '$select': 'id,displayName,mail,userPrincipalName,jobTitle,department',
         '$top': str(limit),
         '$orderby': 'displayName',

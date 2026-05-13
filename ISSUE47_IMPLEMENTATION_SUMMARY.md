@@ -18,6 +18,12 @@ This feature enables staff members to search for users in Azure AD/Entra ID and 
 - Searches across: displayName, mail, userPrincipalName
 - Returns structured user data: azure_oid, azure_upn, email, name, job_title, department
 
+**Graph API Query Syntax:**
+- Uses OData `$filter` parameter with `startswith()` function
+- Query format: `startswith(displayName,'query') or startswith(mail,'query') or startswith(userPrincipalName,'query')`
+- Single quotes in search queries are escaped by doubling them (`''`) per OData specification
+- ⚠️ **Important:** Do NOT use `$search` parameter with colon syntax (e.g., `displayName:"query"`) - this is invalid and causes 400 BadRequest errors
+
 ### 2. URL Routes (`apps/admin_panel/urls.py`)
 
 ```python
@@ -326,3 +332,30 @@ Before deploying:
 - Issue: ISSUE-47
 - Dependencies: ISSUE-03 (Graph API), ISSUE-05 (Azure SSO), ISSUE-34 (Mail Engine)
 - Graph API Documentation: https://learn.microsoft.com/en-us/graph/api/user-list
+
+## Bug Fixes
+
+### Graph API Search Syntax Error (Fixed: 2026-05-13)
+
+**Issue:** Azure AD user search was failing with error:
+```
+Graph API search failed: 400 - {"error":{"code":"BadRequest","message":"Syntax error: character ':' is not valid at position 11 in 'displayName:\"angermeier\" OR mail:\"angermeier\" OR userPrincipalName:\"angermeier\"'."}}
+```
+
+**Root Cause:** The implementation was using invalid `$search` parameter syntax with colons (e.g., `displayName:"query"`), which is not supported by Microsoft Graph API.
+
+**Fix:** Changed to use OData `$filter` parameter with `startswith()` function:
+- **Before (broken):** `$search = displayName:"query" OR mail:"query" OR userPrincipalName:"query"`
+- **After (fixed):** `$filter = startswith(displayName,'query') or startswith(mail,'query') or startswith(userPrincipalName,'query')`
+
+**Additional Improvements:**
+- Added single quote escaping by doubling them (`'` → `''`) to prevent OData syntax errors
+- Added test cases to verify correct query syntax and escaping
+
+**Files Changed:**
+- `apps/accounts/azure_directory.py` - Fixed query construction
+- `apps/accounts/tests/test_azure_provisioning.py` - Added tests for filter syntax and escaping
+
+**Test Coverage:**
+- `test_search_azure_users_filter_syntax` - Verifies correct `$filter` usage
+- `test_search_azure_users_escapes_single_quotes` - Verifies OData escaping
