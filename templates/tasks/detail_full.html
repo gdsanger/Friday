@@ -262,21 +262,7 @@
                     <!-- Watchers -->
                     <div>
                         <label class="form-label fw-semibold">Watchers</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="d-flex">
-                                {% for watcher in task.watching_users.all|slice:":5" %}
-                                <div class="avatar-circle bg-primary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;" title="{{ watcher.full_name }}">
-                                    {{ watcher.initials }}
-                                </div>
-                                {% endfor %}
-                                {% if task.watching_users.count > 5 %}
-                                <div class="avatar-circle bg-secondary text-white" style="width: 28px; height: 28px; font-size: 0.65rem; margin-left: -8px;">
-                                    +{{ task.watching_users.count|add:"-5" }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            {% include 'tasks/partials/watch_button.html' %}
-                        </div>
+                        {% include 'tasks/partials/watcher_list.html' %}
                     </div>
                 </div>
             </div>

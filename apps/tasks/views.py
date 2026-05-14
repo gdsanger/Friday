@@ -44,12 +44,17 @@ class TaskDetailView(LoginRequiredMixin, View):
 
         ctx = {
             'task': task,
-            'project_members': task.project.get_all_members(),
+            'project_members': task.project.get_all_members()
+                                   .exclude(pk__in=task.watching_users.all())
+                                   .order_by('display_name'),
             'project_teams':   Team.objects.filter(
                 models.Q(projectteammembership__project=task.project) |
                 models.Q(is_global=True),
                 is_active=True
-            ).distinct().order_by('name'),
+            ).exclude(pk__in=task.watching_teams.all())
+             .distinct().order_by('name'),
+            'watching_users':  task.watching_users.all(),
+            'watching_teams':  task.watching_teams.all(),
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(
                                    t=Sum('duration_m'))['t'] or 0,
@@ -332,19 +337,104 @@ class TaskAssignView(LoginRequiredMixin, View):
 
 
 class TaskWatchView(LoginRequiredMixin, View):
-    """HTMX — toggle current user as watcher. Returns watcher button partial."""
+    """HTMX — toggle current user as watcher. Returns watcher_list partial."""
     def post(self, request, pk):
+        from apps.teams.models import Team
+
         task = get_object_or_404(Task, pk=pk)
         if not task.project.is_member(request.user):
             raise PermissionDenied
         if request.user in task.watching_users.all():
             task.watching_users.remove(request.user)
-            watching = False
         else:
             task.watching_users.add(request.user)
-            watching = True
-        return render(request, 'tasks/partials/watch_button.html',
-                      {'task': task, 'is_watching': watching})
+
+        # Return full watcher list
+        return render(request, 'tasks/partials/watcher_list.html', {
+            'task':            task,
+            'watching_users':  task.watching_users.all(),
+            'watching_teams':  task.watching_teams.all(),
+            'project_members': task.project.get_all_members()
+                                   .exclude(pk__in=task.watching_users.all())
+                                   .order_by('display_name'),
+            'project_teams':   Team.objects.filter(
+                                   models.Q(projectteammembership__project=task.project) |
+                                   models.Q(is_global=True),
+                                   is_active=True
+                               ).exclude(pk__in=task.watching_teams.all())
+                               .distinct().order_by('name'),
+            'is_watching':     request.user in task.watching_users.all(),
+        })
+
+
+class WatcherAddView(LoginRequiredMixin, View):
+    """
+    HTMX — User oder Team als Watcher hinzufügen.
+    POST: user_id oder team_id
+    Gibt aktualisierte Watcher-Liste zurück.
+    """
+    def post(self, request, pk):
+        from apps.teams.models import Team
+
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        user_id = request.POST.get('user_id')
+        team_id = request.POST.get('team_id')
+
+        if user_id:
+            task.watching_users.add(user_id)
+        elif team_id:
+            task.watching_teams.add(team_id)
+
+        return render(request, 'tasks/partials/watcher_list.html',
+                      self._ctx(request, task))
+
+    def _ctx(self, request, task):
+        from apps.teams.models import Team
+
+        return {
+            'task':            task,
+            'watching_users':  task.watching_users.all(),
+            'watching_teams':  task.watching_teams.all(),
+            'project_members': task.project.get_all_members()
+                                   .exclude(pk__in=task.watching_users.all())
+                                   .order_by('display_name'),
+            'project_teams':   Team.objects.filter(
+                                   models.Q(projectteammembership__project=task.project) |
+                                   models.Q(is_global=True),
+                                   is_active=True
+                               ).exclude(pk__in=task.watching_teams.all())
+                               .distinct().order_by('name'),
+            'is_watching':     request.user in task.watching_users.all(),
+        }
+
+
+class WatcherRemoveView(LoginRequiredMixin, View):
+    """HTMX — User als Watcher entfernen."""
+    def post(self, request, pk, user_pk):
+        task = get_object_or_404(Task, pk=pk)
+        # Nur sich selbst oder Projektmanager können entfernen
+        if user_pk != request.user.pk:
+            role = task.project.get_effective_role(request.user)
+            if role != 'manager' and not request.user.is_staff:
+                raise PermissionDenied
+        task.watching_users.remove(user_pk)
+        return render(request, 'tasks/partials/watcher_list.html',
+                      WatcherAddView()._ctx(request, task))
+
+
+class WatcherRemoveTeamView(LoginRequiredMixin, View):
+    """HTMX — Team als Watcher entfernen."""
+    def post(self, request, pk, team_pk):
+        task = get_object_or_404(Task, pk=pk)
+        role = task.project.get_effective_role(request.user)
+        if role != 'manager' and not request.user.is_staff:
+            raise PermissionDenied
+        task.watching_teams.remove(team_pk)
+        return render(request, 'tasks/partials/watcher_list.html',
+                      WatcherAddView()._ctx(request, task))
 
 
 class TaskCommentView(LoginRequiredMixin, View):
@@ -517,6 +607,8 @@ class TaskDetailFullView(LoginRequiredMixin, View):
     Same data as slide-over but uses a different template with more space.
     """
     def get(self, request, pk):
+        from apps.teams.models import Team
+
         task = get_object_or_404(
             Task.objects.select_related(
                 'project', 'created_by',
@@ -534,8 +626,17 @@ class TaskDetailFullView(LoginRequiredMixin, View):
 
         return render(request, 'tasks/detail_full.html', {
             'task':            task,
-            'project_members': task.project.get_all_members(),
-            'project_teams':   task.project.team_members.all(),
+            'project_members': task.project.get_all_members()
+                                   .exclude(pk__in=task.watching_users.all())
+                                   .order_by('display_name'),
+            'project_teams':   Team.objects.filter(
+                                   models.Q(projectteammembership__project=task.project) |
+                                   models.Q(is_global=True),
+                                   is_active=True
+                               ).exclude(pk__in=task.watching_teams.all())
+                               .distinct().order_by('name'),
+            'watching_users':  task.watching_users.all(),
+            'watching_teams':  task.watching_teams.all(),
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
