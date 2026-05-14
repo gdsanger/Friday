@@ -115,7 +115,7 @@
                     <div class="card-body">
                         <h6 class="card-title">{{ team.name }}</h6>
                         <p class="card-text text-muted small">{{ team.description|truncatewords:10 }}</p>
-                        <a href="{% url 'teams:detail' team.slug %}" class="btn btn-sm btn-outline-primary">View Team</a>
+                        <a href="{% url 'teams:team-detail' team.slug %}" class="btn btn-sm btn-outline-primary">View Team</a>
                     </div>
                 </div>
             </div>
