@@ -1,3 +1,4 @@
+{% load friday_tags %}
 {% if mode == 'edit' %}
 <form hx-post="{% url 'tasks:task-edit-field' task.pk %}"
       hx-target="this"
@@ -24,8 +25,8 @@
      hx-swap="outerHTML"
      style="cursor: pointer; min-height: 48px;">
   {% if task.description %}
-  <div class="md-render"
-       data-md="{{ task.description|escapejs }}">
+  <div class="md-content">
+    {{ task.description|render_md }}
   </div>
   {% else %}
   <span class="text-muted fst-italic" style="font-size:13px;">

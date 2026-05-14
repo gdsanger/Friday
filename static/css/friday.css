@@ -1047,69 +1047,72 @@ body {
    Markdown Rendered Output
    ============================================ */
 
-.md-render h1, .md-render h2, .md-render h3 {
+.md-render h1, .md-render h2, .md-render h3,
+.md-content h1, .md-content h2, .md-content h3 {
   font-weight: 600;
   margin-top: 1em;
   margin-bottom: 0.5em;
   color: var(--friday-text);
 }
-.md-render h2 {
+.md-render h2, .md-content h2 {
   font-size: 16px;
   border-bottom: 1px solid var(--friday-border);
   padding-bottom: 4px;
 }
-.md-render h3 { font-size: 14px; }
-.md-render p  { margin-bottom: 0.75em; line-height: 1.6; }
-.md-render ul, .md-render ol {
+.md-render h3, .md-content h3 { font-size: 14px; }
+.md-render p, .md-content p { margin-bottom: 0.75em; line-height: 1.6; }
+.md-render ul, .md-render ol,
+.md-content ul, .md-content ol {
   padding-left: 1.5em;
   margin-bottom: 0.75em;
 }
-.md-render li { margin-bottom: 0.25em; }
-.md-render code {
+.md-render li, .md-content li { margin-bottom: 0.25em; }
+.md-render code, .md-content code {
   background: var(--friday-surface-alt);
   padding: 1px 5px;
   border-radius: 3px;
   font-family: var(--font-mono);
   font-size: 12px;
 }
-.md-render pre {
+.md-render pre, .md-content pre {
   background: var(--friday-surface-alt);
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
 }
-.md-render pre code {
+.md-render pre code, .md-content pre code {
   background: none;
   padding: 0;
 }
-.md-render blockquote {
+.md-render blockquote, .md-content blockquote {
   border-left: 3px solid var(--friday-accent);
   padding-left: 12px;
   color: var(--friday-text-muted);
   margin: 0.75em 0;
 }
-.md-render hr {
+.md-render hr, .md-content hr {
   border: none;
   border-top: 1px solid var(--friday-border);
   margin: 1em 0;
 }
-.md-render strong { font-weight: 600; }
-.md-render a {
+.md-render strong, .md-content strong { font-weight: 600; }
+.md-render a, .md-content a {
   color: var(--friday-accent);
   text-decoration: none;
 }
-.md-render a:hover { text-decoration: underline; }
-.md-render table {
+.md-render a:hover, .md-content a:hover { text-decoration: underline; }
+.md-render table, .md-content table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   margin-bottom: 0.75em;
 }
-.md-render th, .md-render td {
+.md-render th, .md-render td,
+.md-content th, .md-content td {
   border: 1px solid var(--friday-border);
   padding: 6px 10px;
 }
-.md-render th {
+.md-render th, .md-content th {
   background: var(--friday-surface-alt);
   font-weight: 600;
 }

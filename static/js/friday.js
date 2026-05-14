@@ -353,7 +353,17 @@
     function renderMarkdown(container) {
         const target = container || document;
         target.querySelectorAll('.md-render').forEach(el => {
-            const raw = el.dataset.md || el.textContent || '';
+            let raw = el.dataset.md || el.textContent || '';
+
+            // Doppelt-escaped Unicode-Escapes auflösen
+            // \\u000A → \n, \\u002D → -, \\u002A → * etc.
+            try {
+                raw = raw.replace(
+                    /\\u([0-9A-Fa-f]{4})/g,
+                    (_, code) => String.fromCharCode(parseInt(code, 16))
+                );
+            } catch(e) {}
+
             if (!raw.trim()) {
                 el.innerHTML = '<span class="text-muted fst-italic">Keine Beschreibung</span>';
                 return;

@@ -2,8 +2,26 @@
 Template tags and filters for Friday project.
 """
 from django import template
+import markdown
+import bleach
+from django.utils.safestring import mark_safe
 
 register = template.Library()
+
+
+ALLOWED_TAGS = [
+    'h1','h2','h3','h4','h5','h6',
+    'p','br','hr',
+    'strong','em','del','code','pre',
+    'ul','ol','li',
+    'blockquote','a','img',
+    'table','thead','tbody','tr','th','td',
+]
+ALLOWED_ATTRIBUTES = {
+    'a':   ['href', 'title', 'target', 'rel'],
+    'img': ['src', 'alt', 'title'],
+    '*':   ['class'],
+}
 
 
 @register.filter
@@ -124,7 +142,6 @@ def highlight_mentions(text):
     Returns safe HTML that won't be escaped by Django templates.
     """
     import re
-    from django.utils.safestring import mark_safe
     from django.utils.html import escape
 
     # First escape the text to prevent XSS
@@ -139,3 +156,22 @@ def highlight_mentions(text):
 
     # Mark as safe so Django doesn't double-escape
     return mark_safe(highlighted)
+
+
+@register.filter
+def render_md(value):
+    """Server-seitiges Markdown Rendering."""
+    if not value:
+        return ''
+    html = markdown.markdown(
+        value,
+        extensions=['nl2br', 'tables', 'fenced_code'],
+    )
+    clean = bleach.clean(
+        html,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+    )
+    # Links in neuem Tab öffnen
+    clean = clean.replace('<a ', '<a target="_blank" rel="noopener noreferrer" ')
+    return mark_safe(clean)
