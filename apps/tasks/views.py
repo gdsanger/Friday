@@ -312,7 +312,47 @@ class TaskCommentView(LoginRequiredMixin, View):
             raise PermissionDenied
         body = request.POST.get('body', '').strip()
         if body:
-            Comment.objects.create(task=task, author=request.user, body=body)
+            comment = Comment.objects.create(task=task, author=request.user, body=body)
+
+            # Process @mentions
+            from apps.tasks.mentions import parse_mentions
+            from apps.notifications.models import Notification
+            from django.contrib.contenttypes.models import ContentType
+            from django.conf import settings
+
+            mentioned_users = parse_mentions(body)
+
+            for user in mentioned_users:
+                # Don't notify yourself
+                if user == request.user:
+                    continue
+
+                # Create in-app notification
+                Notification.objects.create(
+                    recipient=user,
+                    verb='hat dich in einem Kommentar erwähnt',
+                    actor=request.user,
+                    target_ct=ContentType.objects.get_for_model(task),
+                    target_id=task.pk,
+                )
+
+                # Send mention email
+                from apps.mail.dispatcher import dispatch
+                from apps.mail.models import MailHook
+                dispatch(
+                    event=MailHook.EVENT_TASK_COMMENT,
+                    context={
+                        'recipient_name': user.full_name,
+                        'task_title': task.title,
+                        'task_url': f'{settings.SITE_URL}/tasks/{task.pk}/',
+                        'project_name': task.project.name,
+                        'comment_author': request.user.full_name,
+                        'comment_body': body[:500],
+                        'is_mention': True,
+                    },
+                    recipients_override=[user.email],
+                )
+
         comments = task.comments.select_related('author').order_by('created_at')
         return render(request, 'tasks/partials/comment_list.html',
                       {'task': task, 'comments': comments})

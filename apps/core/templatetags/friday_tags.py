@@ -114,3 +114,17 @@ def getlist(post_data, key):
     if hasattr(post_data, 'getlist'):
         return post_data.getlist(key)
     return []
+
+
+@register.filter
+def highlight_mentions(text):
+    """
+    Replace @username with HTML span for highlighting in comments.
+    Example: @john -> <span class="mention">@john</span>
+    """
+    import re
+    return re.sub(
+        r'@([\w.+-]+)',
+        r'<span class="mention">@\1</span>',
+        text
+    )
