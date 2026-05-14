@@ -21,7 +21,7 @@
                 </button>
                 {% endif %}
             </div>
-            <div class="text-break">{{ comment.body|highlight_mentions|linebreaks }}</div>
+            <div class="text-break" style="white-space: pre-wrap;">{{ comment.body|highlight_mentions }}</div>
         </div>
     </div>
     {% empty %}

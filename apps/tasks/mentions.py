@@ -40,6 +40,8 @@ def parse_mentions(text: str) -> list:
 def render_mentions(text: str) -> str:
     """
     Replace @username in text with HTML span for UI highlighting.
+    This function is for backend use. For template usage, use the
+    highlight_mentions template filter which includes XSS protection.
 
     Args:
         text: Raw comment text with @username mentions
@@ -51,9 +53,18 @@ def render_mentions(text: str) -> str:
         >>> render_mentions("@john please review")
         '<span class="mention">@john</span> please review'
     """
+    from django.utils.html import escape
+    from django.utils.safestring import mark_safe
+
+    # Escape HTML to prevent XSS
+    escaped_text = escape(text)
+
+    # Add mention spans
     pattern = r'@([\w.+-]+)'
-    return re.sub(
+    highlighted = re.sub(
         pattern,
         r'<span class="mention">@\1</span>',
-        text
+        escaped_text
     )
+
+    return mark_safe(highlighted)
