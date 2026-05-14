@@ -690,6 +690,16 @@ body {
     border-style: dashed;
 }
 
+/* Waiting status styling - amber/orange to indicate external dependency */
+[data-status="waiting"] .kanban-column-header {
+    color: #f59e0b;
+}
+
+[data-status="waiting"] .task-card {
+    border-left: 3px solid #f59e0b !important;
+    opacity: 0.85;
+}
+
 /* Slide-over styles */
 .slide-over-backdrop {
     position: fixed;
