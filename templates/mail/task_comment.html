@@ -1,26 +1,44 @@
 {% extends "mail/base.html" %}
 {% block body %}
-<h1 class="email-title">New comment on task</h1>
-<p class="email-text">Hello {{ recipient_name }},</p>
+<h1 class="email-title">
+  {% if is_mention %}
+    Du wurdest in einem Kommentar erwähnt
+  {% else %}
+    Neuer Kommentar
+  {% endif %}
+</h1>
+
+<p class="email-text">Hallo {{ recipient_name }},</p>
+
 <p class="email-text">
-  <strong>{{ comment_author }}</strong> commented on a task:
+  {% if is_mention %}
+    <strong>{{ comment_author }}</strong> hat dich in einem Kommentar
+    bei <strong>{{ task_title }}</strong> erwähnt:
+  {% else %}
+    <strong>{{ comment_author }}</strong> hat einen Kommentar
+    bei <strong>{{ task_title }}</strong> hinzugefügt:
+  {% endif %}
 </p>
+
+<div class="info-box" style="border-left-color: #6366f1;">
+  <div style="font-size:14px; line-height:1.6; white-space:pre-wrap;">{{ comment_body }}</div>
+</div>
 
 <div class="info-box">
   <div class="info-row">
-    Task:
-    <strong>{{ task_title }}</strong>
-  </div>
-  <div class="info-row">
-    Project:
+    <span class="info-label">Projekt:</span>
     {{ project_name }}
   </div>
-  <div class="info-row" style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e0d8;">
-    <em>"{{ comment_body }}"</em>
+  <div class="info-row">
+    <span class="info-label">Task:</span>
+    {{ task_title }}
   </div>
 </div>
 
-<p style="margin:24px 0;">
-  <a href="{{ task_url }}" class="email-btn">View Comment</a>
+<p style="margin: 24px 0; text-align:center;">
+  <a href="{{ task_url }}" class="email-btn">
+    Task öffnen →
+  </a>
 </p>
+
 {% endblock %}

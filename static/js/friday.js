@@ -396,6 +396,62 @@
     document.addEventListener('htmx:afterSettle', (e) => renderMarkdown(e.detail.target));
 
 
+    // ── @Mentions mit Tribute.js ──────────────────────────────────
+
+    function initMentions(container) {
+        const target = container || document;
+
+        target.querySelectorAll('textarea.mention-enabled').forEach(textarea => {
+            // Skip if already initialized
+            if (textarea.dataset.tributeInitialized) return;
+            textarea.dataset.tributeInitialized = 'true';
+
+            const tribute = new Tribute({
+                trigger: '@',
+                allowSpaces: false,
+                menuItemLimit: 8,
+
+                // Load users from server
+                values: function(text, callback) {
+                    fetch(`/accounts/api/users/search/?q=${encodeURIComponent(text)}`)
+                        .then(r => r.json())
+                        .then(data => callback(data.users))
+                        .catch(() => callback([]));
+                },
+
+                // Render dropdown item
+                menuItemTemplate: (item) => `
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:24px; height:24px; border-radius:50%;
+                                    background:#2d6a4f; color:#fff; font-size:10px;
+                                    display:flex; align-items:center; justify-content:center;
+                                    font-weight:600; flex-shrink:0;">
+                            ${item.original.initials}
+                        </div>
+                        <div>
+                            <div style="font-size:13px; font-weight:500;">${item.original.value}</div>
+                            <div style="font-size:11px; opacity:.6;">@${item.original.key}</div>
+                        </div>
+                    </div>
+                `,
+
+                // What gets inserted into text
+                selectTemplate: (item) => `@${item.original.key}`,
+
+                // Lookup field
+                lookup: 'value',
+                fillAttr: 'key',
+            });
+
+            tribute.attach(textarea);
+        });
+    }
+
+    // Initialize mentions on page load
+    initMentions();
+
+    // Re-initialize after HTMX swaps (slide-over, etc.)
+    document.addEventListener('htmx:afterSettle', (e) => initMentions(e.detail.target));
     // ── Task Actions (ISSUE-53) ──────────────────────────────────────
 
     // Task Closed Event Handler

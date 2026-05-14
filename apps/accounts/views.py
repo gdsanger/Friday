@@ -212,3 +212,44 @@ def profile_view(request):
             'teams': teams.all() if hasattr(teams, 'all') else teams,
         },
     )
+
+
+class UserSearchView(View):
+    """
+    JSON API for user search (used by @mention autocomplete).
+    Returns active, non-portal users matching the query.
+    """
+    def get(self, request):
+        from django.http import JsonResponse
+        from django.db import models
+
+        # Require authentication
+        if not request.user.is_authenticated:
+            return JsonResponse({'users': []}, status=401)
+
+        q = request.GET.get('q', '').strip()
+        if len(q) < 1:
+            return JsonResponse({'users': []})
+
+        User = get_user_model()
+
+        users = User.objects.filter(
+            is_active=True,
+            is_portal_user=False,
+        ).filter(
+            models.Q(username__icontains=q) |
+            models.Q(display_name__icontains=q) |
+            models.Q(first_name__icontains=q) |
+            models.Q(last_name__icontains=q)
+        ).order_by('display_name')[:10]
+
+        return JsonResponse({
+            'users': [
+                {
+                    'key': u.username,
+                    'value': u.full_name,
+                    'initials': u.initials,
+                }
+                for u in users
+            ]
+        })

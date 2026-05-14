@@ -1177,3 +1177,42 @@ body {
   font-weight: 600;
   font-size: 14px;
 }
+
+/* ── @Mentions Styling ────────────────────────────────────── */
+
+/* Mention highlighting in comment text */
+.mention {
+  color: var(--friday-accent);
+  font-weight: 600;
+  background: var(--friday-accent-light);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+
+/* Tribute.js Dropdown Styling */
+.tribute-container {
+  background: var(--friday-surface);
+  border: 1px solid var(--friday-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.tribute-container ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.tribute-container li {
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.tribute-container li.highlight,
+.tribute-container li:hover {
+  background: var(--friday-surface-alt);
+}

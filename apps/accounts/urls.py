@@ -12,4 +12,5 @@ urlpatterns = [
     path('azure/login/', views.AzureLoginView.as_view(), name='azure-login'),
     path('azure/callback/', views.AzureCallbackView.as_view(), name='azure-callback'),
     path('profile/', views.profile_view, name='profile'),
+    path('api/users/search/', views.UserSearchView.as_view(), name='user-search'),
 ]
