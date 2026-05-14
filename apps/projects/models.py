@@ -8,17 +8,23 @@ from apps.core.models import TimeStampedModel
 
 class Project(TimeStampedModel):
     """Project model for organizing work."""
-    STATUS_PLANNING  = 'planning'
-    STATUS_ACTIVE    = 'active'
-    STATUS_ON_HOLD   = 'on_hold'
-    STATUS_DONE      = 'done'
-    STATUS_ARCHIVED  = 'archived'
+    STATUS_PLANNING     = 'planning'
+    STATUS_ACTIVE       = 'active'
+    STATUS_ON_HOLD      = 'on_hold'
+    STATUS_PRODUCTION   = 'production'
+    STATUS_DONE         = 'done'
+    STATUS_DEFERRED     = 'deferred'
+    STATUS_ARCHIVED     = 'archived'
+    STATUS_END_OF_LIFE  = 'end_of_life'
     STATUS_CHOICES = [
-        (STATUS_PLANNING, 'Planning'),
-        (STATUS_ACTIVE,   'Active'),
-        (STATUS_ON_HOLD,  'On Hold'),
-        (STATUS_DONE,     'Done'),
-        (STATUS_ARCHIVED, 'Archived'),
+        (STATUS_PLANNING,    'Planung'),
+        (STATUS_ACTIVE,      'Aktiv'),
+        (STATUS_ON_HOLD,     'Pausiert'),
+        (STATUS_PRODUCTION,  'Production'),
+        (STATUS_DONE,        'Abgeschlossen'),
+        (STATUS_DEFERRED,    'Zurückgestellt'),
+        (STATUS_ARCHIVED,    'Archiviert'),
+        (STATUS_END_OF_LIFE, 'End of Life'),
     ]
     VISIBILITY_MEMBERS = 'members'
     VISIBILITY_ORG     = 'organisation'

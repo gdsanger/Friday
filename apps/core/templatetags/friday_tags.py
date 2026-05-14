@@ -38,11 +38,14 @@ def subtract(value, arg):
 def status_color(project):
     """Return a muted background color for project status badges."""
     colors = {
-        'planning':  '#4b5563',
-        'active':    '#166534',
-        'on_hold':   '#92400e',
-        'done':      '#1e3a5f',
-        'archived':  '#374151',
+        'planning':     '#4b5563',  # grau
+        'active':       '#166534',  # grün
+        'on_hold':      '#92400e',  # amber
+        'production':   '#1e3a5f',  # dunkelblau
+        'done':         '#1e3a5f',  # dunkelblau
+        'deferred':     '#6b21a8',  # lila
+        'archived':     '#374151',  # dunkelgrau
+        'end_of_life':  '#374151',  # dunkelgrau
     }
     return colors.get(project.status, '#4b5563')
 

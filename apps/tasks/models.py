@@ -149,14 +149,16 @@ class Task(TimeStampedModel):
     STATUS_BACKLOG      = 'backlog'
     STATUS_TODO         = 'todo'
     STATUS_IN_PROGRESS  = 'in_progress'
+    STATUS_WAITING      = 'waiting'
     STATUS_REVIEW       = 'review'
     STATUS_DONE         = 'done'
     STATUS_CHOICES = [
         (STATUS_BACKLOG,     'Backlog'),
         (STATUS_TODO,        'To Do'),
-        (STATUS_IN_PROGRESS, 'In Progress'),
+        (STATUS_IN_PROGRESS, 'In Bearbeitung'),
+        (STATUS_WAITING,     'Waiting'),
         (STATUS_REVIEW,      'Review'),
-        (STATUS_DONE,        'Done'),
+        (STATUS_DONE,        'Erledigt'),
     ]
     PRIORITY_NONE     = 0
     PRIORITY_LOW      = 1

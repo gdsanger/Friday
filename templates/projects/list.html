@@ -15,23 +15,31 @@
 <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
         <a class="nav-link {% if status_filter == 'all' %}active{% endif %}"
-           href="?status=all">All</a>
+           href="?status=all">Alle</a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if status_filter == 'active' %}active{% endif %}"
-           href="?status=active">Active</a>
+           href="?status=active">Aktiv</a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if status_filter == 'planning' %}active{% endif %}"
-           href="?status=planning">Planning</a>
+           href="?status=planning">Planung</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'production' %}active{% endif %}"
+           href="?status=production">Production</a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if status_filter == 'on_hold' %}active{% endif %}"
-           href="?status=on_hold">On Hold</a>
+           href="?status=on_hold">Pausiert</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if status_filter == 'deferred' %}active{% endif %}"
+           href="?status=deferred">Zurückgestellt</a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if status_filter == 'done' %}active{% endif %}"
-           href="?status=done">Done</a>
+           href="?status=done">Abgeschlossen</a>
     </li>
 </ul>
 
