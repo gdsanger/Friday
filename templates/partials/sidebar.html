@@ -10,14 +10,6 @@
         </div>
     </div>
 
-    <!-- Toggle Button (Desktop) -->
-    <button class="sidebar-toggle-btn"
-            id="sidebar-toggle"
-            onclick="toggleSidebar()"
-            title="Menü ein-/ausklappen">
-        <i class="bi bi-layout-sidebar-inset"></i>
-    </button>
-
     <!-- Navigation -->
     <nav class="sidebar-nav">
 
@@ -25,35 +17,50 @@
 
         <a href="{% url 'dashboard:dashboard' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}"
-           title="Dashboard">
+           title="Dashboard"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Dashboard">
             <i class="bi bi-speedometer2"></i>
             <span class="sidebar-link-text">Dashboard</span>
         </a>
 
         <a href="{% url 'kanban:kanban-board' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'kanban' %}active{% endif %}"
-           title="Tasks">
+           title="Tasks"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Tasks">
             <i class="bi bi-kanban"></i>
             <span class="sidebar-link-text">Tasks</span>
         </a>
 
         <a href="{% url 'projects:project-list' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'projects' and request.resolver_match.url_name != 'calendar' %}active{% endif %}"
-           title="Projekte">
+           title="Projekte"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Projekte">
             <i class="bi bi-folder2"></i>
             <span class="sidebar-link-text">Projekte</span>
         </a>
 
         <a href="{% url 'projects:calendar' %}"
            class="sidebar-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}"
-           title="Kalender">
+           title="Kalender"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Kalender">
             <i class="bi bi-calendar3"></i>
             <span class="sidebar-link-text">Kalender</span>
         </a>
 
         <a href="{% url 'teams:team-list' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'teams' %}active{% endif %}"
-           title="Teams">
+           title="Teams"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Teams">
             <i class="bi bi-people"></i>
             <span class="sidebar-link-text">Teams</span>
         </a>
@@ -61,7 +68,10 @@
         {% if request.user.is_staff %}
         <a href="{% url 'core:client-list' %}"
            class="sidebar-link {% if request.resolver_match.url_name|slice:":7" == 'client-' %}active{% endif %}"
-           title="Mandanten">
+           title="Mandanten"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Mandanten">
             <i class="bi bi-building"></i>
             <span class="sidebar-link-text">Mandanten</span>
         </a>
@@ -69,14 +79,20 @@
 
         <a href="{% url 'tasks:template-list' %}"
            class="sidebar-link {% if request.resolver_match.url_name|slice:":9" == 'template-' %}active{% endif %}"
-           title="Vorlagen">
+           title="Vorlagen"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Vorlagen">
             <i class="bi bi-file-earmark-text"></i>
             <span class="sidebar-link-text">Vorlagen</span>
         </a>
 
         <a href="{% url 'notifications:notification-list' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}"
-           title="Benachrichtigungen">
+           title="Benachrichtigungen"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Benachrichtigungen">
             <i class="bi bi-bell"></i>
             <span class="sidebar-link-text">
                 Benachrichtigungen
@@ -90,11 +106,25 @@
         <div class="sidebar-section-label">Admin</div>
         <a href="{% url 'admin_panel:admin-dashboard' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'admin_panel' %}active{% endif %}"
-           title="Admin Panel">
+           title="Admin Panel"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Admin Panel">
             <i class="bi bi-gear"></i>
             <span class="sidebar-link-text">Admin Panel</span>
         </a>
         {% endif %}
+
+        <!-- Toggle Button (integrated as last nav item) -->
+        <button class="sidebar-link sidebar-toggle-btn mt-auto"
+                onclick="toggleSidebar()"
+                title="Menü einklappen"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                data-bs-title="Menü">
+            <i class="bi bi-arrow-bar-left" id="sidebar-toggle-icon"></i>
+            <span class="sidebar-link-text">Einklappen</span>
+        </button>
 
     </nav>
 
