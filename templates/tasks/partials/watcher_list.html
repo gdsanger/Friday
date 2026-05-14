@@ -1,0 +1,109 @@
+<div id="watcher-list">
+
+  <!-- Aktuelle Watcher -->
+  {% if watching_users or watching_teams %}
+  <div class="d-flex flex-wrap gap-1 mb-2">
+
+    {% for user in watching_users %}
+    <div class="d-flex align-items-center gap-1 px-2 py-1 rounded"
+         style="background:var(--friday-surface-alt);
+                border:1px solid var(--friday-border);
+                font-size:12px;">
+      <div class="user-avatar" style="width:18px;height:18px;font-size:8px;">
+        {{ user.initials }}
+      </div>
+      <span>{{ user.full_name }}</span>
+      <button hx-post="{% url 'tasks:watcher-remove' task.pk user.pk %}"
+              hx-target="#watcher-list"
+              hx-swap="outerHTML"
+              class="btn btn-link p-0 ms-1"
+              style="font-size:11px; color:var(--friday-text-muted);
+                     line-height:1;">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    {% endfor %}
+
+    {% for team in watching_teams %}
+    <div class="d-flex align-items-center gap-1 px-2 py-1 rounded"
+         style="background:var(--friday-surface-alt);
+                border:1px solid var(--friday-border);
+                font-size:12px;">
+      <span class="rounded-circle"
+            style="width:8px;height:8px;background:{{ team.color }};
+                   display:inline-block;flex-shrink:0;"></span>
+      <span>{{ team.name }}</span>
+      <button hx-post="{% url 'tasks:watcher-remove-team' task.pk team.pk %}"
+              hx-target="#watcher-list"
+              hx-swap="outerHTML"
+              class="btn btn-link p-0 ms-1"
+              style="font-size:11px; color:var(--friday-text-muted);
+                     line-height:1;">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    {% endfor %}
+
+  </div>
+  {% else %}
+  <div class="text-muted fst-italic mb-2" style="font-size:12px;">
+    Keine Watcher
+  </div>
+  {% endif %}
+
+  <!-- Watcher hinzufügen -->
+  <div class="d-flex gap-2">
+
+    <!-- User hinzufügen -->
+    {% if project_members %}
+    <form hx-post="{% url 'tasks:watcher-add' task.pk %}"
+          hx-target="#watcher-list"
+          hx-swap="outerHTML"
+          class="d-flex gap-1 flex-grow-1">
+      {% csrf_token %}
+      <select name="user_id" class="form-select form-select-sm"
+              onchange="this.form.requestSubmit()">
+        <option value="">+ Person hinzufügen</option>
+        {% for member in project_members %}
+        <option value="{{ member.pk }}">{{ member.full_name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+
+    <!-- Team hinzufügen -->
+    {% if project_teams %}
+    <form hx-post="{% url 'tasks:watcher-add' task.pk %}"
+          hx-target="#watcher-list"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <select name="team_id" class="form-select form-select-sm"
+              onchange="this.form.requestSubmit()">
+        <option value="">+ Team</option>
+        {% for team in project_teams %}
+        <option value="{{ team.pk }}">{{ team.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+
+    <!-- Selbst watch/unwatch -->
+    {% if is_watching %}
+    <button hx-post="{% url 'tasks:task-watch' task.pk %}"
+            hx-target="#watcher-list"
+            hx-swap="outerHTML"
+            class="btn btn-outline-secondary btn-sm text-nowrap">
+      <i class="bi bi-eye-slash"></i> Unwatch
+    </button>
+    {% else %}
+    <button hx-post="{% url 'tasks:task-watch' task.pk %}"
+            hx-target="#watcher-list"
+            hx-swap="outerHTML"
+            class="btn btn-outline-primary btn-sm text-nowrap">
+      <i class="bi bi-eye"></i> Watch
+    </button>
+    {% endif %}
+
+  </div>
+
+</div>
