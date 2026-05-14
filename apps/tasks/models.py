@@ -287,6 +287,20 @@ class Task(TimeStampedModel):
     def __str__(self):
         return self.title
 
+    def clean(self):
+        """Validate that task is assigned to either user OR team, not both."""
+        from django.core.exceptions import ValidationError
+        if self.assigned_to_user_id and self.assigned_to_team_id:
+            raise ValidationError(
+                'Ein Task kann nicht gleichzeitig einem User '
+                'und einem Team zugewiesen sein.'
+            )
+
+    def save(self, *args, **kwargs):
+        """Call clean() before saving to enforce XOR constraint."""
+        self.clean()
+        super().save(*args, **kwargs)
+
     @property
     def assignee_display(self):
         """Return a string representation of the assignee."""

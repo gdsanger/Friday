@@ -107,6 +107,7 @@
                 <div class="col-4 fw-semibold">Assigned to:</div>
                 <div class="col-8">
                     <select class="form-select form-select-sm"
+                            id="assign-user-{{ task.pk }}"
                             name="user_id"
                             hx-post="{% url 'tasks:task-assign' task.pk %}"
                             hx-target="#task-assignee"
@@ -120,6 +121,7 @@
                         {% endfor %}
                     </select>
                     <select class="form-select form-select-sm mt-2"
+                            id="assign-team-{{ task.pk }}"
                             name="team_id"
                             hx-post="{% url 'tasks:task-assign' task.pk %}"
                             hx-target="#task-assignee"
@@ -135,6 +137,25 @@
                     <div class="mt-2">
                         {% include 'tasks/partials/assignee.html' %}
                     </div>
+                    <script>
+                    // XOR enforcement: Clear team when user selected, clear user when team selected
+                    (function() {
+                        const userSelect = document.getElementById('assign-user-{{ task.pk }}');
+                        const teamSelect = document.getElementById('assign-team-{{ task.pk }}');
+                        if (userSelect && teamSelect) {
+                            userSelect.addEventListener('change', function() {
+                                if (this.value) {
+                                    teamSelect.value = '';
+                                }
+                            });
+                            teamSelect.addEventListener('change', function() {
+                                if (this.value) {
+                                    userSelect.value = '';
+                                }
+                            });
+                        }
+                    })();
+                    </script>
                 </div>
             </div>
 

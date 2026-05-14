@@ -271,8 +271,18 @@ class TaskAssignView(LoginRequiredMixin, View):
         user_id   = request.POST.get('user_id')
         team_id   = request.POST.get('team_id')
 
-        task.assigned_to_user = User.objects.get(pk=user_id) if user_id else None
-        task.assigned_to_team = Team.objects.get(pk=team_id) if team_id else None
+        # XOR enforcement: User gewählt → Team leeren, Team gewählt → User leeren
+        if user_id:
+            task.assigned_to_user = User.objects.get(pk=user_id)
+            task.assigned_to_team = None
+        elif team_id:
+            task.assigned_to_team = Team.objects.get(pk=team_id)
+            task.assigned_to_user = None
+        else:
+            # Beide leer → Zuweisung aufheben
+            task.assigned_to_user = None
+            task.assigned_to_team = None
+
         task.save(update_fields=['assigned_to_user', 'assigned_to_team'])
 
         return render(request, 'tasks/partials/assignee.html', {'task': task})
