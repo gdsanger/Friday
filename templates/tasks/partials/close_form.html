@@ -1,0 +1,93 @@
+<div class="modal-header">
+  <h5 class="modal-title">
+    <i class="bi bi-check-circle text-success me-2"></i>
+    Task abschließen
+  </h5>
+  <button type="button" class="btn-close"
+          data-bs-dismiss="modal"></button>
+</div>
+
+<form hx-post="{% url 'tasks:task-close' task.pk %}"
+      hx-target="#task-close-modal"
+      hx-swap="innerHTML">
+  {% csrf_token %}
+
+  <div class="modal-body">
+
+    {% if error %}
+    <div class="alert alert-danger py-2">{{ error }}</div>
+    {% endif %}
+
+    <!-- Task Info -->
+    <div class="mb-3 p-3 rounded"
+         style="background:var(--friday-surface-alt);
+                border-left:3px solid {{ task.project.color }};">
+      <div class="fw-medium">{{ task.title }}</div>
+      <div class="text-muted" style="font-size:12px;">
+        {{ task.project.name }}
+        {% if task.story_points %}
+        · Schätzung: {{ task.story_points }} SP
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Tatsächlicher Aufwand — Pflichtfeld -->
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Tatsächlicher Aufwand (Stunden)
+        <span class="text-danger">*</span>
+      </label>
+      <div class="input-group" style="max-width:200px;">
+        <input type="number"
+               name="actual_hours"
+               class="form-control"
+               min="0.25" step="0.25"
+               placeholder="z.B. 4.5"
+               autofocus required>
+        <span class="input-group-text">h</span>
+      </div>
+      {% if task.story_points %}
+      <div class="form-text">
+        Geschätzt waren {{ task.story_points }} SP
+        ({{ task.story_points }} h)
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Notiz (optional) -->
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Abschluss-Notiz
+        <span class="text-muted" style="font-size:12px;">(optional)</span>
+      </label>
+      <textarea name="note" class="form-control" rows="2"
+                placeholder="Was wurde erledigt? Gab es Besonderheiten?"></textarea>
+    </div>
+
+    <!-- Mail-Info -->
+    <div class="d-flex align-items-start gap-2 p-2 rounded"
+         style="background:var(--friday-accent-light);
+                font-size:12px; color:var(--friday-accent);">
+      <i class="bi bi-envelope mt-1"></i>
+      <div>
+        Benachrichtigung wird gesendet an:
+        {% if task.effective_requester %}
+        <strong>{{ task.effective_requester.full_name }}</strong> (Anforderer)
+        {% endif %}
+        {% if task.watching_users.exists or task.watching_teams.exists %}
+        und alle Watcher.
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary"
+            data-bs-dismiss="modal">Abbrechen</button>
+    <button type="submit" class="btn btn-success">
+      <i class="bi bi-check-circle me-1"></i>
+      Task abschließen
+    </button>
+  </div>
+</form>

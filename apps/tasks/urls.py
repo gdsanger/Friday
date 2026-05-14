@@ -29,6 +29,13 @@ urlpatterns = [
     path('<int:pk>/time/log/',                   views.TimeEntryLogView.as_view(),        name='time-log'),
     path('time/<int:entry_pk>/delete/',          views.TimeEntryDeleteView.as_view(),     name='time-delete'),
 
+    # Task Close (ISSUE-53)
+    path('<int:pk>/close/',                      views.TaskCloseFormView.as_view(),       name='task-close-form'),
+    path('<int:pk>/close/submit/',               views.TaskCloseView.as_view(),           name='task-close'),
+
+    # Task Assign Form (ISSUE-53)
+    path('<int:pk>/assign-form/',                views.TaskAssignFormView.as_view(),      name='task-assign-form'),
+
     # Dependencies
     path('<int:pk>/dependencies/add/',           views.DependencyAddView.as_view(),       name='dependency-add'),
     path('<int:pk>/dependencies/<int:dep_pk>/remove/',

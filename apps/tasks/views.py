@@ -264,12 +264,20 @@ class TaskStatusView(LoginRequiredMixin, View):
 class TaskAssignView(LoginRequiredMixin, View):
     """HTMX — assign to user OR team (mutually exclusive). Returns assignee partial."""
     def post(self, request, pk):
+        from django.conf import settings
         from apps.teams.models import Team
+        from apps.mail.dispatcher import dispatch
+        from apps.mail.models import MailHook
+
         task      = get_object_or_404(Task, pk=pk)
         if not task.project.is_member(request.user):
             raise PermissionDenied
         user_id   = request.POST.get('user_id')
         team_id   = request.POST.get('team_id')
+
+        # Store old assignments for comparison
+        old_user = task.assigned_to_user
+        old_team = task.assigned_to_team
 
         # XOR enforcement: User gewählt → Team leeren, Team gewählt → User leeren
         if user_id:
@@ -285,7 +293,42 @@ class TaskAssignView(LoginRequiredMixin, View):
 
         task.save(update_fields=['assigned_to_user', 'assigned_to_team'])
 
-        return render(request, 'tasks/partials/assignee.html', {'task': task})
+        # Send mail if new assignee is set
+        context = {
+            'task_title':   task.title,
+            'task_url':     f'{settings.SITE_URL}/tasks/{task.pk}/',
+            'project_name': task.project.name,
+            'assigned_by':  request.user.full_name,
+            'due_date':     task.due_date.strftime('%d.%m.%Y') if task.due_date else '',
+            'priority':     task.get_priority_display(),
+        }
+
+        if task.assigned_to_user and task.assigned_to_user != request.user:
+            # Mail to newly assigned user
+            dispatch(
+                event=MailHook.EVENT_TASK_ASSIGNED,
+                context={
+                    **context,
+                    'recipient_name': task.assigned_to_user.full_name,
+                },
+                recipients_override=[task.assigned_to_user.email],
+            )
+
+        elif task.assigned_to_team:
+            # Mail to all team members
+            dispatch(
+                event=MailHook.EVENT_TASK_ASSIGNED,
+                context={
+                    **context,
+                    'recipient_name': f'Team {task.assigned_to_team.name}',
+                },
+                task=task,
+            )
+
+        # Close modal signal
+        response = render(request, 'tasks/partials/assignee.html', {'task': task})
+        response['HX-Trigger'] = 'taskAssigned'
+        return response
 
 
 class TaskWatchView(LoginRequiredMixin, View):
@@ -568,6 +611,122 @@ class TimeEntryDeleteView(LoginRequiredMixin, View):
         total_m = entries.aggregate(t=Sum('duration_m'))['t'] or 0
         return render(request, 'tasks/partials/time_entry_list.html',
                       {'task': task, 'entries': entries, 'total_m': total_m})
+
+
+class TaskCloseFormView(LoginRequiredMixin, View):
+    """HTMX GET — returns modal content for closing a task with time tracking."""
+    def get(self, request, pk):
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+        return render(request, 'tasks/partials/close_form.html', {'task': task})
+
+
+class TaskCloseView(LoginRequiredMixin, View):
+    """
+    POST — Close task with time tracking.
+    Required field: actual_hours (actual effort in hours)
+    """
+    def post(self, request, pk):
+        from django.conf import settings
+
+        task         = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        actual_hours = request.POST.get('actual_hours', '').strip()
+        note         = request.POST.get('note', '').strip()
+
+        if not actual_hours:
+            return render(request, 'tasks/partials/close_form.html', {
+                'task':  task,
+                'error': 'Bitte den tatsächlichen Aufwand angeben.',
+            })
+
+        try:
+            hours = float(actual_hours.replace(',', '.'))
+            if hours < 0:
+                raise ValueError
+        except ValueError:
+            return render(request, 'tasks/partials/close_form.html', {
+                'task':  task,
+                'error': 'Bitte eine gültige Stundenanzahl eingeben.',
+            })
+
+        # Create Time Entry
+        TimeEntry.objects.create(
+            task       = task,
+            user       = request.user,
+            started_at = timezone.now(),
+            duration_m = int(hours * 60),
+            note       = note or f'Abschluss-Erfassung von {request.user.full_name}',
+        )
+
+        # Set Task to Done
+        old_status  = task.status
+        task.status = Task.STATUS_DONE
+        task.save(update_fields=['status'])
+
+        # Send Mail
+        from apps.mail.dispatcher import dispatch
+        from apps.mail.models import MailHook
+
+        context = {
+            'task_title':   task.title,
+            'task_url':     f'{settings.SITE_URL}/tasks/{task.pk}/',
+            'project_name': task.project.name,
+            'closed_by':    request.user.full_name,
+            'actual_hours': hours,
+            'note':         note,
+        }
+
+        # To Requester (if exists and not current user)
+        if task.effective_requester and task.effective_requester != request.user:
+            dispatch(
+                event=MailHook.EVENT_TASK_DONE,
+                context={
+                    **context,
+                    'recipient_name': task.effective_requester.full_name,
+                },
+                recipients_override=[task.effective_requester.email],
+            )
+
+        # To Watchers
+        dispatch(
+            event=MailHook.EVENT_TASK_DONE,
+            context=context,
+            task=task,
+        )
+
+        # Portal User Done Notification (ISSUE-28)
+        if task.created_by and hasattr(task.created_by, 'is_portal_user') and task.created_by.is_portal_user:
+            from apps.portal.tasks import send_portal_ticket_done_notification
+            send_portal_ticket_done_notification.delay(task.pk)
+
+        # Close modal + trigger refresh
+        response = HttpResponse(status=204)
+        response['HX-Trigger'] = 'taskClosed'
+        return response
+
+
+class TaskAssignFormView(LoginRequiredMixin, View):
+    """HTMX GET — returns assignment modal content."""
+    def get(self, request, pk):
+        from apps.teams.models import Team
+
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        return render(request, 'tasks/partials/assign_form.html', {
+            'task':            task,
+            'project_members': task.project.get_all_members().order_by('display_name'),
+            'project_teams':   Team.objects.filter(
+                models.Q(projectteammembership__project=task.project) |
+                models.Q(is_global=True),
+                is_active=True
+            ).distinct().order_by('name'),
+        })
 
 
 class TaskCloneView(LoginRequiredMixin, View):
