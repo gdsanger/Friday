@@ -19,11 +19,19 @@
             const saved = localStorage.getItem(SIDEBAR_KEY) || 'expanded';
             if (saved === 'collapsed') {
                 sidebar.classList.add('collapsed');
+                // Icon auch beim Init setzen
+                const icon = document.getElementById('sidebar-toggle-icon');
+                if (icon) {
+                    icon.className = 'bi bi-arrow-bar-right';
+                }
             }
         }
 
         // Theme Icon aktualisieren
         updateThemeIcon();
+
+        // Tooltips initialisieren
+        updateTooltips();
     }
 
     window.toggleSidebar = function() {
@@ -31,8 +39,20 @@
         if (!sidebar) return;
 
         sidebar.classList.toggle('collapsed');
-        const state = sidebar.classList.contains('collapsed') ? 'collapsed' : 'expanded';
+        const collapsed = sidebar.classList.contains('collapsed');
+        const state = collapsed ? 'collapsed' : 'expanded';
         localStorage.setItem(SIDEBAR_KEY, state);
+
+        // Icon wechseln
+        const icon = document.getElementById('sidebar-toggle-icon');
+        if (icon) {
+            icon.className = collapsed
+                ? 'bi bi-arrow-bar-right'
+                : 'bi bi-arrow-bar-left';
+        }
+
+        // Tooltips aktualisieren
+        updateTooltips();
     };
 
     window.openSidebarMobile = function() {
@@ -50,6 +70,27 @@
         backdrop?.classList.remove('active');
         document.body.style.overflow = '';
     };
+
+    // Tooltip Management für collapsed State
+    function updateTooltips() {
+        const sidebar = document.getElementById('friday-sidebar');
+        if (!sidebar) return;
+
+        const collapsed = sidebar.classList.contains('collapsed');
+
+        document.querySelectorAll('.sidebar-link[data-bs-title]').forEach(el => {
+            const existing = bootstrap.Tooltip.getInstance(el);
+            if (collapsed) {
+                if (!existing) {
+                    new bootstrap.Tooltip(el);
+                }
+            } else {
+                if (existing) {
+                    existing.dispose();
+                }
+            }
+        });
+    }
 
     // Schließen bei Escape
     document.addEventListener('keydown', (e) => {

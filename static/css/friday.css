@@ -76,7 +76,8 @@ body {
 
 .friday-layout {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* ── Sidebar Collapsible ─────────────────────────────────────── */
@@ -174,18 +175,27 @@ body {
 /* Icons zentrieren wenn collapsed */
 .friday-sidebar.collapsed .sidebar-link {
   justify-content: center;
-  padding: 8px 0;
+  padding: 8px;
+}
+
+.friday-sidebar.collapsed .sidebar-link .bi {
+  margin: 0;
+  font-size: 18px;  /* etwas größer im collapsed State */
 }
 
 .friday-sidebar.collapsed .sidebar-logo {
   justify-content: center;
-  padding: 20px 0 16px;
+  padding: 16px 8px;
+}
+
+.friday-sidebar.collapsed .sidebar-logo-mark {
+  margin: 0;
 }
 
 .friday-sidebar.collapsed .sidebar-footer {
-  justify-content: center;
   flex-direction: column;
   align-items: center;
+  padding: 12px 8px;
   gap: 8px;
 }
 
@@ -193,37 +203,31 @@ body {
   justify-content: center;
 }
 
-/* Toggle Button */
+.friday-sidebar.collapsed .sidebar-user-avatar {
+  margin: 0;
+}
+
+/* Toggle Button (integrated in nav) */
 .sidebar-toggle-btn {
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--friday-surface);
-  border: 1px solid var(--friday-border);
-  color: var(--friday-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Remove absolute positioning - it's now a nav item */
+  background: none;
+  border: none;
+  width: auto;
+  height: auto;
   cursor: pointer;
-  font-size: 12px;
-  z-index: 10;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .sidebar-toggle-btn:hover {
-  background: var(--friday-accent);
-  color: #fff;
-  border-color: var(--friday-accent);
+  background-color: var(--sidebar-hover);
 }
 
 /* Navigation */
 .sidebar-nav {
   flex: 1;
   padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-section-label {
@@ -281,22 +285,7 @@ body {
   margin-left: 6px;
 }
 
-/* Tooltip auf Icons wenn collapsed */
-.friday-sidebar.collapsed .sidebar-link:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--friday-text);
-  color: var(--friday-bg);
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1000;
-}
+/* Tooltip removed - using Bootstrap tooltips instead */
 
 /* Sidebar Footer */
 .sidebar-footer {
@@ -404,11 +393,6 @@ body {
     box-shadow: var(--shadow-lg);
   }
 
-  /* Main area immer full-width auf Tablet */
-  .friday-main {
-    margin-left: var(--sidebar-width-collapsed);
-  }
-
   .sidebar-toggle-btn {
     display: none;
   }
@@ -425,10 +409,6 @@ body {
   .friday-sidebar.mobile-open {
     transform: translateX(0);
     box-shadow: var(--shadow-lg);
-  }
-
-  .friday-main {
-    margin-left: 0;
   }
 
   .hamburger-btn {
@@ -474,10 +454,11 @@ body {
 /* Main Content Area */
 .friday-main {
     flex: 1;
-    margin-left: var(--sidebar-width-expanded);
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    transition: none;  /* Sidebar handles transition */
 }
 
 /* Topbar - 56px height, sticky */
