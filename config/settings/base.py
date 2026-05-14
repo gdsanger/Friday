@@ -20,6 +20,13 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://friday.angermeier.net",
+    "https://friday.isarlabs.de",
+    "http://localhost:8012",
+    "http://127.0.0.1"
+]
+
 # Application definition
 INSTALLED_APPS = [
     # Django
@@ -106,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'de-de'
 TIME_ZONE = 'Europe/Berlin'
 USE_I18N = True
 USE_TZ = True
