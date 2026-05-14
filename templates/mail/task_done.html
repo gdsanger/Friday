@@ -1,39 +1,39 @@
 {% extends "mail/base.html" %}
 {% block body %}
 <h1 class="email-title">Task completed</h1>
-<p class="email-text">Hello {{ recipient_name }},</p>
+<p class="email-text">Hallo {{ recipient_name }},</p>
 <p class="email-text">
-  <strong>{{ closed_by }}</strong> has marked a task as complete:
+  <strong>{{ closed_by }}</strong> hat eine Aufgabe als erledigt markiert:
 </p>
 
 <div class="info-box">
   <div class="info-row">
-    Task:
+    Aufgabe:
     <strong>{{ task_title }}</strong>
   </div>
   <div class="info-row">
-    Project:
+    Projekt:
     {{ project_name }}
   </div>
   <div class="info-row">
     Status:
-    <span class="badge badge-green">Done</span>
+    <span class="badge badge-green">Erledigt</span>
   </div>
   {% if actual_hours %}
   <div class="info-row">
-    Actual effort:
+    Tatsächlicher Aufwand:
     <strong>{{ actual_hours }}h</strong>
   </div>
   {% endif %}
   {% if note %}
   <div class="info-row">
-    Note:
+    Notiz:
     {{ note }}
   </div>
   {% endif %}
 </div>
 
 <p style="margin:24px 0;">
-  <a href="{{ task_url }}" class="email-btn">View Task</a>
+  <a href="{{ task_url }}" class="email-btn">Aufgabe öffnen</a>
 </p>
 {% endblock %}

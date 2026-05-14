@@ -1,35 +1,35 @@
 {% extends "mail/base.html" %}
 {% block body %}
-<h1 class="email-title">A task has been assigned to you</h1>
-<p class="email-text">Hello {{ recipient_name }},</p>
+<h1 class="email-title">Eine Aufgabe wurde dir zugewiesen</h1>
+<p class="email-text">Hallo {{ recipient_name }},</p>
 <p class="email-text">
-  <strong>{{ assigned_by }}</strong> has assigned you a new task:
+  <strong>{{ assigned_by }}</strong> hat dir eine neue Aufgabe zugewiesen. Hier sind die Details:
 </p>
 
 <div class="info-box">
   <div class="info-row">
-    Task:
+    Aufgabe:
     <strong>{{ task_title }}</strong>
   </div>
   <div class="info-row">
-    Project:
+    Projekt:
     {{ project_name }}
   </div>
   {% if due_date %}
   <div class="info-row">
-    Due:
-    {{ due_date }}
+    Fälligkeitsdatum:
+    <strong style="color:#991b1b;">{{ due_date }}</strong>  
   </div>
   {% endif %}
   {% if priority %}
   <div class="info-row">
-    Priority:
+    Priorität:
     {{ priority }}
   </div>
   {% endif %}
 </div>
 
 <p style="margin:24px 0;">
-  <a href="{{ task_url }}" class="email-btn">Open Task</a>
+  <a href="{{ task_url }}" class="email-btn">Aufgabe öffnen</a>
 </p>
 {% endblock %}
