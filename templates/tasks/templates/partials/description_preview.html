@@ -1,9 +1,13 @@
+{% load friday_tags %}
 <div id="description-preview"
-     class="md-render p-3 rounded"
+     class="md-content p-3 rounded"
      style="background:var(--bs-secondary-bg); font-size:13px;
-            border:1px solid var(--bs-border-color); min-height:100px;"
-     data-md="{{ preview|default:''|escapejs }}">
-  {% if not preview %}<span class="text-muted fst-italic">
+            border:1px solid var(--bs-border-color); min-height:100px;">
+  {% if preview %}
+    {{ preview|render_md }}
+  {% else %}
+    <span class="text-muted fst-italic">
       Fülle die Felder aus um die Vorschau zu sehen...
-    </span>{% endif %}
+    </span>
+  {% endif %}
 </div>

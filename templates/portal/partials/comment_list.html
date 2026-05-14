@@ -1,3 +1,4 @@
+{% load friday_tags %}
 {% if comments %}
 {% for comment in comments %}
 <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
@@ -9,7 +10,7 @@
             <strong>{{ comment.author.full_name }}</strong>
             <small class="text-muted">{{ comment.created_at|date:"d.m.Y H:i" }}</small>
         </div>
-        <div class="md-render" data-md="{{ comment.body }}"></div>
+        <div class="md-content">{{ comment.body|render_md }}</div>
     </div>
 </div>
 {% endfor %}

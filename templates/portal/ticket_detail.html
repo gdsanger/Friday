@@ -1,4 +1,5 @@
 {% extends 'portal/base_portal.html' %}
+{% load friday_tags %}
 
 {% block title %}{{ task.title }} - Friday Portal{% endblock %}
 
@@ -41,7 +42,7 @@
         <h6 class="mb-0">Beschreibung</h6>
     </div>
     <div class="card-body">
-        <div class="md-render" data-md="{{ task.description }}"></div>
+        <div class="md-content">{{ task.description|render_md }}</div>
     </div>
 </div>
 {% endif %}
