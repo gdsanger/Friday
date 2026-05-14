@@ -452,5 +452,61 @@
 
     // Re-initialize after HTMX swaps (slide-over, etc.)
     document.addEventListener('htmx:afterSettle', (e) => initMentions(e.detail.target));
+    // ── Task Actions (ISSUE-53) ──────────────────────────────────────
+
+    // Task Closed Event Handler
+    document.addEventListener('taskClosed', () => {
+        // Close modal
+        const modalEl = document.getElementById('task-close-modal-container');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal?.hide();
+        }
+
+        // Reload Slide-Over if open
+        const slideOver = document.getElementById('slide-over');
+        if (slideOver && slideOver.dataset.taskId) {
+            htmx.ajax('GET',
+                `/tasks/${slideOver.dataset.taskId}/detail/`,
+                { target: '#slide-over', swap: 'innerHTML' }
+            );
+        }
+
+        // Refresh Kanban Board if visible
+        const kanbanBoard = document.getElementById('kanban-board');
+        if (kanbanBoard) {
+            htmx.trigger(kanbanBoard, 'refresh');
+        }
+
+        // Reload full page if we're on task detail full view
+        if (window.location.pathname.match(/^\/tasks\/\d+\/$/)) {
+            window.location.reload();
+        }
+    });
+
+    // Task Assigned Event Handler
+    document.addEventListener('taskAssigned', () => {
+        // Close modal
+        const modalEl = document.getElementById('task-assign-modal-container');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal?.hide();
+        }
+
+        // Reload Slide-Over if open
+        const slideOver = document.getElementById('slide-over');
+        if (slideOver && slideOver.dataset.taskId) {
+            htmx.ajax('GET',
+                `/tasks/${slideOver.dataset.taskId}/detail/`,
+                { target: '#slide-over', swap: 'innerHTML' }
+            );
+        }
+
+        // Refresh Kanban Board if visible
+        const kanbanBoard = document.getElementById('kanban-board');
+        if (kanbanBoard) {
+            htmx.trigger(kanbanBoard, 'refresh');
+        }
+    });
 
 })();

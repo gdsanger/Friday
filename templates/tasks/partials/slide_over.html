@@ -87,6 +87,16 @@
             <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        {% if task.status != 'done' %}
+        <button class="btn btn-success btn-sm ms-auto"
+                hx-get="{% url 'tasks:task-close-form' task.pk %}"
+                hx-target="#task-close-modal"
+                hx-swap="innerHTML"
+                data-bs-toggle="modal"
+                data-bs-target="#task-close-modal-container">
+          <i class="bi bi-check-circle me-1"></i> Task abschließen
+        </button>
+        {% endif %}
     </div>
 
     <!-- Description -->
@@ -104,58 +114,22 @@
         <div class="card-body">
             <!-- Assigned To -->
             <div class="row mb-3">
-                <div class="col-4 fw-semibold">Assigned to:</div>
-                <div class="col-8">
-                    <select class="form-select form-select-sm"
-                            id="assign-user-{{ task.pk }}"
-                            name="user_id"
-                            hx-post="{% url 'tasks:task-assign' task.pk %}"
-                            hx-target="#task-assignee"
-                            hx-swap="innerHTML"
-                            hx-include="[name='team_id']">
-                        <option value="">— Select User —</option>
-                        {% for member in project_members %}
-                        <option value="{{ member.id }}" {% if task.assigned_to_user.id == member.id %}selected{% endif %}>
-                            {{ member.full_name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <select class="form-select form-select-sm mt-2"
-                            id="assign-team-{{ task.pk }}"
-                            name="team_id"
-                            hx-post="{% url 'tasks:task-assign' task.pk %}"
-                            hx-target="#task-assignee"
-                            hx-swap="innerHTML"
-                            hx-include="[name='user_id']">
-                        <option value="">— Select Team —</option>
-                        {% for team in project_teams %}
-                        <option value="{{ team.id }}" {% if task.assigned_to_team.id == team.id %}selected{% endif %}>
-                            {{ team.name }}{% if team.is_global %} 🌐{% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <div class="mt-2">
-                        {% include 'tasks/partials/assignee.html' %}
+                <div class="col-4 fw-semibold">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span>Assigned to:</span>
+                        <button class="btn btn-outline-secondary btn-xs"
+                                hx-get="{% url 'tasks:task-assign-form' task.pk %}"
+                                hx-target="#task-assign-modal"
+                                hx-swap="innerHTML"
+                                data-bs-toggle="modal"
+                                data-bs-target="#task-assign-modal-container"
+                                style="font-size:11px; padding:1px 6px;">
+                            <i class="bi bi-person-plus"></i> Zuweisen
+                        </button>
                     </div>
-                    <script>
-                    // XOR enforcement: Clear team when user selected, clear user when team selected
-                    (function() {
-                        const userSelect = document.getElementById('assign-user-{{ task.pk }}');
-                        const teamSelect = document.getElementById('assign-team-{{ task.pk }}');
-                        if (userSelect && teamSelect) {
-                            userSelect.addEventListener('change', function() {
-                                if (this.value) {
-                                    teamSelect.value = '';
-                                }
-                            });
-                            teamSelect.addEventListener('change', function() {
-                                if (this.value) {
-                                    userSelect.value = '';
-                                }
-                            });
-                        }
-                    })();
-                    </script>
+                </div>
+                <div class="col-8" id="task-assignee">
+                    {% include 'tasks/partials/assignee.html' %}
                 </div>
             </div>
 
@@ -424,4 +398,24 @@
         <div>Created by {{ task.created_by.full_name }} on {{ task.created_at|date:"M d, Y" }}</div>
         <div>Last updated {{ task.updated_at|timesince }} ago</div>
     </div>
+</div>
+
+<!-- Modal Container for Task Close -->
+<div class="modal fade" id="task-close-modal-container"
+     tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="task-close-modal">
+      <!-- Will be filled via HTMX -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal Container for Task Assignment -->
+<div class="modal fade" id="task-assign-modal-container"
+     tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="task-assign-modal">
+      <!-- Will be filled via HTMX -->
+    </div>
+  </div>
 </div>

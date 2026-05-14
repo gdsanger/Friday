@@ -3,7 +3,7 @@
 <h1 class="email-title">Task completed</h1>
 <p class="email-text">Hello {{ recipient_name }},</p>
 <p class="email-text">
-  <strong>{{ done_by }}</strong> has marked a task as complete:
+  <strong>{{ closed_by }}</strong> has marked a task as complete:
 </p>
 
 <div class="info-box">
@@ -19,6 +19,18 @@
     Status:
     <span class="badge badge-green">Done</span>
   </div>
+  {% if actual_hours %}
+  <div class="info-row">
+    Actual effort:
+    <strong>{{ actual_hours }}h</strong>
+  </div>
+  {% endif %}
+  {% if note %}
+  <div class="info-row">
+    Note:
+    {{ note }}
+  </div>
+  {% endif %}
 </div>
 
 <p style="margin:24px 0;">
