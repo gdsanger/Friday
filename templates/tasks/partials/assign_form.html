@@ -1,0 +1,120 @@
+<div class="modal-header">
+  <h5 class="modal-title">
+    <i class="bi bi-person-plus me-2"></i>
+    Task zuweisen
+  </h5>
+  <button type="button" class="btn-close"
+          data-bs-dismiss="modal"></button>
+</div>
+
+<form hx-post="{% url 'tasks:task-assign' task.pk %}"
+      hx-target="#task-assignee"
+      hx-swap="outerHTML">
+  {% csrf_token %}
+
+  <div class="modal-body">
+
+    <!-- Task Info -->
+    <div class="mb-3 p-3 rounded"
+         style="background:var(--friday-surface-alt);
+                border-left:3px solid {{ task.project.color }};">
+      <div class="fw-medium">{{ task.title }}</div>
+      <div class="text-muted" style="font-size:12px;">
+        {{ task.project.name }}
+      </div>
+    </div>
+
+    <!-- Aktueller Assignee -->
+    {% if task.assigned_to_user or task.assigned_to_team %}
+    <div class="mb-3 p-2 rounded d-flex align-items-center gap-2"
+         style="background:var(--friday-surface-alt); font-size:13px;">
+      <i class="bi bi-person-check text-muted"></i>
+      Aktuell: <strong>{{ task.assignee_display }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- Radio: Person oder Team -->
+    <div class="mb-3">
+      <div class="d-flex gap-3 mb-2">
+        <div class="form-check">
+          <input class="form-check-input" type="radio"
+                 name="assign_type" value="user" id="at-user"
+                 checked onchange="toggleAssignType('user')">
+          <label class="form-check-label" for="at-user">Person</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio"
+                 name="assign_type" value="team" id="at-team"
+                 onchange="toggleAssignType('team')">
+          <label class="form-check-label" for="at-team">Team</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio"
+                 name="assign_type" value="none" id="at-none"
+                 onchange="toggleAssignType('none')">
+          <label class="form-check-label" for="at-none">Niemand</label>
+        </div>
+      </div>
+
+      <div id="assign-user-wrap">
+        <select name="user_id" class="form-select">
+          <option value="">— Person wählen —</option>
+          {% for member in project_members %}
+          <option value="{{ member.pk }}"
+            {% if task.assigned_to_user_id == member.pk %}selected{% endif %}>
+            {{ member.full_name }}
+            {% if member == request.user %}(ich){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div id="assign-team-wrap" style="display:none;">
+        <select name="team_id" class="form-select">
+          <option value="">— Team wählen —</option>
+          {% for team in project_teams %}
+          <option value="{{ team.pk }}"
+            {% if task.assigned_to_team_id == team.pk %}selected{% endif %}>
+            {{ team.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Mail-Info -->
+    <div class="d-flex align-items-center gap-2 p-2 rounded"
+         style="background:var(--friday-accent-light);
+                font-size:12px; color:var(--friday-accent);">
+      <i class="bi bi-envelope"></i>
+      Der/die Zugewiesene erhält eine Benachrichtigung per Mail.
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary"
+            data-bs-dismiss="modal">Abbrechen</button>
+    <button type="submit" class="btn btn-primary"
+            onclick="closeAssignModal()">
+      <i class="bi bi-person-check me-1"></i>
+      Zuweisen
+    </button>
+  </div>
+</form>
+
+<script>
+function toggleAssignType(type) {
+  document.getElementById('assign-user-wrap').style.display =
+    type === 'user' ? 'block' : 'none';
+  document.getElementById('assign-team-wrap').style.display =
+    type === 'team' ? 'block' : 'none';
+}
+function closeAssignModal() {
+  setTimeout(() => {
+    bootstrap.Modal.getInstance(
+      document.getElementById('task-assign-modal-container')
+    )?.hide();
+  }, 300);
+}
+</script>
