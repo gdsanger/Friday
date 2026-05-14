@@ -58,9 +58,12 @@ def _resolve_recipients(hook: MailHook, task) -> list[str]:
             continue
 
         if recipient_type == 'assignee':
+            # XOR: User direkt zugewiesen → nur dieser User
+            # Nur Team zugewiesen → alle Teammitglieder
             if task.assigned_to_user and _wants_mail(task.assigned_to_user):
                 emails.add(task.assigned_to_user.email)
             elif task.assigned_to_team:
+                # Team zugewiesen, kein User → alle Teammitglieder
                 for m in task.assigned_to_team.memberships.all():
                     if _wants_mail(m.user):
                         emails.add(m.user.email)

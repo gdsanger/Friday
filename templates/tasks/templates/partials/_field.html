@@ -12,7 +12,11 @@
          value="{{ post|get_item:field.name }}"
          class="form-control extra-field"
          {% if field.required %}required{% endif %}>
-  {% if field.hint %}<div class="form-text">{{ field.hint }}</div>{% endif %}
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'textarea' %}
@@ -24,6 +28,11 @@
   <textarea name="extra_{{ field.name }}"
             class="form-control extra-field" rows="3"
             {% if field.required %}required{% endif %}>{{ post|get_item:field.name }}</textarea>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'number' %}
@@ -39,6 +48,11 @@
          {% if field.min is not None %}min="{{ field.min }}"{% endif %}
          {% if field.max is not None %}max="{{ field.max }}"{% endif %}
          {% if field.required %}required{% endif %}>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'select' %}
@@ -58,6 +72,11 @@
     </option>
     {% endfor %}
   </select>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'multiselect' %}
@@ -80,6 +99,11 @@
     </div>
     {% endfor %}
   </div>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'date' %}
@@ -93,6 +117,11 @@
          value="{{ post|get_item:field.name }}"
          class="form-control extra-field"
          {% if field.required %}required{% endif %}>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 
 {% elif field.type == 'checkbox' %}
@@ -108,5 +137,10 @@
       {% if field.required %}<span class="text-danger">*</span>{% endif %}
     </label>
   </div>
+  {% if field.description %}
+  <div class="form-text" style="font-size:12px; color:var(--friday-text-muted);">
+    {{ field.description }}
+  </div>
+  {% endif %}
 </div>
 {% endif %}

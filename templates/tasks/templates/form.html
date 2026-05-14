@@ -145,6 +145,7 @@
                         YAML-Definition der Zusatzfelder. Beispiel:
                         <pre class="mt-2 p-2 bg-light border rounded" style="font-size: 12px;">- name: zielgruppe
   label: Zielgruppe
+  description: Beschreibe die Zielgruppe für diese Aufgabe
   type: text
   required: true
 
@@ -156,7 +157,13 @@
     - Formell
     - Informell
     - Neutral</pre>
-                        <strong>Erlaubte Typen:</strong> text, textarea, number, select, multiselect, date, checkbox
+                        <strong>Verfügbare Felder pro Eintrag:</strong><br>
+                        <code>name</code>: (Pflicht) Feldname (keine Leerzeichen)<br>
+                        <code>label</code>: (Pflicht) Anzeigename<br>
+                        <code>description</code>: (Optional) Helptext unter dem Feld<br>
+                        <code>type</code>: (Pflicht) text | textarea | number | select | multiselect | date | checkbox<br>
+                        <code>required</code>: (Optional) true | false<br>
+                        <code>options</code>: (Pflicht bei select/multiselect) Liste von Werten
                     </div>
                 </div>
             </div>

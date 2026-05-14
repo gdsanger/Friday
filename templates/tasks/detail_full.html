@@ -192,6 +192,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Assigned to</label>
                         <select class="form-select form-select-sm mb-2"
+                                id="assign-user-full"
                                 name="user_id"
                                 hx-post="{% url 'tasks:task-assign' task.pk %}"
                                 hx-target="#task-assignee"
@@ -205,6 +206,7 @@
                             {% endfor %}
                         </select>
                         <select class="form-select form-select-sm"
+                                id="assign-team-full"
                                 name="team_id"
                                 hx-post="{% url 'tasks:task-assign' task.pk %}"
                                 hx-target="#task-assignee"
@@ -220,6 +222,25 @@
                         <div class="mt-2">
                             {% include 'tasks/partials/assignee.html' %}
                         </div>
+                        <script>
+                        // XOR enforcement: Clear team when user selected, clear user when team selected
+                        (function() {
+                            const userSelect = document.getElementById('assign-user-full');
+                            const teamSelect = document.getElementById('assign-team-full');
+                            if (userSelect && teamSelect) {
+                                userSelect.addEventListener('change', function() {
+                                    if (this.value) {
+                                        teamSelect.value = '';
+                                    }
+                                });
+                                teamSelect.addEventListener('change', function() {
+                                    if (this.value) {
+                                        userSelect.value = '';
+                                    }
+                                });
+                            }
+                        })();
+                        </script>
                     </div>
 
                     <!-- Requester -->

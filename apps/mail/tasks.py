@@ -162,27 +162,30 @@ def send_daily_digest():
         my_teams = list(user.teams)
 
         # ── Kategorie 1: Überfällig ───────────────────────────────
+        # XOR Logic: Direkt zugewiesen ODER Team ohne User-Assignee
         overdue = Task.objects.filter(
             models.Q(assigned_to_user=user) |
-            models.Q(assigned_to_team__in=my_teams),
+            models.Q(assigned_to_team__in=my_teams, assigned_to_user__isnull=True),
             due_date__lt=today,
         ).exclude(status='done').select_related(
             'project', 'assigned_to_team', 'assigned_to_user'
         ).order_by('due_date')
 
         # ── Kategorie 2: Nächste 7 Tage ──────────────────────────
+        # XOR Logic: Direkt zugewiesen ODER Team ohne User-Assignee
         upcoming = Task.objects.filter(
             models.Q(assigned_to_user=user) |
-            models.Q(assigned_to_team__in=my_teams),
+            models.Q(assigned_to_team__in=my_teams, assigned_to_user__isnull=True),
             due_date__range=(today, in_7),
         ).exclude(status='done').select_related(
             'project', 'assigned_to_team', 'assigned_to_user'
         ).order_by('due_date')
 
         # ── Kategorie 3: In Bearbeitung ───────────────────────────
+        # XOR Logic: Direkt zugewiesen ODER Team ohne User-Assignee
         in_progress = Task.objects.filter(
             models.Q(assigned_to_user=user) |
-            models.Q(assigned_to_team__in=my_teams),
+            models.Q(assigned_to_team__in=my_teams, assigned_to_user__isnull=True),
             status='in_progress',
         ).select_related(
             'project', 'assigned_to_team', 'assigned_to_user'
