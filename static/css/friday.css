@@ -1282,3 +1282,130 @@ body {
 #taskAccordionSlideOver .accordion-button {
   box-shadow: none;
 }
+
+/* ── Task Full-View Spacing & Visual Separation (ISSUE-69) ────── */
+
+/* General Task Section Card Wrapper */
+.task-section {
+  background: var(--friday-surface);
+  border: 1px solid var(--friday-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.task-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--friday-text-muted);
+  margin-bottom: 16px;
+}
+
+/* Accordion Items with more spacing and borders */
+.task-accordion .accordion-item,
+#taskAccordion .accordion-item {
+  border: 1px solid var(--friday-border) !important;
+  border-radius: 10px !important;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.task-accordion .accordion-button,
+#taskAccordion .accordion-button {
+  padding: 16px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+.task-accordion .accordion-body,
+#taskAccordion .accordion-body {
+  padding: 0 20px 20px;
+}
+
+/* Activity Section */
+.activity-section {
+  background: var(--friday-surface);
+  border: 1px solid var(--friday-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.activity-section .activity-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--friday-border);
+}
+
+.activity-section .activity-item:last-child {
+  border-bottom: none;
+}
+
+/* Tabs Section with Card Wrapper */
+.task-tabs-section {
+  background: var(--friday-surface);
+  border: 1px solid var(--friday-border);
+  border-radius: 10px;
+  padding: 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.task-tabs-section .nav-tabs {
+  padding: 0 20px;
+  background: var(--friday-surface-alt);
+  border-bottom: 1px solid var(--friday-border);
+}
+
+.task-tabs-section .tab-content {
+  padding: 20px;
+}
+
+/* Two-Column Layout for Full View */
+.task-full-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .task-full-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sticky Sidebar */
+.task-full-sidebar {
+  position: sticky;
+  top: 16px;
+}
+
+/* Meta Section Styling */
+.task-meta-section {
+  background: var(--friday-surface);
+  border: 1px solid var(--friday-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.task-meta-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--friday-border);
+}
+
+.task-meta-row:last-child {
+  border-bottom: none;
+}
+
+.task-meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--friday-text-muted);
+  margin-bottom: 6px;
+}

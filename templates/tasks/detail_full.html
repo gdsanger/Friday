@@ -20,9 +20,9 @@
         </ol>
     </nav>
 
-    <div class="row">
+    <div class="task-full-layout">
         <!-- Left Column (Main Content) -->
-        <div class="col-lg-8">
+        <div>
             <!-- Title (editable) with actions -->
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div class="flex-grow-1">
@@ -135,10 +135,10 @@
             </div>
 
             <!-- Task Tabs (Subtasks, Dependencies, Attachments, Time Entries) -->
-            <div class="task-tabs mt-4 mb-4">
+            <div class="task-tabs-section">
                 <!-- Tab Header -->
                 <ul class="nav nav-tabs" id="taskTabs" role="tablist"
-                    style="font-size:13px; border-bottom:1px solid var(--friday-border);">
+                    style="font-size:13px;">
 
                     <li class="nav-item">
                         <button class="nav-link active" data-bs-toggle="tab"
@@ -195,7 +195,7 @@
                 </ul>
 
                 <!-- Tab Content -->
-                <div class="tab-content pt-3" id="taskTabContent">
+                <div class="tab-content" id="taskTabContent">
 
                     <!-- Subtasks Tab -->
                     <div class="tab-pane fade show active" id="tab-subtasks">
@@ -241,9 +241,8 @@
             </div>
 
             <!-- Activity Stream -->
-            <div class="card mb-4">
-                <div class="card-body"
-                     hx-get="{% url 'tasks:task-activity' task.pk %}"
+            <div class="activity-section">
+                <div hx-get="{% url 'tasks:task-activity' task.pk %}"
                      hx-trigger="load"
                      hx-target="this"
                      hx-swap="innerHTML">
@@ -252,18 +251,17 @@
             </div>
 
             <!-- Accordion for Checkliste and Comments -->
-            <div class="accordion mt-4" id="taskAccordion">
+            <div class="accordion" id="taskAccordion">
 
                 <!-- Checkliste -->
-                <div class="accordion-item border-0 border-top">
+                <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {% if not task.checklist_items.exists %}collapsed{% endif %} px-0"
+                        <button class="accordion-button {% if not task.checklist_items.exists %}collapsed{% endif %}"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#accordion-checklist"
-                                style="background:transparent; font-size:13px;
-                                       font-weight:600; color:var(--friday-text);
-                                       text-transform:uppercase; letter-spacing:.5px;">
+                                style="background:transparent;
+                                       color:var(--friday-text);">
                             Checkliste
                             {% with done=task.checklist_progress.0 total=task.checklist_progress.1 %}
                             {% if total > 0 %}
@@ -285,22 +283,21 @@
                     </h2>
                     <div id="accordion-checklist"
                          class="accordion-collapse collapse {% if task.checklist_items.exists %}show{% endif %}">
-                        <div class="accordion-body px-0 pt-2">
+                        <div class="accordion-body">
                             {% include 'tasks/partials/checklist.html' with items=task.checklist_items.all done=task|checklist_done total=task|checklist_total pct=task.checklist_pct templates=checklist_templates %}
                         </div>
                     </div>
                 </div>
 
                 <!-- Kommentare -->
-                <div class="accordion-item border-0 border-top">
+                <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {% if not task.comments.exists %}collapsed{% endif %} px-0"
+                        <button class="accordion-button {% if not task.comments.exists %}collapsed{% endif %}"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#accordion-comments"
-                                style="background:transparent; font-size:13px;
-                                       font-weight:600; color:var(--friday-text);
-                                       text-transform:uppercase; letter-spacing:.5px;">
+                                style="background:transparent;
+                                       color:var(--friday-text);">
                             Kommentare
                             {% with count=task.comments.count %}
                             {% if count > 0 %}
@@ -314,7 +311,7 @@
                     </h2>
                     <div id="accordion-comments"
                          class="accordion-collapse collapse {% if task.comments.exists %}show{% endif %}">
-                        <div class="accordion-body px-0 pt-2">
+                        <div class="accordion-body">
                             {% include 'tasks/partials/comment_list.html' with comments=task.comments.all %}
 
                             <form hx-post="{% url 'tasks:task-comment' task.pk %}"
@@ -336,7 +333,7 @@
         </div>
 
         <!-- Right Column (Sidebar) -->
-        <div class="col-lg-4">
+        <div class="task-full-sidebar">
             <!-- Task Details -->
             <div class="card mb-4">
                 <div class="card-header">
