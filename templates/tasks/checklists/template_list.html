@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checklisten-Vorlagen{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Checklisten-Vorlagen</h2>
+        <a href="{% url 'tasks:checklist-template-create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Neue Vorlage
+        </a>
+    </div>
+
+    {% if templates %}
+    <div class="row">
+        {% for template in templates %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ template.name }}</h5>
+                    <p class="text-muted small mb-2">
+                        {{ template.items.count }} Item{{ template.items.count|pluralize }}
+                    </p>
+                    <div class="mb-3">
+                        {% for item in template.items.all|slice:":5" %}
+                        <div class="d-flex gap-2 py-1">
+                            <i class="bi bi-circle" style="font-size:12px; color:var(--friday-text-muted);"></i>
+                            <span style="font-size:13px;">{{ item.title }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if template.items.count > 5 %}
+                        <div class="text-muted small">
+                            ... und {{ template.items.count|add:"-5" }} weitere
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'tasks:checklist-template-edit' template.pk %}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Bearbeiten
+                        </a>
+                        <form method="post" action="{% url 'tasks:checklist-template-delete' template.pk %}"
+                              onsubmit="return confirm('Vorlage &quot;{{ template.name }}&quot; wirklich löschen?');"
+                              class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash3"></i> Löschen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    Erstellt von {{ template.created_by.display_name }} am {{ template.created_at|date:"d.m.Y" }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        Noch keine Checklisten-Vorlagen vorhanden.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

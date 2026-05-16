@@ -58,6 +58,28 @@ urlpatterns = [
     path('<int:pk>/labels/<int:label_pk>/remove/',
                                                  views.TaskLabelRemoveView.as_view(),     name='task-label-remove'),
 
+    # Checklisten-Items (ISSUE-63)
+    path('<int:pk>/checklist/add/',
+         views.ChecklistItemAddView.as_view(),                                            name='checklist-item-add'),
+    path('<int:pk>/checklist/<int:item_pk>/toggle/',
+         views.ChecklistItemToggleView.as_view(),                                         name='checklist-item-toggle'),
+    path('<int:pk>/checklist/<int:item_pk>/delete/',
+         views.ChecklistItemDeleteView.as_view(),                                         name='checklist-item-delete'),
+    path('<int:pk>/checklist/<int:item_pk>/convert/',
+         views.ChecklistItemConvertView.as_view(),                                        name='checklist-item-convert'),
+    path('<int:pk>/checklist/apply-template/',
+         views.ChecklistApplyTemplateView.as_view(),                                      name='checklist-apply-template'),
+
+    # Checklisten-Vorlagen (ISSUE-63)
+    path('checklists/',
+         views.ChecklistTemplateListView.as_view(),                                       name='checklist-template-list'),
+    path('checklists/create/',
+         views.ChecklistTemplateCreateView.as_view(),                                     name='checklist-template-create'),
+    path('checklists/<int:pk>/edit/',
+         views.ChecklistTemplateEditView.as_view(),                                       name='checklist-template-edit'),
+    path('checklists/<int:pk>/delete/',
+         views.ChecklistTemplateDeleteView.as_view(),                                     name='checklist-template-delete'),
+
     # Task Templates
     path('templates/',                           views.TemplateListView.as_view(),        name='template-list'),
     path('templates/create/',                    views.TemplateCreateView.as_view(),      name='template-create'),
