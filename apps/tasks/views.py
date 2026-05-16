@@ -643,6 +643,8 @@ class TaskDetailFullView(LoginRequiredMixin, View):
             'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
+            'available_labels': Label.objects.exclude(
+                                   pk__in=task.labels.all()).order_by('name'),
             'breadcrumb': [
                 {'label': 'Projects',      'url': reverse('projects:project-list')},
                 {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},

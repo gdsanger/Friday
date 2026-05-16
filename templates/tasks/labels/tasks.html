@@ -23,33 +23,29 @@
     </div>
 
     <!-- Kanban Board -->
-    <div class="kanban-board">
-        <div class="kanban-columns">
-            {% for status, status_name in status_choices %}
-            <div class="kanban-column">
-                <div class="kanban-column-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="kanban-column-title mb-0">
-                            {{ status_name }}
-                        </h3>
-                        <span class="badge rounded-pill bg-secondary">
-                            {{ columns|get_item:status|length }}
-                        </span>
-                    </div>
-                </div>
+    <div class="kanban-board d-flex gap-3 overflow-x-auto pb-3">
+        {% for status, status_name in status_choices %}
+        <div class="kanban-column flex-shrink-0"
+             data-status="{{ status }}"
+             style="width: 280px; min-width: 280px;">
 
-                <div class="kanban-column-body">
-                    {% for task in columns|get_item:status %}
-                        {% include 'tasks/partials/card.html' %}
-                    {% empty %}
-                    <div class="text-muted text-center py-3" style="font-size:13px;">
-                        Keine Tasks
-                    </div>
-                    {% endfor %}
-                </div>
+            <div class="kanban-column-header d-flex align-items-center justify-content-between mb-2">
+                <span>{{ status_name }}</span>
+                <span class="badge bg-secondary">{{ columns|get_item:status|length }}</span>
             </div>
-            {% endfor %}
+
+            <div class="kanban-cards" id="col-{{ status }}" data-status="{{ status }}">
+                {% for task in columns|get_item:status %}
+                    {% include 'tasks/partials/card.html' with task=task %}
+                {% empty %}
+                <div class="text-muted text-center py-3" style="font-size:13px;">
+                    Keine Tasks
+                </div>
+                {% endfor %}
+            </div>
+
         </div>
+        {% endfor %}
     </div>
 </div>
 
