@@ -1219,3 +1219,33 @@ body {
 .tribute-container li:hover {
   background: var(--friday-surface-alt);
 }
+
+/* ── Task Accordion Styling (ISSUE-66) ──────────────────────────── */
+
+/* Accordion without standard Bootstrap styling */
+.task-accordion .accordion-button::after,
+#taskAccordion .accordion-button::after,
+#taskAccordionSlideOver .accordion-button::after {
+  margin-left: auto;
+}
+
+.task-accordion .accordion-button:not(.collapsed),
+#taskAccordion .accordion-button:not(.collapsed),
+#taskAccordionSlideOver .accordion-button:not(.collapsed) {
+  box-shadow: none;
+  color: var(--friday-text);
+  background-color: transparent;
+}
+
+.task-accordion .accordion-button:focus,
+#taskAccordion .accordion-button:focus,
+#taskAccordionSlideOver .accordion-button:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.task-accordion .accordion-button,
+#taskAccordion .accordion-button,
+#taskAccordionSlideOver .accordion-button {
+  box-shadow: none;
+}

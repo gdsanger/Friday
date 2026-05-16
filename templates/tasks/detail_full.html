@@ -134,49 +134,109 @@
                 </div>
             </div>
 
-            <!-- Subtasks -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Subtasks</h6>
-                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#subtask-form">
-                        <i class="bi bi-plus"></i> Add
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="collapse mb-3" id="subtask-form">
-                        <form hx-post="{% url 'tasks:subtask-create' task.pk %}"
-                              hx-target="#subtask-list"
-                              hx-swap="innerHTML"
-                              hx-on::after-request="this.reset(); bootstrap.Collapse.getInstance(document.getElementById('subtask-form')).hide();">
-                            {% csrf_token %}
-                            <div class="input-group input-group-sm">
-                                <input type="text" name="title" class="form-control" placeholder="Subtask title" required>
-                                <button type="submit" class="btn btn-primary">Add</button>
-                            </div>
-                        </form>
+            <!-- Task Tabs (Subtasks, Dependencies, Attachments, Time Entries) -->
+            <div class="task-tabs mt-4 mb-4">
+                <!-- Tab Header -->
+                <ul class="nav nav-tabs" id="taskTabs" role="tablist"
+                    style="font-size:13px; border-bottom:1px solid var(--friday-border);">
+
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab"
+                                data-bs-target="#tab-subtasks" type="button">
+                            Subtasks
+                            {% with count=task.subtasks.count %}
+                            {% if count > 0 %}
+                            <span class="badge bg-secondary ms-1"
+                                  style="font-size:10px;">{{ count }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#tab-dependencies" type="button">
+                            Abhängigkeiten
+                            {% with count=task.blocked_by_deps.count %}
+                            {% if count > 0 %}
+                            <span class="badge bg-warning text-dark ms-1"
+                                  style="font-size:10px;">{{ count }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#tab-attachments" type="button">
+                            Anhänge
+                            {% with count=task.attachments.count %}
+                            {% if count > 0 %}
+                            <span class="badge bg-secondary ms-1"
+                                  style="font-size:10px;">{{ count }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab"
+                                data-bs-target="#tab-time" type="button">
+                            Zeit
+                            {% with count=task.time_entries.count %}
+                            {% if count > 0 %}
+                            <span class="badge bg-secondary ms-1"
+                                  style="font-size:10px;">{{ count }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </li>
+
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content pt-3" id="taskTabContent">
+
+                    <!-- Subtasks Tab -->
+                    <div class="tab-pane fade show active" id="tab-subtasks">
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#subtask-form">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                        <div class="collapse mb-3" id="subtask-form">
+                            <form hx-post="{% url 'tasks:subtask-create' task.pk %}"
+                                  hx-target="#subtask-list"
+                                  hx-swap="innerHTML"
+                                  hx-on::after-request="this.reset(); bootstrap.Collapse.getInstance(document.getElementById('subtask-form')).hide();">
+                                {% csrf_token %}
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="title" class="form-control" placeholder="Subtask title" required>
+                                    <button type="submit" class="btn btn-primary">Add</button>
+                                </div>
+                            </form>
+                        </div>
+                        {% include 'tasks/partials/subtask_list.html' with subtasks=task.subtasks.all %}
                     </div>
-                    {% include 'tasks/partials/subtask_list.html' with subtasks=task.subtasks.all %}
-                </div>
-            </div>
 
-            <!-- Attachments -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="bi bi-paperclip"></i> Attachments</h6>
-                </div>
-                <div class="card-body">
-                    {% include 'tasks/partials/attachment_list.html' with attachments=task.attachments.all %}
-                </div>
-            </div>
+                    <!-- Dependencies Tab -->
+                    <div class="tab-pane fade" id="tab-dependencies">
+                        {% include 'tasks/partials/dependency_list.html' %}
+                    </div>
 
-            <!-- Time Entries -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Time Entries</h6>
-                    <span class="badge bg-primary">Total: {{ total_time_m|floatformat:0 }}m</span>
-                </div>
-                <div class="card-body">
-                    {% include 'tasks/partials/time_entry_list.html' with entries=task.time_entries.all %}
+                    <!-- Attachments Tab -->
+                    <div class="tab-pane fade" id="tab-attachments">
+                        {% include 'tasks/partials/attachment_list.html' with attachments=task.attachments.all %}
+                    </div>
+
+                    <!-- Time Entries Tab -->
+                    <div class="tab-pane fade" id="tab-time">
+                        <div class="mb-3">
+                            <span class="badge bg-primary">Total: {{ total_time_m|floatformat:0 }}m</span>
+                        </div>
+                        {% include 'tasks/partials/time_entry_list.html' with entries=task.time_entries.all %}
+                    </div>
+
                 </div>
             </div>
 
@@ -191,26 +251,87 @@
                 </div>
             </div>
 
-            <!-- Comments -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Comments</h6>
-                </div>
-                <div class="card-body">
-                    {% include 'tasks/partials/comment_list.html' with comments=task.comments.all %}
+            <!-- Accordion for Checkliste and Comments -->
+            <div class="accordion mt-4" id="taskAccordion">
 
-                    <form hx-post="{% url 'tasks:task-comment' task.pk %}"
-                          hx-target="#comment-list"
-                          hx-swap="innerHTML"
-                          hx-on::after-request="this.reset();"
-                          class="mt-3">
-                        {% csrf_token %}
-                        <div class="input-group">
-                            <textarea name="body" class="form-control mention-enabled" rows="2" placeholder="Write a comment..." required></textarea>
-                            <button type="submit" class="btn btn-primary">Post</button>
+                <!-- Checkliste -->
+                <div class="accordion-item border-0 border-top">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {% if not task.checklist_items.exists %}collapsed{% endif %} px-0"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#accordion-checklist"
+                                style="background:transparent; font-size:13px;
+                                       font-weight:600; color:var(--friday-text);
+                                       text-transform:uppercase; letter-spacing:.5px;">
+                            Checkliste
+                            {% with done=task.checklist_progress.0 total=task.checklist_progress.1 %}
+                            {% if total > 0 %}
+                            <span class="ms-2 fw-normal text-muted" style="font-size:12px;">
+                                {{ done }}/{{ total }}
+                            </span>
+                            <!-- Mini Fortschrittsbalken im Header -->
+                            <div class="ms-2 rounded-pill"
+                                 style="width:60px; height:4px;
+                                        background:var(--friday-border); overflow:hidden;">
+                                <div style="height:100%; width:{{ task.checklist_pct }}%;
+                                            background:{% if task.checklist_pct == 100 %}var(--friday-success)
+                                                        {% else %}var(--friday-accent){% endif %};">
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </h2>
+                    <div id="accordion-checklist"
+                         class="accordion-collapse collapse {% if task.checklist_items.exists %}show{% endif %}">
+                        <div class="accordion-body px-0 pt-2">
+                            {% include 'tasks/partials/checklist.html' with items=task.checklist_items.all done=task|checklist_done total=task|checklist_total pct=task.checklist_pct templates=checklist_templates %}
                         </div>
-                    </form>
+                    </div>
                 </div>
+
+                <!-- Kommentare -->
+                <div class="accordion-item border-0 border-top">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {% if not task.comments.exists %}collapsed{% endif %} px-0"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#accordion-comments"
+                                style="background:transparent; font-size:13px;
+                                       font-weight:600; color:var(--friday-text);
+                                       text-transform:uppercase; letter-spacing:.5px;">
+                            Kommentare
+                            {% with count=task.comments.count %}
+                            {% if count > 0 %}
+                            <span class="ms-2 badge bg-secondary"
+                                  style="font-size:10px; font-weight:500;">
+                                {{ count }}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </button>
+                    </h2>
+                    <div id="accordion-comments"
+                         class="accordion-collapse collapse {% if task.comments.exists %}show{% endif %}">
+                        <div class="accordion-body px-0 pt-2">
+                            {% include 'tasks/partials/comment_list.html' with comments=task.comments.all %}
+
+                            <form hx-post="{% url 'tasks:task-comment' task.pk %}"
+                                  hx-target="#comment-list"
+                                  hx-swap="innerHTML"
+                                  hx-on::after-request="this.reset();"
+                                  class="mt-3">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <textarea name="body" class="form-control mention-enabled" rows="2" placeholder="Write a comment..." required></textarea>
+                                    <button type="submit" class="btn btn-primary">Post</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -283,6 +404,88 @@
                         </div>
                     </div>
 
+                    <!-- Story Points / Zeit -->
+                    <div class="mb-3">
+                        <label class="form-label-sm text-muted"
+                               style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">
+                            Story Points / Zeit
+                        </label>
+
+                        <div class="d-flex align-items-center gap-3 mt-1">
+                            <!-- Geschätzt -->
+                            <div style="font-size:13px;">
+                                <span class="text-muted" style="font-size:11px;">Geschätzt</span><br>
+                                <div hx-get="{% url 'tasks:task-edit-field' task.pk %}?mode=edit&field=story_points"
+                                     hx-target="this"
+                                     hx-swap="outerHTML"
+                                     style="cursor:pointer;">
+                                    {% if task.story_points %}
+                                    <span style="font-family:var(--font-mono); font-weight:600;">
+                                        {{ task.story_points }} SP
+                                    </span>
+                                    <i class="bi bi-pencil text-muted ms-1" style="font-size:11px;"></i>
+                                    {% else %}
+                                    <span class="text-muted fst-italic" style="font-size:13px;">
+                                        Nicht geschätzt
+                                        <i class="bi bi-pencil ms-1" style="font-size:11px;"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if task.story_points and total_logged_hours > 0 %}
+                            <div style="color:var(--friday-border);">→</div>
+
+                            <!-- Erfasst -->
+                            <div style="font-size:13px;">
+                                <span class="text-muted" style="font-size:11px;">Erfasst</span><br>
+                                <span style="font-family:var(--font-mono); font-weight:600;
+                                             color:{% if total_logged_hours > task.story_points %}
+                                                     var(--friday-danger)
+                                                   {% elif total_logged_hours == task.story_points %}
+                                                     var(--friday-success)
+                                                   {% else %}
+                                                     var(--friday-text)
+                                                   {% endif %};">
+                                    {{ total_logged_hours|floatformat:1 }}h
+                                </span>
+                            </div>
+
+                            <!-- Differenz -->
+                            {% with diff=task.story_points|subtract:total_logged_hours %}
+                            <div style="font-size:13px;">
+                                <span class="text-muted" style="font-size:11px;">Differenz</span><br>
+                                <span style="font-family:var(--font-mono); font-size:12px;
+                                             color:{% if diff < 0 %}var(--friday-danger)
+                                                   {% elif diff == 0 %}var(--friday-success)
+                                                   {% else %}var(--friday-text-muted){% endif %};">
+                                    {% if diff > 0 %}+{% endif %}{{ diff|floatformat:1 }}h
+                                </span>
+                            </div>
+                            {% endwith %}
+                            {% endif %}
+                        </div>
+
+                        <!-- Mini Progress Bar SP vs Zeit -->
+                        {% if task.story_points and total_logged_hours > 0 %}
+                        <div class="mt-2 rounded-pill"
+                             style="height:4px; background:var(--friday-border); overflow:hidden;">
+                            {% with pct=total_logged_hours|divide:task.story_points|multiply:100 %}
+                            <div style="height:100%; width:{% if pct > 100 %}100{% else %}{{ pct|floatformat:0 }}{% endif %}%;
+                                        background:{% if pct > 100 %}var(--friday-danger)
+                                                   {% elif pct >= 80 %}var(--friday-warning)
+                                                   {% else %}var(--friday-accent){% endif %};">
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <div class="d-flex justify-content-between mt-1"
+                             style="font-size:10px; color:var(--friday-text-muted);">
+                            <span>0h</span>
+                            <span>{{ task.story_points }} SP</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
                     <!-- Watchers -->
                     <div>
                         <label class="form-label fw-semibold">Watchers</label>
@@ -294,26 +497,6 @@
                         <label class="form-label fw-semibold">Labels</label>
                         {% include 'tasks/partials/label_list.html' %}
                     </div>
-                </div>
-            </div>
-
-            <!-- Dependencies -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Dependencies</h6>
-                </div>
-                <div class="card-body">
-                    {% include 'tasks/partials/dependency_list.html' %}
-                </div>
-            </div>
-
-            <!-- Checkliste (ISSUE-63) -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Checkliste</h6>
-                </div>
-                <div class="card-body">
-                    {% include 'tasks/partials/checklist.html' with items=task.checklist_items.all done=task|checklist_done total=task|checklist_total pct=task.checklist_pct templates=checklist_templates %}
                 </div>
             </div>
 

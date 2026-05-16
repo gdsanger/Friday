@@ -462,6 +462,64 @@
 
     // Re-initialize after HTMX swaps (slide-over, etc.)
     document.addEventListener('htmx:afterSettle', (e) => initMentions(e.detail.target));
+
+    // ── Task Tab Badge Counter Updates (ISSUE-66) ────────────────────
+
+    // Update tab badge counters after HTMX updates
+    document.addEventListener('htmx:afterSettle', (e) => {
+        // Update Subtasks badge
+        const subtaskItems = document.querySelectorAll('#tab-subtasks .subtask-item, #tab-subtasks-so .subtask-item');
+        const subtaskCount = subtaskItems.length;
+        const subtaskBadges = document.querySelectorAll('[data-bs-target="#tab-subtasks"] .badge, [data-bs-target="#tab-subtasks-so"] .badge');
+        subtaskBadges.forEach(badge => {
+            if (subtaskCount > 0) {
+                badge.textContent = subtaskCount;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+
+        // Update Attachments badge
+        const attachmentItems = document.querySelectorAll('#tab-attachments .attachment-item, #tab-attachments-so .attachment-item');
+        const attachmentCount = attachmentItems.length;
+        const attachmentBadges = document.querySelectorAll('[data-bs-target="#tab-attachments"] .badge, [data-bs-target="#tab-attachments-so"] .badge');
+        attachmentBadges.forEach(badge => {
+            if (attachmentCount > 0) {
+                badge.textContent = attachmentCount;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+
+        // Update Time Entries badge
+        const timeEntryItems = document.querySelectorAll('#tab-time .time-entry-item, #tab-time-so .time-entry-item');
+        const timeEntryCount = timeEntryItems.length;
+        const timeEntryBadges = document.querySelectorAll('[data-bs-target="#tab-time"] .badge, [data-bs-target="#tab-time-so"] .badge');
+        timeEntryBadges.forEach(badge => {
+            if (timeEntryCount > 0) {
+                badge.textContent = timeEntryCount;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+
+        // Update Dependencies badge
+        const dependencyItems = document.querySelectorAll('#tab-dependencies .dependency-item, #tab-dependencies-so .dependency-item');
+        const dependencyCount = dependencyItems.length;
+        const dependencyBadges = document.querySelectorAll('[data-bs-target="#tab-dependencies"] .badge, [data-bs-target="#tab-dependencies-so"] .badge');
+        dependencyBadges.forEach(badge => {
+            if (dependencyCount > 0) {
+                badge.textContent = dependencyCount;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+    });
+
     // ── Task Actions (ISSUE-53) ──────────────────────────────────────
 
     // Task Closed Event Handler
