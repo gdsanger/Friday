@@ -519,4 +519,23 @@
         }
     });
 
+    // Task Moved Event Handler
+    document.addEventListener('taskMoved', () => {
+        // Close modal
+        const modalEl = document.getElementById('task-move-modal-container');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal?.hide();
+        }
+
+        // Refresh Kanban Board if visible
+        const kanbanBoard = document.getElementById('kanban-board');
+        if (kanbanBoard) {
+            htmx.trigger(kanbanBoard, 'refresh');
+        }
+
+        // Close Slide-Over (task is now in another project)
+        closeSlideOver();
+    });
+
 })();

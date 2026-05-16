@@ -39,6 +39,10 @@ urlpatterns = [
     # Task Assign Form (ISSUE-53)
     path('<int:pk>/assign-form/',                views.TaskAssignFormView.as_view(),      name='task-assign-form'),
 
+    # Task Move to Another Project (ISSUE-61)
+    path('<int:pk>/move-project/form/',          views.TaskMoveProjectFormView.as_view(), name='task-move-project-form'),
+    path('<int:pk>/move-project/',               views.TaskMoveProjectView.as_view(),     name='task-move-project'),
+
     # Dependencies
     path('<int:pk>/dependencies/add/',           views.DependencyAddView.as_view(),       name='dependency-add'),
     path('<int:pk>/dependencies/<int:dep_pk>/remove/',

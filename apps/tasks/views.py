@@ -870,6 +870,88 @@ class TaskAssignFormView(LoginRequiredMixin, View):
         })
 
 
+class TaskMoveProjectFormView(LoginRequiredMixin, View):
+    """HTMX GET — returns modal content for moving task to another project."""
+    def get(self, request, pk):
+        from apps.projects.models import Project
+
+        task = get_object_or_404(Task, pk=pk)
+        user = request.user
+        my_teams = user.teams
+
+        # Permission check: Must be manager of source project or staff
+        src_role = task.project.get_effective_role(user)
+        if src_role != 'manager' and not user.is_staff:
+            raise PermissionDenied
+
+        # Get accessible projects - excluding current one and archived ones
+        projects = Project.objects.filter(
+            models.Q(user_members=user) |
+            models.Q(team_members__in=my_teams)
+        ).exclude(
+            pk=task.project_id
+        ).exclude(
+            status='archived'
+        ).distinct().order_by('name')
+
+        return render(request, 'tasks/partials/move_project_form.html', {
+            'task': task,
+            'projects': projects,
+        })
+
+
+class TaskMoveProjectView(LoginRequiredMixin, View):
+    """POST — Move task to another project."""
+    def post(self, request, pk):
+        from apps.projects.models import Project
+        from apps.tasks.models import TaskDependency
+
+        task = get_object_or_404(Task, pk=pk)
+        project_id = request.POST.get('project_id')
+
+        if not project_id:
+            return HttpResponseBadRequest('project_id fehlt.')
+
+        # Source project: Must be manager or staff
+        src_role = task.project.get_effective_role(request.user)
+        if src_role != 'manager' and not request.user.is_staff:
+            raise PermissionDenied
+
+        # Target project: Must be member
+        new_project = get_object_or_404(Project, pk=project_id)
+        if not new_project.is_member(request.user):
+            raise PermissionDenied
+
+        old_project = task.project
+
+        # Move task to new project
+        task.project = new_project
+
+        # Inherit client from new project if task has no direct client
+        if not task.client:
+            task.client = new_project.client
+
+        task.save(update_fields=['project', 'client'])
+
+        # Move subtasks along with parent task
+        task.subtasks.all().update(project=new_project)
+
+        # Resolve dependencies to tasks in the old project
+        TaskDependency.objects.filter(
+            task=task,
+            blocked_by__project=old_project,
+        ).delete()
+        TaskDependency.objects.filter(
+            blocked_by=task,
+            task__project=old_project,
+        ).delete()
+
+        # HTMX: Return 204 with trigger event
+        response = HttpResponse(status=204)
+        response['HX-Trigger'] = 'taskMoved'
+        return response
+
+
 class TaskCloneView(LoginRequiredMixin, View):
     """
     POST — clone a task and redirect to the new task's detail page.
