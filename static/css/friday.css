@@ -635,14 +635,47 @@ body {
    ============================================ */
 
 .kanban-board {
+    display: flex;
+    gap: 12px;
     align-items: flex-start;
-    min-height: calc(100vh - 240px);
+    overflow-x: auto;
+    padding-bottom: 16px;
+    min-height: calc(100vh - 200px);
 }
 
+/* Kanban Spalte — flex statt fixer Breite */
 .kanban-column {
-    background: var(--friday-surface-alt);
+    flex: 1;                    /* gleichmäßig wachsen */
+    min-width: 200px;           /* Minimum für Lesbarkeit */
+    max-width: 400px;           /* Maximum damit es nicht zu breit wird */
+    display: flex;
+    flex-direction: column;
+    background: var(--friday-surface);
     border-radius: 10px;
+    border: 1px solid var(--friday-border);
+    overflow: hidden;
     padding: 12px;
+}
+
+/* Auf sehr großen Screens (> 1800px) etwas einschränken */
+@media (min-width: 1800px) {
+    .kanban-column {
+        max-width: 480px;
+    }
+}
+
+/* Auf kleinen Screens horizontal scrollen */
+@media (min-width: 768px) and (max-width: 992px) {
+    .kanban-column {
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    .kanban-column {
+        min-width: 280px;
+        flex: 0 0 280px;
+    }
 }
 
 .kanban-column-header {
