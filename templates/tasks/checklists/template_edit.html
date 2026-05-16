@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vorlage bearbeiten: {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Vorlage bearbeiten: {{ template.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="template-form">
+                        {% csrf_token %}
+
+                        <!-- Name -->
+                        <div class="mb-4">
+                            <label for="name" class="form-label">Name der Vorlage</label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   value="{{ template.name }}" required>
+                        </div>
+
+                        <!-- Items -->
+                        <div class="mb-4">
+                            <label class="form-label">Checklisten-Items</label>
+                            <div id="items-container">
+                                {% for item in template.items.all %}
+                                <div class="d-flex gap-2 mb-2 item-row">
+                                    <span class="handle" style="cursor:move; color:var(--friday-text-muted);">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </span>
+                                    <input type="text" class="form-control" name="items[]"
+                                           value="{{ item.title }}" required>
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            onclick="this.parentElement.remove();">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                    onclick="addItem()">
+                                <i class="bi bi-plus-lg"></i> Item hinzufügen
+                            </button>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                            <a href="{% url 'tasks:checklist-template-list' %}" class="btn btn-secondary">
+                                Zurück
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addItem() {
+    const container = document.getElementById('items-container');
+    const div = document.createElement('div');
+    div.className = 'd-flex gap-2 mb-2 item-row';
+    div.innerHTML = `
+        <span class="handle" style="cursor:move; color:var(--friday-text-muted);">
+            <i class="bi bi-grip-vertical"></i>
+        </span>
+        <input type="text" class="form-control" name="items[]" placeholder="Item-Titel" required>
+        <button type="button" class="btn btn-outline-danger btn-sm"
+                onclick="this.parentElement.remove();">
+            <i class="bi bi-trash3"></i>
+        </button>
+    `;
+    container.appendChild(div);
+    div.querySelector('input').focus();
+}
+
+// Simple drag and drop reordering
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('items-container');
+    let draggedElement = null;
+
+    container.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('handle')) {
+            draggedElement = e.target.closest('.item-row');
+            e.dataTransfer.effectAllowed = 'move';
+            draggedElement.style.opacity = '0.5';
+        }
+    });
+
+    container.addEventListener('dragend', function(e) {
+        if (draggedElement) {
+            draggedElement.style.opacity = '';
+            draggedElement = null;
+        }
+    });
+
+    container.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(container, e.clientY);
+        if (afterElement == null) {
+            container.appendChild(draggedElement);
+        } else {
+            container.insertBefore(draggedElement, afterElement);
+        }
+    });
+
+    // Make handles draggable
+    container.querySelectorAll('.handle').forEach(handle => {
+        handle.setAttribute('draggable', 'true');
+    });
+});
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.item-row:not([style*="opacity: 0.5"])')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+</script>
+{% endblock %}
