@@ -87,6 +87,16 @@
             <span class="sidebar-link-text">Vorlagen</span>
         </a>
 
+        <a href="{% url 'tasks:label-list' %}"
+           class="sidebar-link {% if request.resolver_match.url_name|slice:":6" == 'label-' %}active{% endif %}"
+           title="Labels"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Labels">
+            <i class="bi bi-tags"></i>
+            <span class="sidebar-link-text">Labels</span>
+        </a>
+
         <a href="{% url 'notifications:notification-list' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}"
            title="Benachrichtigungen"

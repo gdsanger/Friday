@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load friday_tags %}
+
+{% block title %}{% if label %}Label bearbeiten{% else %}Neues Label{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12 col-lg-6">
+            <div class="mb-4">
+                <a href="{% url 'tasks:label-list' %}" class="btn btn-link text-decoration-none ps-0">
+                    <i class="bi bi-arrow-left"></i> Zurück zu Labels
+                </a>
+            </div>
+
+            <h2 class="mb-4">
+                {% if label %}
+                Label bearbeiten
+                {% else %}
+                Neues Label erstellen
+                {% endif %}
+            </h2>
+
+            {% if error %}
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="name"
+                                   name="name"
+                                   value="{% if label %}{{ label.name }}{% endif %}"
+                                   required
+                                   autofocus>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="color" class="form-label">Farbe</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color"
+                                       class="form-control form-control-color"
+                                       id="color"
+                                       name="color"
+                                       value="{% if label %}{{ label.color }}{% else %}#64748b{% endif %}"
+                                       style="width: 60px; height: 40px;">
+                                <span id="color-preview"
+                                      class="rounded-circle"
+                                      style="width:20px;height:20px;background:{% if label %}{{ label.color }}{% else %}#64748b{% endif %};display:inline-block;"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'tasks:label-list' %}" class="btn btn-outline-secondary">
+                                Abbrechen
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Speichern
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('color').addEventListener('input', function(e) {
+    document.getElementById('color-preview').style.background = e.target.value;
+});
+</script>
+
+{% endblock %}

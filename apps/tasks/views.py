@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
-from .models import Task, Comment, Attachment, TimeEntry
+from .models import Task, Comment, Attachment, TimeEntry, Label
 
 User = get_user_model()
 
@@ -61,6 +61,8 @@ class TaskDetailView(LoginRequiredMixin, View):
             'user_role':       task.project.get_effective_role(request.user),
             'clients':         Client.objects.filter(is_active=True).order_by('name'),
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
+            'available_labels': Label.objects.exclude(
+                                   pk__in=task.labels.all()).order_by('name'),
         }
         template = 'tasks/partials/slide_over.html' if request.htmx else 'tasks/detail.html'
         return render(request, template, ctx)
@@ -641,6 +643,8 @@ class TaskDetailFullView(LoginRequiredMixin, View):
             'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
             'user_role':       task.project.get_effective_role(request.user),
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
+            'available_labels': Label.objects.exclude(
+                                   pk__in=task.labels.all()).order_by('name'),
             'breadcrumb': [
                 {'label': 'Projects',      'url': reverse('projects:project-list')},
                 {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},
@@ -1370,4 +1374,195 @@ class TemplatePreviewView(LoginRequiredMixin, View):
 
         return render(request, 'tasks/templates/partials/description_preview.html', {
             'preview': preview,
+        })
+
+
+# ====================================================================
+# Label Views (ISSUE-62)
+# ====================================================================
+
+class LabelListView(LoginRequiredMixin, View):
+    """
+    Alle Labels — nur Staff kann anlegen/bearbeiten.
+    """
+    def get(self, request):
+        from django.db.models import Count
+
+        labels = Label.objects.annotate(
+            task_count=Count('task')
+        ).order_by('name')
+
+        return render(request, 'tasks/labels/list.html', {
+            'labels': labels,
+        })
+
+
+class LabelCreateView(LoginRequiredMixin, View):
+    """
+    Label erstellen — nur Staff.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        return render(request, 'tasks/labels/form.html')
+
+    def post(self, request):
+        from django.contrib import messages
+
+        name  = request.POST.get('name', '').strip()
+        color = request.POST.get('color', '#64748b')
+
+        if not name:
+            return render(request, 'tasks/labels/form.html', {
+                'error': 'Name ist erforderlich.'
+            })
+
+        label, created = Label.objects.get_or_create(
+            name=name, defaults={'color': color}
+        )
+        if not created:
+            return render(request, 'tasks/labels/form.html', {
+                'error': f'Label "{name}" existiert bereits.'
+            })
+
+        return redirect('tasks:label-list')
+
+
+class LabelEditView(LoginRequiredMixin, View):
+    """
+    Label bearbeiten — nur Staff.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk):
+        label = get_object_or_404(Label, pk=pk)
+        return render(request, 'tasks/labels/form.html', {'label': label})
+
+    def post(self, request, pk):
+        label       = get_object_or_404(Label, pk=pk)
+        label.name  = request.POST.get('name', label.name).strip()
+        label.color = request.POST.get('color', label.color)
+
+        if not label.name:
+            return render(request, 'tasks/labels/form.html', {
+                'label': label,
+                'error': 'Name ist erforderlich.'
+            })
+
+        label.save()
+        return redirect('tasks:label-list')
+
+
+class LabelDeleteView(LoginRequiredMixin, View):
+    """
+    Label löschen — nur wenn keine Tasks damit versehen sind.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, pk):
+        from django.contrib import messages
+
+        label = get_object_or_404(Label, pk=pk)
+        if label.task_set.exists():
+            # Nicht löschen — stattdessen Fehlermeldung
+            messages.error(
+                request,
+                f'Label "{label.name}" wird von '
+                f'{label.task_set.count()} Tasks verwendet und kann nicht gelöscht werden.'
+            )
+        else:
+            label.delete()
+            messages.success(request, f'Label "{label.name}" wurde gelöscht.')
+        return redirect('tasks:label-list')
+
+
+class LabelTasksView(LoginRequiredMixin, View):
+    """
+    Alle Tasks mit diesem Label — projektübergreifend.
+    Wie Kanban aber gefiltert nach Label.
+    """
+    def get(self, request, pk):
+        from apps.teams.models import Team
+
+        label    = get_object_or_404(Label, pk=pk)
+        user     = request.user
+        my_teams = Team.objects.filter(memberships__user=user)
+
+        tasks = Task.objects.filter(
+            labels=label,
+        ).filter(
+            models.Q(project__user_members=user) |
+            models.Q(project__team_members__in=my_teams) |
+            models.Q(project__visibility='organisation')
+        ).distinct().select_related(
+            'project', 'assigned_to_user', 'assigned_to_team'
+        ).prefetch_related('labels').order_by('project__name', 'status', 'position')
+
+        # Nach Status gruppieren
+        columns = {status: [] for status, _ in Task.STATUS_CHOICES}
+        for task in tasks:
+            columns[task.status].append(task)
+
+        return render(request, 'tasks/labels/tasks.html', {
+            'label':          label,
+            'columns':        columns,
+            'status_choices': Task.STATUS_CHOICES,
+            'total_count':    tasks.count(),
+        })
+
+
+class TaskLabelAddView(LoginRequiredMixin, View):
+    """
+    HTMX — Label zu Task hinzufügen. Gibt Label-Liste zurück.
+    """
+    def post(self, request, pk):
+        task     = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        label_id = request.POST.get('label_id')
+        if label_id:
+            task.labels.add(label_id)
+
+        # Verfügbare Labels (noch nicht zugewiesen)
+        available_labels = Label.objects.exclude(
+            pk__in=task.labels.all()
+        ).order_by('name')
+
+        return render(request, 'tasks/partials/label_list.html', {
+            'task': task,
+            'available_labels': available_labels,
+        })
+
+
+class TaskLabelRemoveView(LoginRequiredMixin, View):
+    """
+    HTMX — Label von Task entfernen. Gibt Label-Liste zurück.
+    """
+    def post(self, request, pk, label_pk):
+        task = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        task.labels.remove(label_pk)
+
+        # Verfügbare Labels (noch nicht zugewiesen)
+        available_labels = Label.objects.exclude(
+            pk__in=task.labels.all()
+        ).order_by('name')
+
+        return render(request, 'tasks/partials/label_list.html', {
+            'task': task,
+            'available_labels': available_labels,
         })
