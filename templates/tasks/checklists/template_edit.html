@@ -1,133 +1,91 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Vorlage bearbeiten: {{ template.name }}{% endblock %}
-
+{% extends "base.html" %}
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Vorlage bearbeiten: {{ template.name }}</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post" id="template-form">
-                        {% csrf_token %}
 
-                        <!-- Name -->
-                        <div class="mb-4">
-                            <label for="name" class="form-label">Name der Vorlage</label>
-                            <input type="text" class="form-control" id="name" name="name"
-                                   value="{{ template.name }}" required>
-                        </div>
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'tasks:checklist-template-list' %}"
+     class="text-muted text-decoration-none" style="font-size:13px;">
+    <i class="bi bi-arrow-left me-1"></i>Zurück
+  </a>
+  <h4 class="mb-0">Vorlage bearbeiten</h4>
+</div>
 
-                        <!-- Items -->
-                        <div class="mb-4">
-                            <label class="form-label">Checklisten-Items</label>
-                            <div id="items-container">
-                                {% for item in template.items.all %}
-                                <div class="d-flex gap-2 mb-2 item-row">
-                                    <span class="handle" style="cursor:move; color:var(--friday-text-muted);">
-                                        <i class="bi bi-grip-vertical"></i>
-                                    </span>
-                                    <input type="text" class="form-control" name="items[]"
-                                           value="{{ item.title }}" required>
-                                    <button type="button" class="btn btn-outline-danger btn-sm"
-                                            onclick="this.parentElement.remove();">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                    onclick="addItem()">
-                                <i class="bi bi-plus-lg"></i> Item hinzufügen
-                            </button>
-                        </div>
+<div class="card border-0 shadow-sm p-4" style="max-width:600px;">
+  <form method="POST">
+    {% csrf_token %}
 
-                        <!-- Buttons -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">Speichern</button>
-                            <a href="{% url 'tasks:checklist-template-list' %}" class="btn btn-secondary">
-                                Zurück
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+    <!-- Name -->
+    <div class="mb-4">
+      <label class="form-label fw-medium">Name *</label>
+      <input type="text" name="name"
+             value="{{ template.name|default:'' }}"
+             class="form-control" required
+             placeholder="z.B. Standard Rollout">
     </div>
+
+    <!-- Items -->
+    <div class="mb-4">
+      <label class="form-label fw-medium">Checklisten-Items</label>
+      <div id="template-items">
+        {% for item in template.items.all %}
+        <div class="d-flex gap-2 mb-2 template-item-row">
+          <input type="text" name="items[]"
+                 value="{{ item.title }}"
+                 class="form-control form-control-sm"
+                 placeholder="Item-Bezeichnung">
+          <button type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  onclick="this.closest('.template-item-row').remove()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        {% endfor %}
+
+        <!-- Leere Zeile für neue Items -->
+        <div class="d-flex gap-2 mb-2 template-item-row">
+          <input type="text" name="items[]"
+                 class="form-control form-control-sm"
+                 placeholder="Item-Bezeichnung">
+          <button type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  onclick="this.closest('.template-item-row').remove()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="button"
+              class="btn btn-outline-secondary btn-sm mt-1"
+              onclick="addTemplateItem()">
+        <i class="bi bi-plus-lg me-1"></i>Item hinzufügen
+      </button>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'tasks:checklist-template-list' %}"
+         class="btn btn-outline-secondary">Abbrechen</a>
+      <button type="submit" class="btn btn-primary">Speichern</button>
+    </div>
+  </form>
 </div>
 
 <script>
-function addItem() {
-    const container = document.getElementById('items-container');
-    const div = document.createElement('div');
-    div.className = 'd-flex gap-2 mb-2 item-row';
-    div.innerHTML = `
-        <span class="handle" style="cursor:move; color:var(--friday-text-muted);">
-            <i class="bi bi-grip-vertical"></i>
-        </span>
-        <input type="text" class="form-control" name="items[]" placeholder="Item-Titel" required>
-        <button type="button" class="btn btn-outline-danger btn-sm"
-                onclick="this.parentElement.remove();">
-            <i class="bi bi-trash3"></i>
-        </button>
-    `;
-    container.appendChild(div);
-    div.querySelector('input').focus();
-}
-
-// Simple drag and drop reordering
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('items-container');
-    let draggedElement = null;
-
-    container.addEventListener('dragstart', function(e) {
-        if (e.target.classList.contains('handle')) {
-            draggedElement = e.target.closest('.item-row');
-            e.dataTransfer.effectAllowed = 'move';
-            draggedElement.style.opacity = '0.5';
-        }
-    });
-
-    container.addEventListener('dragend', function(e) {
-        if (draggedElement) {
-            draggedElement.style.opacity = '';
-            draggedElement = null;
-        }
-    });
-
-    container.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(container, e.clientY);
-        if (afterElement == null) {
-            container.appendChild(draggedElement);
-        } else {
-            container.insertBefore(draggedElement, afterElement);
-        }
-    });
-
-    // Make handles draggable
-    container.querySelectorAll('.handle').forEach(handle => {
-        handle.setAttribute('draggable', 'true');
-    });
-});
-
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.item-row:not([style*="opacity: 0.5"])')];
-
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+function addTemplateItem() {
+  const container = document.getElementById('template-items');
+  const row = document.createElement('div');
+  row.className = 'd-flex gap-2 mb-2 template-item-row';
+  row.innerHTML = `
+    <input type="text" name="items[]"
+           class="form-control form-control-sm"
+           placeholder="Item-Bezeichnung">
+    <button type="button"
+            class="btn btn-outline-danger btn-sm"
+            onclick="this.closest('.template-item-row').remove()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  `;
+  container.appendChild(row);
+  row.querySelector('input').focus();
 }
 </script>
+
 {% endblock %}

@@ -95,16 +95,23 @@
   <form hx-post="{% url 'tasks:checklist-apply-template' task.pk %}"
         hx-target="#task-checklist"
         hx-swap="outerHTML"
-        class="mt-2">
+        class="mb-2 mt-2">
     {% csrf_token %}
-    <select name="template_id" class="form-select form-select-sm"
-            onchange="this.form.requestSubmit()"
-            style="font-size:12px;">
-      <option value="">📋 Vorlage anwenden...</option>
-      {% for tpl in templates %}
-      <option value="{{ tpl.pk }}">{{ tpl.name }}</option>
-      {% endfor %}
-    </select>
+    <div class="d-flex gap-2">
+      <select name="template_id"
+              class="form-select form-select-sm"
+              style="font-size:12px;">
+        <option value="">📋 Vorlage anwenden...</option>
+        {% for tpl in templates %}
+        <option value="{{ tpl.pk }}">
+          {{ tpl.name }} ({{ tpl.items.count }} Items)
+        </option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">
+        <i class="bi bi-plus-lg me-1"></i>Anwenden
+      </button>
+    </div>
   </form>
   {% endif %}
 
