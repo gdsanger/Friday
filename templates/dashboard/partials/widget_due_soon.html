@@ -1,63 +1,61 @@
 {% load static %}
-<div class="dashboard-widget"
-     id="widget-due-soon"
-     hx-get="{% url 'dashboard:widget-due-soon' %}"
-     hx-trigger="every 60s"
-     hx-target="this"
-     hx-swap="outerHTML">
-    <div class="widget-header">
-        <h5 class="widget-title">Due Soon (7 days)</h5>
-    </div>
-    <div class="widget-body">
-        {% if tasks %}
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <tbody>
-                        {% for task in tasks %}
-                            <tr>
-                                <td class="task-title-col">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="project-dot" style="background-color: {{ task.project.color }};"></span>
-                                        <a href="{% url 'tasks:task-detail' task.pk %}"
-                                           hx-get="{% url 'tasks:task-detail' task.pk %}"
-                                           hx-target="#slide-over"
-                                           hx-swap="innerHTML"
-                                           hx-push-url="true"
-                                           class="task-link">
-                                            {{ task.title }}
-                                        </a>
-                                    </div>
-                                    <small class="text-muted">{{ task.project.name }}</small>
-                                </td>
-                                <td class="assignee-col text-center">
-                                    {% if task.assigned_to_user %}
-                                        <div class="avatar-circle avatar-sm" title="{{ task.assigned_to_user.full_name }}">
-                                            {{ task.assigned_to_user.initials }}
-                                        </div>
-                                    {% elif task.assigned_to_team %}
-                                        <span class="badge bg-secondary">{{ task.assigned_to_team.name }}</span>
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td class="due-date-col text-end">
-                                    {% if task.due_date == today %}
-                                        <span class="badge bg-warning">Today</span>
-                                    {% elif task.due_date|date:"Y-m-d" == today|date:"Y-m-d" %}
-                                        <span class="badge bg-warning">Today</span>
-                                    {% else %}
-                                        <small class="text-muted">{{ task.due_date|date:"M j" }}</small>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <p class="text-center text-muted mb-0">Nothing due in the next 7 days 🎉</p>
-            </div>
-        {% endif %}
-    </div>
+<div class="widget-header">
+  <span class="widget-title">Fällig in 7 Tagen</span>
+  <span style="font-size:11px; color:var(--friday-text-muted);">
+    {{ tasks|length }} Tasks
+  </span>
 </div>
+
+{% for task in tasks %}
+<div class="d-flex align-items-center gap-3 py-2
+            {% if not forloop.last %}border-bottom{% endif %}"
+     style="border-color:var(--friday-border) !important;">
+
+  <!-- Prioritäts-Farbe als linker Balken -->
+  <div class="flex-shrink-0 rounded-pill"
+       style="width:3px; height:36px;
+              background:{% if task.priority >= 3 %}var(--friday-danger)
+                         {% elif task.priority == 2 %}var(--friday-warning)
+                         {% else %}var(--friday-border){% endif %};">
+  </div>
+
+  <!-- Task Info -->
+  <div class="flex-grow-1 min-width-0">
+    <a href="{% url 'tasks:task-detail-full' task.pk %}"
+       hx-get="{% url 'tasks:task-detail' task.pk %}"
+       hx-target="#slide-over"
+       hx-swap="innerHTML"
+       class="text-decoration-none fw-medium d-block"
+       style="font-size:13px; color:var(--friday-text);
+              white-space:nowrap; overflow:hidden;
+              text-overflow:ellipsis;">
+      {{ task.title }}
+    </a>
+    <span style="font-size:11px; color:var(--friday-text-muted);">
+      {{ task.project.name }}
+    </span>
+  </div>
+
+  <!-- Assignee + Datum -->
+  <div class="d-flex align-items-center gap-2 flex-shrink-0">
+    {% if task.assigned_to_user %}
+    <div class="user-avatar" style="width:24px;height:24px;font-size:9px;">
+      {{ task.assigned_to_user.initials }}
+    </div>
+    {% endif %}
+    <span style="font-size:11px;
+                 color:{% if task.due_date == today %}var(--friday-danger)
+                       {% else %}var(--friday-text-muted){% endif %};">
+      {{ task.due_date|date:"d. M." }}
+    </span>
+  </div>
+
+</div>
+{% empty %}
+<div class="text-center py-3 text-muted">
+  <i class="bi bi-check2-all" style="font-size:24px; opacity:.3;"></i>
+  <p class="mt-2 mb-0" style="font-size:13px;">
+    Nichts fällig in den nächsten 7 Tagen 🎉
+  </p>
+</div>
+{% endfor %}

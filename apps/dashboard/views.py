@@ -107,6 +107,13 @@ class WidgetProjectStatusView(LoginRequiredMixin, View):
             done_tasks=Count('tasks', filter=Q(tasks__status='done')),
         ).order_by('status', '-updated_at')[:12]
 
+        # Calculate percentage for each project
+        for project in projects:
+            if project.total_tasks > 0:
+                project.pct = int((project.done_tasks / project.total_tasks) * 100)
+            else:
+                project.pct = 0
+
         status_counts = projects.values('status').annotate(n=Count('id'))
 
         return render(request, 'dashboard/partials/widget_project_status.html', {
