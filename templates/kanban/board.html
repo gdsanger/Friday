@@ -85,137 +85,167 @@
 </div>
 
 <!-- Filters -->
-<div class="card mb-3">
-    <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-2">
-                <label for="filter-project" class="form-label small text-muted">Project</label>
-                <select id="filter-project" name="project" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='team'],[name='client'],[name='assignee'],[name='label'],[name='priority'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">All Projects</option>
-                    {% for p in projects %}
-                    <option value="{{ p.pk }}" {% if active_filters.project == p.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ p.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-client" class="form-label small text-muted">Client</label>
-                <select id="filter-client" name="client" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='team'],[name='assignee'],[name='label'],[name='priority'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">All Clients</option>
-                    {% for c in clients %}
-                    <option value="{{ c.pk }}" {% if active_filters.client == c.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ c.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-team" class="form-label small text-muted">Team</label>
-                <select id="filter-team" name="team" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='assignee'],[name='label'],[name='priority'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">All Teams</option>
-                    {% for t in teams %}
-                    <option value="{{ t.pk }}" {% if active_filters.team == t.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ t.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-assignee" class="form-label small text-muted">Assignee</label>
-                <select id="filter-assignee" name="assignee" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='label'],[name='priority'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">Alle Bearbeiter</option>
-                    {% for user in assignees %}
-                    <option value="{{ user.pk }}" {% if active_filters.assignee == user.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ user.full_name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-label" class="form-label small text-muted">Label</label>
-                <select id="filter-label" name="label" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='assignee'],[name='priority'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">Alle Labels</option>
-                    {% for label in labels %}
-                    <option value="{{ label.pk }}" {% if active_filters.label == label.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ label.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-priority" class="form-label small text-muted">Priority</label>
-                <select id="filter-priority" name="priority" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='label'],[name='assignee'],[name='due'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">All Priorities</option>
-                    {% for value, label in priority_choices %}
-                    <option value="{{ value }}" {% if active_filters.priority == value|stringformat:"s" %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label for="filter-due" class="form-label small text-muted">Due Date</label>
-                <select id="filter-due" name="due" class="form-select"
-                        hx-get="{% url 'kanban:kanban-board' %}"
-                        hx-target="#kanban-board"
-                        hx-include="[name='view'],[name='project'],[name='client'],[name='team'],[name='label'],[name='assignee'],[name='priority'],[name='show_subtasks']"
-                        hx-push-url="true">
-                    <option value="">All</option>
-                    <option value="overdue" {% if active_filters.due == 'overdue' %}selected{% endif %}>Overdue</option>
-                    <option value="today" {% if active_filters.due == 'today' %}selected{% endif %}>Today</option>
-                    <option value="week" {% if active_filters.due == 'week' %}selected{% endif %}>This Week</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
-                    <input class="form-check-input" type="checkbox"
-                           id="show-subtasks"
-                           name="show_subtasks"
-                           value="1"
-                           {% if active_filters.show_subtasks %}checked{% endif %}
-                           hx-get="{% url 'kanban:kanban-board' %}"
-                           hx-trigger="change"
-                           hx-target="#kanban-board"
-                           hx-include="[name='view'],[name='project'],[name='team'],[name='label'],[name='assignee'],[name='priority'],[name='due'],[name='client']"
-                           hx-push-url="true">
-                    <label class="form-check-label" for="show-subtasks"
-                           style="font-size:13px;">
-                        Subtasks anzeigen
-                    </label>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <a href="{% url 'kanban:kanban-board' %}" class="btn btn-outline-secondary w-100">
-                    Clear
-                </a>
-            </div>
-        </div>
+<div class="kanban-filter-bar d-flex flex-wrap gap-2 align-items-center p-2 mb-3 rounded"
+     style="background:var(--friday-surface); border:1px solid var(--friday-border);">
+
+    <!-- Projekt -->
+    <select name="project"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:150px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Projekte</option>
+        {% for p in projects %}
+        <option value="{{ p.pk }}"
+          {% if active_filters.project == p.pk|stringformat:"s" %}selected{% endif %}>
+          {{ p.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Mandant -->
+    <select name="client"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:130px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Mandanten</option>
+        {% for c in clients %}
+        <option value="{{ c.pk }}"
+          {% if active_filters.client == c.pk|stringformat:"s" %}selected{% endif %}>
+          {{ c.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Team -->
+    <select name="team"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:120px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Teams</option>
+        {% for t in teams %}
+        <option value="{{ t.pk }}"
+          {% if active_filters.team == t.pk|stringformat:"s" %}selected{% endif %}>
+          {{ t.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Bearbeiter -->
+    <select name="assignee"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:140px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Bearbeiter</option>
+        {% for user in assignees %}
+        <option value="{{ user.pk }}"
+          {% if active_filters.assignee == user.pk|stringformat:"s" %}selected{% endif %}>
+          {{ user.full_name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Priorität -->
+    <select name="priority"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:120px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Prioritäten</option>
+        {% for value, label in priority_choices %}
+        <option value="{{ value }}"
+          {% if active_filters.priority == value|stringformat:"s" %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Fällig -->
+    <select name="due"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:110px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle</option>
+        <option value="today" {% if active_filters.due == 'today' %}selected{% endif %}>Heute</option>
+        <option value="week" {% if active_filters.due == 'week' %}selected{% endif %}>Diese Woche</option>
+        <option value="overdue" {% if active_filters.due == 'overdue' %}selected{% endif %}>Überfällig</option>
+    </select>
+
+    <!-- Label -->
+    <select name="label"
+            class="form-select form-select-sm kanban-filter"
+            style="max-width:120px; font-size:12px;"
+            hx-get="{% url 'kanban:kanban-board' %}"
+            hx-target="#kanban-board"
+            hx-include=".kanban-filter,[name='view']"
+            hx-push-url="true">
+        <option value="">Alle Labels</option>
+        {% for label in labels %}
+        <option value="{{ label.pk }}"
+          {% if active_filters.label == label.pk|stringformat:"s" %}selected{% endif %}>
+          {{ label.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Separator -->
+    <div style="width:1px; height:24px; background:var(--friday-border); margin:0 4px;"></div>
+
+    <!-- Subtasks Toggle -->
+    <div class="form-check form-switch mb-0 d-flex align-items-center gap-1">
+        <input class="form-check-input kanban-filter" type="checkbox"
+               name="show_subtasks" value="1"
+               id="show-subtasks"
+               {% if active_filters.show_subtasks %}checked{% endif %}
+               hx-get="{% url 'kanban:kanban-board' %}"
+               hx-trigger="change"
+               hx-target="#kanban-board"
+               hx-include=".kanban-filter,[name='view']"
+               hx-push-url="true"
+               style="font-size:12px;">
+        <label class="form-check-label" for="show-subtasks"
+               style="font-size:12px; white-space:nowrap;">
+            Subtasks
+        </label>
     </div>
+
+    <!-- Done Toggle -->
+    <button class="btn btn-sm btn-outline-secondary"
+            id="toggle-done-btn"
+            onclick="toggleDoneColumn()"
+            style="font-size:12px; padding:2px 8px; white-space:nowrap;">
+        <i class="bi bi-eye" id="toggle-done-icon"></i>
+        <span id="toggle-done-label" style="font-size:12px;">Erledigt</span>
+    </button>
+
+    <!-- Spacer to push Clear button to the right -->
+    <div style="flex-grow:1;"></div>
+
+    <!-- Clear (nur wenn Filter aktiv) -->
+    {% if active_filters.project or active_filters.client or active_filters.team or active_filters.assignee or active_filters.label or active_filters.priority or active_filters.due %}
+    <a href="{% url 'kanban:kanban-board' %}"
+       class="btn btn-sm btn-outline-danger"
+       style="font-size:12px; padding:2px 8px;">
+        <i class="bi bi-x-circle me-1"></i>Clear
+    </a>
+    {% endif %}
+
 </div>
 
 <!-- Kanban Board -->
@@ -257,13 +287,49 @@
         });
     }
 
+    // Done Column Toggle Functionality
+    const DONE_VISIBLE_KEY = 'friday-kanban-done-visible';
+
+    function initDoneColumn() {
+        // Standard: versteckt
+        const visible = localStorage.getItem(DONE_VISIBLE_KEY) === 'true';
+        setDoneColumnVisible(visible);
+    }
+
+    function toggleDoneColumn() {
+        const current = localStorage.getItem(DONE_VISIBLE_KEY) === 'true';
+        const next = !current;
+        localStorage.setItem(DONE_VISIBLE_KEY, String(next));
+        setDoneColumnVisible(next);
+    }
+
+    function setDoneColumnVisible(visible) {
+        const doneCol = document.querySelector('.kanban-column[data-status="done"]');
+        const icon = document.getElementById('toggle-done-icon');
+        const label = document.getElementById('toggle-done-label');
+
+        if (!doneCol) return;
+
+        if (visible) {
+            doneCol.style.display = '';
+            if (icon) icon.className = 'bi bi-eye-slash';
+            if (label) label.textContent = 'Erledigt ausblenden';
+        } else {
+            doneCol.style.display = 'none';
+            if (icon) icon.className = 'bi bi-eye';
+            if (label) label.textContent = 'Erledigt anzeigen';
+        }
+    }
+
     // Initialize on page load
     initSortable();
+    initDoneColumn();
 
     // Re-initialize after HTMX swaps
     document.addEventListener('htmx:afterSwap', function(event) {
         if (event.detail.target.id === 'kanban-board') {
             initSortable();
+            initDoneColumn();
         }
     });
 </script>
