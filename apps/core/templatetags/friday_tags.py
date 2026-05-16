@@ -47,7 +47,25 @@ def file_icon(filename):
 def subtract(value, arg):
     """{{ total|subtract:open }}"""
     try:
-        return int(value) - int(arg)
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.filter
+def divide(value, arg):
+    """{{ value|divide:divisor }}"""
+    try:
+        return float(value) / float(arg) if float(arg) != 0 else 0
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.filter
+def multiply(value, arg):
+    """{{ value|multiply:multiplier }}"""
+    try:
+        return float(value) * float(arg)
     except (ValueError, TypeError):
         return 0
 

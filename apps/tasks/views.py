@@ -63,6 +63,8 @@ class TaskDetailView(LoginRequiredMixin, View):
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(
                                    t=Sum('duration_m'))['t'] or 0,
+            'total_logged_hours': (task.time_entries.aggregate(
+                                       t=Sum('duration_m'))['t'] or 0) / 60,
             'user_role':       task.project.get_effective_role(request.user),
             'clients':         Client.objects.filter(is_active=True).order_by('name'),
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
@@ -760,10 +762,12 @@ class TaskDetailFullView(LoginRequiredMixin, View):
             'watching_teams':  task.watching_teams.all(),
             'is_watching':     request.user in task.get_all_watchers(),
             'total_time_m':    task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0,
+            'total_logged_hours': (task.time_entries.aggregate(t=Sum('duration_m'))['t'] or 0) / 60,
             'user_role':       task.project.get_effective_role(request.user),
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
             'available_labels': Label.objects.exclude(
                                    pk__in=task.labels.all()).order_by('name'),
+            'checklist_templates': ChecklistTemplate.objects.all().order_by('name'),
             'breadcrumb': [
                 {'label': 'Projects',      'url': reverse('projects:project-list')},
                 {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},
