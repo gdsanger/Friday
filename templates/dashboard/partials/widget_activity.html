@@ -6,41 +6,49 @@
      hx-target="this"
      hx-swap="outerHTML">
     <div class="widget-header">
-        <h5 class="widget-title">Activity Feed</h5>
+        <h5 class="widget-title">Aktivitäten</h5>
+        <span class="text-muted" style="font-size:11px;">Live</span>
     </div>
     <div class="widget-body">
-        {% if notifications %}
-            <div class="notification-list">
-                {% for notif in notifications %}
-                    <div class="notification-item {% if not notif.is_read %}notification-unread{% endif %}">
-                        <div class="d-flex gap-2">
-                            {% if notif.actor %}
-                                <div class="avatar-circle avatar-sm">
-                                    {{ notif.actor.initials }}
-                                </div>
-                            {% else %}
-                                <div class="avatar-circle avatar-sm bg-secondary">
-                                    <i class="bi bi-bell-fill"></i>
-                                </div>
-                            {% endif %}
-                            <div class="notification-content flex-grow-1">
-                                <div class="notification-text">
-                                    {% if notif.actor %}
-                                        <strong>{{ notif.actor.full_name }}</strong>
-                                    {% else %}
-                                        <strong>System</strong>
-                                    {% endif %}
-                                    {{ notif.verb }}
-                                </div>
-                                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
-                            </div>
-                        </div>
+        {% if activities %}
+            {% for activity in activities %}
+            <div class="d-flex gap-2 mb-3">
+
+                <!-- Avatar -->
+                <div class="flex-shrink-0">
+                    {% if activity.user %}
+                    <div class="user-avatar" style="width:28px;height:28px;font-size:10px;">
+                        {{ activity.user.initials }}
                     </div>
-                {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Content -->
+                <div class="flex-grow-1 min-width-0">
+                    <div style="font-size:12px; color:var(--friday-text); line-height:1.4;">
+                        {{ activity.display_text }}
+                    </div>
+                    <!-- Task Link -->
+                    <a href="{% url 'tasks:task-detail-full' activity.task.pk %}"
+                       hx-get="{% url 'tasks:task-detail' activity.task.pk %}"
+                       hx-target="#slide-over"
+                       hx-swap="innerHTML"
+                       class="text-decoration-none"
+                       style="font-size:11px; color:var(--friday-accent);">
+                        {{ activity.task.title|truncatechars:40 }}
+                    </a>
+                    <span style="font-size:11px; color:var(--friday-text-muted);">
+                        · {{ activity.created_at|timesince }} ago
+                    </span>
+                </div>
+
             </div>
+            {% endfor %}
         {% else %}
             <div class="empty-state">
-                <p class="text-muted mb-0">No recent activity</p>
+                <p class="text-muted fst-italic mb-0" style="font-size:13px;">
+                    Noch keine Aktivitäten.
+                </p>
             </div>
         {% endif %}
     </div>

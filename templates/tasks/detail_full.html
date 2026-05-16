@@ -180,6 +180,17 @@
                 </div>
             </div>
 
+            <!-- Activity Stream -->
+            <div class="card mb-4">
+                <div class="card-body"
+                     hx-get="{% url 'tasks:task-activity' task.pk %}"
+                     hx-trigger="load"
+                     hx-target="this"
+                     hx-swap="innerHTML">
+                    <div class="widget-skeleton" style="height:100px;"></div>
+                </div>
+            </div>
+
             <!-- Comments -->
             <div class="card mb-4">
                 <div class="card-header">

@@ -6,6 +6,7 @@ urlpatterns = [
     path('create/',                          views.TaskCreateView.as_view(),         name='task-create'),
     path('<int:pk>/detail/',                 views.TaskDetailView.as_view(),          name='task-detail'),
     path('<int:pk>/',                        views.TaskDetailFullView.as_view(),      name='task-detail-full'),
+    path('<int:pk>/activity/',               views.TaskActivityView.as_view(),        name='task-activity'),
     path('<int:pk>/edit/',                   views.TaskEditView.as_view(),            name='task-edit'),
     path('<int:pk>/edit-field/',             views.TaskEditFieldView.as_view(),       name='task-edit-field'),
     path('<int:pk>/delete/',                 views.TaskDeleteView.as_view(),          name='task-delete'),

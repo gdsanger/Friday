@@ -116,15 +116,26 @@ class WidgetProjectStatusView(LoginRequiredMixin, View):
 
 
 class WidgetActivityView(LoginRequiredMixin, View):
-    """Widget showing recent activity notifications."""
+    """
+    Dashboard Widget — globaler Activity Feed.
+    Zeigt die letzten 20 Aktivitäten auf Tasks die
+    der User sehen darf.
+    """
     def get(self, request):
-        # Most recent notifications for this user
-        notifications = Notification.objects.filter(
-            recipient=request.user
-        ).select_related('actor').order_by('-created_at')[:20]
+        from apps.tasks.models import TaskActivity
+        user     = request.user
+        my_teams = user.teams
+
+        # Nur Aktivitäten auf zugänglichen Tasks
+        activities = TaskActivity.objects.filter(
+            models.Q(task__project__user_members=user) |
+            models.Q(task__project__team_members__in=my_teams)
+        ).select_related(
+            'user', 'task', 'task__project'
+        ).distinct().order_by('-created_at')[:20]
 
         return render(request, 'dashboard/partials/widget_activity.html', {
-            'notifications': notifications,
+            'activities': activities,
         })
 
 
