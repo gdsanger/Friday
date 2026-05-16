@@ -1,55 +1,85 @@
 {% load static %}
-<div class="dashboard-widget"
-     id="widget-activity"
+<div id="widget-activity"
      hx-get="{% url 'dashboard:widget-activity' %}"
-     hx-trigger="every 60s"
-     hx-target="this"
+     hx-trigger="every 30s"
      hx-swap="outerHTML">
-    <div class="widget-header">
-        <h5 class="widget-title">Aktivitäten</h5>
-        <span class="text-muted" style="font-size:11px;">Live</span>
-    </div>
-    <div class="widget-body">
-        {% if activities %}
-            {% for activity in activities %}
-            <div class="d-flex gap-2 mb-3">
 
-                <!-- Avatar -->
-                <div class="flex-shrink-0">
-                    {% if activity.user %}
-                    <div class="user-avatar" style="width:28px;height:28px;font-size:10px;">
-                        {{ activity.user.initials }}
-                    </div>
-                    {% endif %}
-                </div>
+  <div class="widget-header">
+    <span class="widget-title">Aktivitäten</span>
+    <span class="d-flex align-items-center gap-1"
+          style="font-size:11px; color:var(--friday-success);">
+      <span class="rounded-circle"
+            style="width:6px;height:6px;background:var(--friday-success);
+                   display:inline-block;"></span>
+      Live
+    </span>
+  </div>
 
-                <!-- Content -->
-                <div class="flex-grow-1 min-width-0">
-                    <div style="font-size:12px; color:var(--friday-text); line-height:1.4;">
-                        {{ activity.display_text }}
-                    </div>
-                    <!-- Task Link -->
-                    <a href="{% url 'tasks:task-detail-full' activity.task.pk %}"
-                       hx-get="{% url 'tasks:task-detail' activity.task.pk %}"
-                       hx-target="#slide-over"
-                       hx-swap="innerHTML"
-                       class="text-decoration-none"
-                       style="font-size:11px; color:var(--friday-accent);">
-                        {{ activity.task.title|truncatechars:40 }}
-                    </a>
-                    <span style="font-size:11px; color:var(--friday-text-muted);">
-                        · {{ activity.created_at|timesince }} ago
-                    </span>
-                </div>
+  <!-- Timeline -->
+  <div class="activity-timeline">
+    {% for activity in activities %}
+    <div class="activity-item">
 
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <p class="text-muted fst-italic mb-0" style="font-size:13px;">
-                    Noch keine Aktivitäten.
-                </p>
-            </div>
+      <!-- Vertikale Linie + Icon -->
+      <div class="activity-icon-wrap">
+        <div class="activity-icon
+          {% if activity.verb == 'status_changed' %}activity-icon-primary
+          {% elif activity.verb == 'closed' %}activity-icon-success
+          {% elif activity.verb == 'assigned' %}activity-icon-success
+          {% elif activity.verb == 'commented' %}activity-icon-info
+          {% elif activity.verb == 'created' %}activity-icon-success
+          {% elif activity.verb == 'priority_changed' %}activity-icon-warning
+          {% else %}activity-icon-muted{% endif %}">
+          {% if activity.verb == 'status_changed' %}
+            <i class="bi bi-arrow-right-circle"></i>
+          {% elif activity.verb == 'closed' %}
+            <i class="bi bi-check-circle-fill"></i>
+          {% elif activity.verb == 'assigned' %}
+            <i class="bi bi-person-check"></i>
+          {% elif activity.verb == 'commented' %}
+            <i class="bi bi-chat"></i>
+          {% elif activity.verb == 'created' %}
+            <i class="bi bi-plus-circle"></i>
+          {% elif activity.verb == 'priority_changed' %}
+            <i class="bi bi-flag"></i>
+          {% elif activity.verb == 'project_moved' %}
+            <i class="bi bi-arrow-right-square"></i>
+          {% else %}
+            <i class="bi bi-pencil"></i>
+          {% endif %}
+        </div>
+        {% if not forloop.last %}
+        <div class="activity-line"></div>
         {% endif %}
+      </div>
+
+      <!-- Content -->
+      <div class="activity-content">
+        <div class="activity-text">
+          {{ activity.display_text }}
+        </div>
+        <a href="{% url 'tasks:task-detail-full' activity.task.pk %}"
+           hx-get="{% url 'tasks:task-detail' activity.task.pk %}"
+           hx-target="#slide-over"
+           hx-swap="innerHTML"
+           class="activity-task-link text-decoration-none">
+          <i class="bi bi-card-text me-1" style="font-size:10px;"></i>
+          {{ activity.task.title|truncatechars:45 }}
+        </a>
+        <div class="activity-time">
+          {{ activity.created_at|timesince }} ago
+        </div>
+      </div>
+
     </div>
+    {% empty %}
+    <div class="text-center py-4 text-muted">
+      <i class="bi bi-activity" style="font-size:32px; opacity:.3;"></i>
+      <p class="mt-2 mb-0" style="font-size:13px;">
+        Noch keine Aktivitäten
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+
 </div>
