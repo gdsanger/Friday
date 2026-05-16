@@ -175,3 +175,21 @@ def render_md(value):
     # Links in neuem Tab öffnen
     clean = clean.replace('<a ', '<a target="_blank" rel="noopener noreferrer" ')
     return mark_safe(clean)
+
+
+@register.filter
+def checklist_done(task):
+    """Return count of completed checklist items for a task."""
+    try:
+        return task.checklist_items.filter(is_done=True).count()
+    except (AttributeError, TypeError):
+        return 0
+
+
+@register.filter
+def checklist_total(task):
+    """Return total count of checklist items for a task."""
+    try:
+        return task.checklist_items.count()
+    except (AttributeError, TypeError):
+        return 0

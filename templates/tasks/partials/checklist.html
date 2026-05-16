@@ -1,0 +1,118 @@
+{% load friday_tags %}
+<div id="task-checklist">
+
+  <!-- Header mit Fortschritt -->
+  {% if total > 0 %}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <span style="font-size:12px; font-weight:600; color:var(--friday-text-muted);">
+      CHECKLISTE
+    </span>
+    <span style="font-size:12px; color:var(--friday-text-muted);
+                 font-family:var(--font-mono);">
+      {{ done }}/{{ total }}
+    </span>
+  </div>
+
+  <!-- Fortschrittsbalken -->
+  <div class="progress mb-3" style="height:4px; background:var(--friday-border);">
+    <div class="progress-bar"
+         style="width:{{ pct }}%;
+                background:{% if pct == 100 %}var(--friday-success){% else %}var(--friday-accent){% endif %};">
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Items -->
+  {% for item in items %}
+  <div class="d-flex align-items-start gap-2 py-1 checklist-item
+              {% if item.is_done %}opacity-75{% endif %}">
+
+    <!-- Toggle Checkbox -->
+    <button hx-post="{% url 'tasks:checklist-item-toggle' task.pk item.pk %}"
+            hx-target="#task-checklist"
+            hx-swap="outerHTML"
+            class="btn p-0 flex-shrink-0 mt-1"
+            style="color:{% if item.is_done %}var(--friday-success){% else %}var(--friday-border){% endif %};">
+      <i class="bi {% if item.is_done %}bi-check-circle-fill{% else %}bi-circle{% endif %}"
+         style="font-size:16px;"></i>
+    </button>
+
+    <!-- Titel -->
+    <span class="flex-grow-1"
+          style="font-size:13px;
+                 {% if item.is_done %}text-decoration:line-through;
+                 color:var(--friday-text-muted);{% endif %}">
+      {{ item.title }}
+    </span>
+
+    <!-- Actions -->
+    <div class="d-flex gap-1 opacity-0 checklist-item-actions">
+
+      <!-- In SubTask umwandeln -->
+      {% if not item.is_done %}
+      <button hx-post="{% url 'tasks:checklist-item-convert' task.pk item.pk %}"
+              hx-target="#task-checklist"
+              hx-swap="outerHTML"
+              hx-confirm="Dieses Item in einen SubTask umwandeln?"
+              class="btn btn-link btn-sm p-0 text-muted"
+              title="In SubTask umwandeln">
+        <i class="bi bi-arrow-up-right-square" style="font-size:13px;"></i>
+      </button>
+      {% endif %}
+
+      <!-- Löschen -->
+      <button hx-post="{% url 'tasks:checklist-item-delete' task.pk item.pk %}"
+              hx-target="#task-checklist"
+              hx-swap="outerHTML"
+              class="btn btn-link btn-sm p-0 text-danger"
+              title="Item löschen">
+        <i class="bi bi-trash3" style="font-size:12px;"></i>
+      </button>
+
+    </div>
+
+  </div>
+  {% endfor %}
+
+  <!-- Neues Item hinzufügen -->
+  <form hx-post="{% url 'tasks:checklist-item-add' task.pk %}"
+        hx-target="#task-checklist"
+        hx-swap="outerHTML"
+        hx-on::after-request="this.reset()"
+        class="d-flex gap-2 mt-2">
+    {% csrf_token %}
+    <input type="text" name="title"
+           class="form-control form-control-sm"
+           placeholder="+ Item hinzufügen..."
+           style="font-size:13px;">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-plus-lg"></i>
+    </button>
+  </form>
+
+  <!-- Vorlage anwenden -->
+  {% if templates %}
+  <form hx-post="{% url 'tasks:checklist-apply-template' task.pk %}"
+        hx-target="#task-checklist"
+        hx-swap="outerHTML"
+        class="mt-2">
+    {% csrf_token %}
+    <select name="template_id" class="form-select form-select-sm"
+            onchange="this.form.requestSubmit()"
+            style="font-size:12px;">
+      <option value="">📋 Vorlage anwenden...</option>
+      {% for tpl in templates %}
+      <option value="{{ tpl.pk }}">{{ tpl.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+
+</div>
+
+<!-- CSS: Actions bei Hover zeigen -->
+<style>
+.checklist-item:hover .checklist-item-actions {
+  opacity: 1 !important;
+}
+</style>

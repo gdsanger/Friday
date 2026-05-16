@@ -296,6 +296,16 @@
                 </div>
             </div>
 
+            <!-- Checkliste (ISSUE-63) -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Checkliste</h6>
+                </div>
+                <div class="card-body">
+                    {% include 'tasks/partials/checklist.html' with items=task.checklist_items.all done=task|checklist_done total=task|checklist_total pct=task.checklist_pct templates=checklist_templates %}
+                </div>
+            </div>
+
             <!-- AI Actions -->
             <div class="card mb-4">
                 <div class="card-header">

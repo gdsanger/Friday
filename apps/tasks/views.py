@@ -12,7 +12,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 
-from .models import Task, Comment, Attachment, TimeEntry, Label
+from .models import (
+    Task, Comment, Attachment, TimeEntry, Label,
+    ChecklistTemplate, ChecklistTemplateItem, TaskChecklistItem
+)
 
 User = get_user_model()
 
@@ -32,6 +35,7 @@ class TaskDetailView(LoginRequiredMixin, View):
                 'subtasks', 'labels', 'comments__author',
                 'attachments', 'time_entries__user',
                 'watching_users', 'watching_teams',
+                'checklist_items__done_by',
             ),
             pk=pk
         )
@@ -63,6 +67,7 @@ class TaskDetailView(LoginRequiredMixin, View):
             'project_tasks':   task.project.tasks.exclude(pk=task.pk).order_by('title'),
             'available_labels': Label.objects.exclude(
                                    pk__in=task.labels.all()).order_by('name'),
+            'checklist_templates': ChecklistTemplate.objects.all().order_by('name'),
         }
         template = 'tasks/partials/slide_over.html' if request.htmx else 'tasks/detail.html'
         return render(request, template, ctx)
@@ -1566,3 +1571,234 @@ class TaskLabelRemoveView(LoginRequiredMixin, View):
             'task': task,
             'available_labels': available_labels,
         })
+
+
+# ============================================================
+# CHECKLIST VIEWS (ISSUE-63)
+# ============================================================
+
+def _checklist_ctx(request, task):
+    """Gemeinsamer Context für Checklisten-Partials."""
+    done, total = task.checklist_progress
+    return {
+        'task':       task,
+        'items':      task.checklist_items.select_related('done_by'),
+        'done':       done,
+        'total':      total,
+        'pct':        task.checklist_pct,
+        'templates':  ChecklistTemplate.objects.all().order_by('name'),
+    }
+
+
+class ChecklistItemAddView(LoginRequiredMixin, View):
+    """HTMX — neues Checklisten-Item hinzufügen."""
+    def post(self, request, pk):
+        task  = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        title = request.POST.get('title', '').strip()
+
+        if title:
+            # Order: nach letztem Item
+            last_order = task.checklist_items.aggregate(
+                models.Max('order')
+            )['order__max'] or 0
+
+            TaskChecklistItem.objects.create(
+                task=task, title=title, order=last_order + 1
+            )
+
+        return render(request, 'tasks/partials/checklist.html',
+                      _checklist_ctx(request, task))
+
+
+class ChecklistItemToggleView(LoginRequiredMixin, View):
+    """HTMX — Item abhaken / wieder öffnen."""
+    def post(self, request, pk, item_pk):
+        task = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        item = get_object_or_404(TaskChecklistItem, pk=item_pk, task=task)
+
+        item.is_done = not item.is_done
+        if item.is_done:
+            item.done_by = request.user
+            item.done_at = timezone.now()
+        else:
+            item.done_by = None
+            item.done_at = None
+        item.save()
+
+        return render(request, 'tasks/partials/checklist.html',
+                      _checklist_ctx(request, task))
+
+
+class ChecklistItemDeleteView(LoginRequiredMixin, View):
+    """HTMX — Item löschen."""
+    def post(self, request, pk, item_pk):
+        task = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        TaskChecklistItem.objects.filter(pk=item_pk, task=task).delete()
+        return render(request, 'tasks/partials/checklist.html',
+                      _checklist_ctx(request, task))
+
+
+class ChecklistItemConvertView(LoginRequiredMixin, View):
+    """
+    HTMX — Checklisten-Item in SubTask umwandeln.
+    Das Item wird gelöscht, ein neuer SubTask angelegt.
+    """
+    def post(self, request, pk, item_pk):
+        task = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        item = get_object_or_404(TaskChecklistItem, pk=item_pk, task=task)
+
+        # SubTask anlegen
+        Task.objects.create(
+            title       = item.title,
+            project     = task.project,
+            parent_task = task,
+            status      = Task.STATUS_BACKLOG,
+            created_by  = request.user,
+            client      = task.client,
+        )
+
+        # Item entfernen
+        item.delete()
+
+        return render(request, 'tasks/partials/checklist.html',
+                      _checklist_ctx(request, task))
+
+
+class ChecklistApplyTemplateView(LoginRequiredMixin, View):
+    """
+    HTMX — Checklisten-Vorlage auf Task anwenden.
+    Bestehende Items bleiben erhalten, Vorlage wird hinzugefügt.
+    """
+    def post(self, request, pk):
+        task        = get_object_or_404(Task, pk=pk)
+
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        template_id = request.POST.get('template_id')
+        template    = get_object_or_404(ChecklistTemplate, pk=template_id)
+
+        last_order = task.checklist_items.aggregate(
+            models.Max('order')
+        )['order__max'] or 0
+
+        for i, tpl_item in enumerate(template.items.all(), start=1):
+            TaskChecklistItem.objects.create(
+                task  = task,
+                title = tpl_item.title,
+                order = last_order + i,
+            )
+
+        return render(request, 'tasks/partials/checklist.html',
+                      _checklist_ctx(request, task))
+
+
+# ============================================================
+# CHECKLIST TEMPLATE MANAGEMENT VIEWS (ISSUE-63)
+# ============================================================
+
+class ChecklistTemplateListView(LoginRequiredMixin, View):
+    """Staff-only: Liste aller Checklisten-Vorlagen."""
+    def get(self, request):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        templates = ChecklistTemplate.objects.all().prefetch_related('items')
+        return render(request, 'tasks/checklists/template_list.html', {
+            'templates': templates,
+        })
+
+
+class ChecklistTemplateCreateView(LoginRequiredMixin, View):
+    """Staff-only: Neue Checklisten-Vorlage erstellen."""
+    def get(self, request):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        return render(request, 'tasks/checklists/template_form.html')
+
+    def post(self, request):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        name = request.POST.get('name', '').strip()
+        if not name:
+            return HttpResponseBadRequest('Name ist erforderlich')
+
+        template = ChecklistTemplate.objects.create(
+            name=name,
+            created_by=request.user
+        )
+
+        return redirect('tasks:checklist-template-edit', pk=template.pk)
+
+
+class ChecklistTemplateEditView(LoginRequiredMixin, View):
+    """Staff-only: Checklisten-Vorlage bearbeiten."""
+    def get(self, request, pk):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        template = get_object_or_404(
+            ChecklistTemplate.objects.prefetch_related('items'),
+            pk=pk
+        )
+        return render(request, 'tasks/checklists/template_edit.html', {
+            'template': template,
+        })
+
+    def post(self, request, pk):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        template = get_object_or_404(ChecklistTemplate, pk=pk)
+
+        # Name aktualisieren
+        name = request.POST.get('name', '').strip()
+        if name:
+            template.name = name
+            template.save()
+
+        # Items aktualisieren
+        # Bestehende Items löschen
+        template.items.all().delete()
+
+        # Neue Items aus POST erstellen
+        items = request.POST.getlist('items[]')
+        for i, item_title in enumerate(items):
+            if item_title.strip():
+                ChecklistTemplateItem.objects.create(
+                    template=template,
+                    title=item_title.strip(),
+                    order=i
+                )
+
+        return redirect('tasks:checklist-template-list')
+
+
+class ChecklistTemplateDeleteView(LoginRequiredMixin, View):
+    """Staff-only: Checklisten-Vorlage löschen."""
+    def post(self, request, pk):
+        if not request.user.is_staff:
+            raise PermissionDenied
+
+        template = get_object_or_404(ChecklistTemplate, pk=pk)
+        template.delete()
+
+        return redirect('tasks:checklist-template-list')

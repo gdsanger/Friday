@@ -358,6 +358,22 @@ class Task(TimeStampedModel):
         """Tasks that are waiting for this task to be done."""
         return Task.objects.filter(blocked_by_deps__blocked_by=self)
 
+    @property
+    def checklist_progress(self):
+        """Gibt (erledigt, gesamt) zurück."""
+        items = self.checklist_items.all()
+        total = items.count()
+        done  = items.filter(is_done=True).count()
+        return done, total
+
+    @property
+    def checklist_pct(self):
+        """Fortschritt in Prozent."""
+        done, total = self.checklist_progress
+        if total == 0:
+            return 0
+        return int(done / total * 100)
+
 
 class Comment(TimeStampedModel):
     """Comment model for task discussions."""
@@ -450,3 +466,67 @@ class TaskDependency(models.Model):
 
     def __str__(self):
         return f'{self.task.title} blocked by {self.blocked_by.title}'
+
+
+class ChecklistTemplate(TimeStampedModel):
+    """
+    Wiederverwendbare Checklisten-Vorlage.
+    Nur Staff kann Vorlagen anlegen.
+    """
+    name       = models.CharField(max_length=200, unique=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class ChecklistTemplateItem(models.Model):
+    """Ein Eintrag in einer Checklisten-Vorlage."""
+    template = models.ForeignKey(
+        ChecklistTemplate,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+    title    = models.CharField(max_length=300)
+    order    = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+
+class TaskChecklistItem(TimeStampedModel):
+    """
+    Ein Checklisten-Item an einem konkreten Task.
+    Entweder manuell erstellt oder aus einer Vorlage.
+    """
+    task      = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='checklist_items'
+    )
+    title     = models.CharField(max_length=300)
+    is_done   = models.BooleanField(default=False)
+    order     = models.PositiveIntegerField(default=0)
+    done_by   = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='checked_items'
+    )
+    done_at   = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{"☑" if self.is_done else "☐"} {self.title}'

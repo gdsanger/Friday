@@ -97,6 +97,15 @@
                 <span><i class="bi bi-list-task" style="font-size:11px;"></i> {{ done }}/{{ total }}</span>
                 {% endif %}
                 {% endwith %}
+                {% with done=task|checklist_done total=task|checklist_total %}
+                {% if total > 0 %}
+                <span class="d-flex align-items-center gap-1"
+                      style="font-size:11px; color:var(--friday-text-muted);">
+                  <i class="bi bi-check2-square" style="font-size:11px;"></i>
+                  {{ done }}/{{ total }}
+                </span>
+                {% endif %}
+                {% endwith %}
                 {% if task.comments.count > 0 %}
                 <span><i class="bi bi-chat"></i> {{ task.comments.count }}</span>
                 {% endif %}
