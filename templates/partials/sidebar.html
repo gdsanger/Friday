@@ -87,6 +87,18 @@
             <span class="sidebar-link-text">Vorlagen</span>
         </a>
 
+        {% if request.user.is_staff %}
+        <a href="{% url 'tasks:checklist-template-list' %}"
+           class="sidebar-link {% if request.resolver_match.url_name|slice:":19" == 'checklist-template-' %}active{% endif %}"
+           title="Checklisten-Vorlagen"
+           data-bs-toggle="tooltip"
+           data-bs-placement="right"
+           data-bs-title="Checklisten">
+            <i class="bi bi-list-check"></i>
+            <span class="sidebar-link-text">Checklisten</span>
+        </a>
+        {% endif %}
+
         <a href="{% url 'tasks:label-list' %}"
            class="sidebar-link {% if request.resolver_match.url_name|slice:":6" == 'label-' %}active{% endif %}"
            title="Labels"
