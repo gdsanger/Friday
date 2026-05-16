@@ -223,6 +223,12 @@ class TaskEditView(LoginRequiredMixin, View):
         if not task.project.is_member(request.user):
             raise PermissionDenied
 
+        # Store old values for activity logging
+        old_story_points = task.story_points
+        old_priority = task.priority
+        old_due_date = task.due_date
+        old_deadline = task.deadline
+
         # Update fields based on what's provided
         if 'title' in request.POST:
             task.title = request.POST['title'].strip()
@@ -244,6 +250,24 @@ class TaskEditView(LoginRequiredMixin, View):
             task.story_points = story_points if story_points else None
 
         task.save()
+
+        # Log activities for changed fields
+        if 'story_points' in request.POST and task.story_points != old_story_points:
+            log_activity(task, request.user, TaskActivity.VERB_SP_CHANGED,
+                        old_value=str(old_story_points) if old_story_points else '0',
+                        new_value=str(task.story_points) if task.story_points else '0')
+        if 'priority' in request.POST and task.priority != old_priority:
+            old_priority_display = dict(Task.PRIORITY_CHOICES).get(old_priority, 'None')
+            new_priority_display = task.get_priority_display()
+            log_activity(task, request.user, TaskActivity.VERB_PRIORITY_CHANGED,
+                        old_value=old_priority_display, new_value=new_priority_display)
+        if 'due_date' in request.POST and task.due_date != old_due_date:
+            log_activity(task, request.user, TaskActivity.VERB_DUE_DATE_CHANGED,
+                        new_value=str(task.due_date) if task.due_date else 'Entfernt')
+        if 'deadline' in request.POST and task.deadline != old_deadline:
+            log_activity(task, request.user, TaskActivity.VERB_DEADLINE_CHANGED,
+                        new_value=str(task.deadline) if task.deadline else 'Entfernt')
+
         return HttpResponse(status=204)
 
 
