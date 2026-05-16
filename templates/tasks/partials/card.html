@@ -71,6 +71,17 @@
             </span>
         </div>
 
+        {% if task.labels.exists %}
+        <div class="d-flex flex-wrap gap-1 mb-2">
+            {% for label in task.labels.all %}
+            <span class="badge"
+                  style="background:{{ label.color }}; font-size:9px; color:#fff;">
+                {{ label.name }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="d-flex justify-content-between align-items-center small text-muted">
             <div class="d-flex gap-2 align-items-center">
                 {% if task.effective_client %}

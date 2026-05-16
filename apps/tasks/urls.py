@@ -48,6 +48,16 @@ urlpatterns = [
     path('<int:pk>/dependencies/<int:dep_pk>/remove/',
                                                  views.DependencyRemoveView.as_view(),    name='dependency-remove'),
 
+    # Labels (ISSUE-62)
+    path('labels/',                              views.LabelListView.as_view(),           name='label-list'),
+    path('labels/create/',                       views.LabelCreateView.as_view(),         name='label-create'),
+    path('labels/<int:pk>/edit/',                views.LabelEditView.as_view(),           name='label-edit'),
+    path('labels/<int:pk>/delete/',              views.LabelDeleteView.as_view(),         name='label-delete'),
+    path('labels/<int:pk>/tasks/',               views.LabelTasksView.as_view(),          name='label-tasks'),
+    path('<int:pk>/labels/add/',                 views.TaskLabelAddView.as_view(),        name='task-label-add'),
+    path('<int:pk>/labels/<int:label_pk>/remove/',
+                                                 views.TaskLabelRemoveView.as_view(),     name='task-label-remove'),
+
     # Task Templates
     path('templates/',                           views.TemplateListView.as_view(),        name='template-list'),
     path('templates/create/',                    views.TemplateCreateView.as_view(),      name='template-create'),

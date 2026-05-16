@@ -1,0 +1,43 @@
+<div id="task-labels">
+
+  <!-- Aktuelle Labels -->
+  <div class="d-flex flex-wrap gap-1 mb-2">
+    {% for label in task.labels.all %}
+    <a href="{% url 'tasks:label-tasks' label.pk %}"
+       class="badge text-decoration-none d-inline-flex align-items-center gap-1"
+       style="background:{{ label.color }}; font-size:11px; color:#fff;">
+      {{ label.name }}
+      <button hx-post="{% url 'tasks:task-label-remove' task.pk label.pk %}"
+              hx-target="#task-labels"
+              hx-swap="outerHTML"
+              class="btn-close btn-close-white ms-1"
+              style="font-size:8px;"
+              aria-label="Entfernen"
+              type="button">
+      </button>
+    </a>
+    {% empty %}
+    <span class="text-muted fst-italic" style="font-size:12px;">
+      Keine Labels
+    </span>
+    {% endfor %}
+  </div>
+
+  <!-- Label hinzufügen -->
+  {% if available_labels %}
+  <form hx-post="{% url 'tasks:task-label-add' task.pk %}"
+        hx-target="#task-labels"
+        hx-swap="outerHTML">
+    {% csrf_token %}
+    <select name="label_id" class="form-select form-select-sm"
+            onchange="this.form.requestSubmit()"
+            style="max-width:200px;">
+      <option value="">+ Label hinzufügen</option>
+      {% for label in available_labels %}
+      <option value="{{ label.pk }}">{{ label.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+
+</div>
