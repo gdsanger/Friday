@@ -34,6 +34,19 @@
                         </button>
                     </form>
                 </li>
+                {% if user_role == 'manager' or request.user.is_staff %}
+                <li>
+                    <button class="dropdown-item"
+                            hx-get="{% url 'tasks:task-move-project-form' task.pk %}"
+                            hx-target="#task-move-modal"
+                            hx-swap="innerHTML"
+                            data-bs-toggle="modal"
+                            data-bs-target="#task-move-modal-container">
+                        <i class="bi bi-arrow-right-square me-2"></i>
+                        In anderes Projekt verschieben
+                    </button>
+                </li>
+                {% endif %}
                 {% if user_role == 'manager' or task.created_by == request.user %}
                 <li><hr class="dropdown-divider"></li>
                 <li>
@@ -401,6 +414,16 @@
      tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content" id="task-assign-modal">
+      <!-- Will be filled via HTMX -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal Container for Task Move to Project -->
+<div class="modal fade" id="task-move-modal-container"
+     tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="task-move-modal">
       <!-- Will be filled via HTMX -->
     </div>
   </div>

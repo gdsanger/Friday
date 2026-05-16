@@ -1,0 +1,61 @@
+<div class="modal-header">
+  <h5 class="modal-title">
+    <i class="bi bi-arrow-right-square me-2"></i>
+    In anderes Projekt verschieben
+  </h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<form hx-post="{% url 'tasks:task-move-project' task.pk %}"
+      hx-target="body"
+      hx-swap="none">
+  {% csrf_token %}
+
+  <div class="modal-body">
+
+    <!-- Current Project -->
+    <div class="mb-3 p-3 rounded"
+         style="background:var(--friday-surface-alt);
+                border-left:3px solid {{ task.project.color }};">
+      <div style="font-size:11px; color:var(--friday-text-muted);">
+        Aktuelles Projekt
+      </div>
+      <div class="fw-medium">{{ task.project.name }}</div>
+    </div>
+
+    <!-- Target Project -->
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Verschieben nach <span class="text-danger">*</span>
+      </label>
+      <select name="project_id" class="form-select" required>
+        <option value="">— Projekt wählen —</option>
+        {% for project in projects %}
+        <option value="{{ project.pk }}">
+          {{ project.name }}
+          {% if project.client %}· {{ project.client.short_name }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if task.subtasks.exists %}
+    <div class="d-flex align-items-center gap-2 p-2 rounded"
+         style="background:var(--friday-accent-light);
+                font-size:12px; color:var(--friday-accent);">
+      <i class="bi bi-info-circle"></i>
+      {{ task.subtasks.count }} Subtask(s) werden ebenfalls verschoben.
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary"
+            data-bs-dismiss="modal">Abbrechen</button>
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-arrow-right-square me-1"></i>
+      Verschieben
+    </button>
+  </div>
+</form>
