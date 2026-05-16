@@ -530,3 +530,89 @@ class TaskChecklistItem(TimeStampedModel):
 
     def __str__(self):
         return f'{"☑" if self.is_done else "☐"} {self.title}'
+
+
+class TaskActivity(models.Model):
+    """
+    Audit-Log für alle relevanten Änderungen an einem Task.
+    Unveränderlich — keine Updates, nur Inserts.
+    """
+
+    # Verfügbare Verben
+    VERB_CREATED          = 'created'
+    VERB_STATUS_CHANGED   = 'status_changed'
+    VERB_ASSIGNED         = 'assigned'
+    VERB_UNASSIGNED       = 'unassigned'
+    VERB_PRIORITY_CHANGED = 'priority_changed'
+    VERB_DEADLINE_CHANGED = 'deadline_changed'
+    VERB_DUE_DATE_CHANGED = 'due_date_changed'
+    VERB_CLOSED           = 'closed'
+    VERB_COMMENTED        = 'commented'
+    VERB_WATCHER_ADDED    = 'watcher_added'
+    VERB_WATCHER_REMOVED  = 'watcher_removed'
+    VERB_PROJECT_MOVED    = 'project_moved'
+    VERB_TITLE_CHANGED    = 'title_changed'
+    VERB_SP_CHANGED       = 'sp_changed'
+
+    VERB_CHOICES = [
+        (VERB_CREATED,          'erstellt'),
+        (VERB_STATUS_CHANGED,   'Status geändert'),
+        (VERB_ASSIGNED,         'zugewiesen'),
+        (VERB_UNASSIGNED,       'Zuweisung entfernt'),
+        (VERB_PRIORITY_CHANGED, 'Priorität geändert'),
+        (VERB_DEADLINE_CHANGED, 'Deadline geändert'),
+        (VERB_DUE_DATE_CHANGED, 'Fälligkeitsdatum geändert'),
+        (VERB_CLOSED,           'abgeschlossen'),
+        (VERB_COMMENTED,        'kommentiert'),
+        (VERB_WATCHER_ADDED,    'Watcher hinzugefügt'),
+        (VERB_WATCHER_REMOVED,  'Watcher entfernt'),
+        (VERB_PROJECT_MOVED,    'Projekt gewechselt'),
+        (VERB_TITLE_CHANGED,    'Titel geändert'),
+        (VERB_SP_CHANGED,       'Story Points geändert'),
+    ]
+
+    task       = models.ForeignKey(
+        'Task', on_delete=models.CASCADE,
+        related_name='activities'
+    )
+    user       = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='task_activities'
+    )
+    verb       = models.CharField(max_length=50, choices=VERB_CHOICES)
+    old_value  = models.CharField(max_length=500, blank=True)
+    new_value  = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Task Activity'
+
+    def __str__(self):
+        return f'{self.user} {self.verb} on {self.task}'
+
+    @property
+    def display_text(self):
+        """Menschenlesbarer Text für die Activity."""
+        user = self.user.full_name if self.user else 'System'
+        verb = self.get_verb_display()
+
+        templates = {
+            'created':          f'{user} hat den Task erstellt',
+            'status_changed':   f'{user} hat Status von "{self.old_value}" auf "{self.new_value}" geändert',
+            'assigned':         f'{user} hat Task "{self.new_value}" zugewiesen',
+            'unassigned':       f'{user} hat Zuweisung entfernt',
+            'priority_changed': f'{user} hat Priorität von "{self.old_value}" auf "{self.new_value}" geändert',
+            'deadline_changed': f'{user} hat Deadline auf {self.new_value} gesetzt',
+            'due_date_changed': f'{user} hat Fälligkeitsdatum auf {self.new_value} gesetzt',
+            'closed':           f'{user} hat Task abgeschlossen ({self.new_value}h erfasst)',
+            'commented':        f'{user} hat einen Kommentar hinzugefügt',
+            'watcher_added':    f'{user} hat {self.new_value} als Watcher hinzugefügt',
+            'watcher_removed':  f'{user} hat {self.new_value} als Watcher entfernt',
+            'project_moved':    f'{user} hat Task nach "{self.new_value}" verschoben',
+            'title_changed':    f'{user} hat Titel geändert',
+            'sp_changed':       f'{user} hat Story Points auf {self.new_value} SP geändert',
+        }
+        return templates.get(self.verb, f'{user} hat {verb}')

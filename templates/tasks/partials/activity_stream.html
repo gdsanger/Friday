@@ -1,0 +1,63 @@
+<div id="task-activity">
+
+  <div class="section-label mb-3">
+    AKTIVITÄT
+  </div>
+
+  {% for activity in activities %}
+  <div class="d-flex gap-3 mb-3">
+
+    <!-- Avatar -->
+    <div class="flex-shrink-0">
+      {% if activity.user %}
+      <div class="user-avatar user-avatar-sm">
+        {{ activity.user.initials }}
+      </div>
+      {% else %}
+      <div class="user-avatar user-avatar-sm"
+           style="background:var(--friday-surface-alt);">
+        <i class="bi bi-gear" style="font-size:10px;"></i>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Content -->
+    <div class="flex-grow-1">
+      <div style="font-size:13px; color:var(--friday-text);">
+        {{ activity.display_text }}
+      </div>
+      <div style="font-size:11px; color:var(--friday-text-muted); margin-top:2px;">
+        {{ activity.created_at|timesince }} ago
+        · {{ activity.created_at|date:"d.m.Y H:i" }}
+      </div>
+    </div>
+
+    <!-- Icon -->
+    <div class="flex-shrink-0" style="width:20px; text-align:center;">
+      {% if activity.verb == 'status_changed' %}
+        <i class="bi bi-arrow-right-circle text-primary" style="font-size:14px;"></i>
+      {% elif activity.verb == 'assigned' %}
+        <i class="bi bi-person-check text-success" style="font-size:14px;"></i>
+      {% elif activity.verb == 'closed' %}
+        <i class="bi bi-check-circle-fill text-success" style="font-size:14px;"></i>
+      {% elif activity.verb == 'commented' %}
+        <i class="bi bi-chat text-info" style="font-size:14px;"></i>
+      {% elif activity.verb == 'created' %}
+        <i class="bi bi-plus-circle text-success" style="font-size:14px;"></i>
+      {% elif activity.verb == 'priority_changed' %}
+        <i class="bi bi-flag text-warning" style="font-size:14px;"></i>
+      {% elif activity.verb == 'project_moved' %}
+        <i class="bi bi-arrow-right-square text-primary" style="font-size:14px;"></i>
+      {% else %}
+        <i class="bi bi-pencil text-muted" style="font-size:14px;"></i>
+      {% endif %}
+    </div>
+
+  </div>
+  {% empty %}
+  <p class="text-muted fst-italic" style="font-size:13px;">
+    Noch keine Aktivitäten.
+  </p>
+  {% endfor %}
+
+</div>

@@ -14,8 +14,9 @@ from django.views import View
 
 from .models import (
     Task, Comment, Attachment, TimeEntry, Label,
-    ChecklistTemplate, ChecklistTemplateItem, TaskChecklistItem
+    ChecklistTemplate, ChecklistTemplateItem, TaskChecklistItem, TaskActivity
 )
+from .activity import log_activity
 
 User = get_user_model()
 
@@ -168,6 +169,9 @@ class TaskCreateView(LoginRequiredMixin, View):
             story_points = request.POST.get('story_points') or None,
         )
 
+        # Log activity: task created
+        log_activity(task, request.user, TaskActivity.VERB_CREATED)
+
         # Optional: set requester
         requester_id = request.POST.get('requester')
         if requester_id:
@@ -178,11 +182,20 @@ class TaskCreateView(LoginRequiredMixin, View):
         user_id = request.POST.get('assigned_to_user')
         team_id = request.POST.get('assigned_to_team')
         if user_id:
+            assigned_user = User.objects.get(pk=user_id)
             task.assigned_to_user_id = user_id
             task.save(update_fields=['assigned_to_user'])
+            # Log activity: task assigned
+            log_activity(task, request.user, TaskActivity.VERB_ASSIGNED,
+                        new_value=assigned_user.full_name)
         elif team_id:
+            from apps.teams.models import Team
+            assigned_team = Team.objects.get(pk=team_id)
             task.assigned_to_team_id = team_id
             task.save(update_fields=['assigned_to_team'])
+            # Log activity: task assigned to team
+            log_activity(task, request.user, TaskActivity.VERB_ASSIGNED,
+                        new_value=f'Team: {assigned_team.name}')
 
         # HTMX requests
         if request.htmx:
@@ -265,11 +278,21 @@ class TaskStatusView(LoginRequiredMixin, View):
                 'blocking': blocking,
             }, status=409)
 
+        # Store old status for activity logging
+        old_status = task.get_status_display()
+
         if status in dict(Task.STATUS_CHOICES):
             task.status = status
         if position is not None:
             task.position = int(position)
         task.save(update_fields=['status', 'position'])
+
+        # Log activity: status changed
+        if status and status != old_status:
+            new_status = task.get_status_display()
+            log_activity(task, request.user, TaskActivity.VERB_STATUS_CHANGED,
+                        old_value=old_status, new_value=new_status)
+
         return HttpResponse(status=204)
 
 
@@ -304,6 +327,16 @@ class TaskAssignView(LoginRequiredMixin, View):
             task.assigned_to_team = None
 
         task.save(update_fields=['assigned_to_user', 'assigned_to_team'])
+
+        # Log activity for assignment changes
+        if task.assigned_to_user and task.assigned_to_user != old_user:
+            log_activity(task, request.user, TaskActivity.VERB_ASSIGNED,
+                        new_value=task.assigned_to_user.full_name)
+        elif task.assigned_to_team and task.assigned_to_team != old_team:
+            log_activity(task, request.user, TaskActivity.VERB_ASSIGNED,
+                        new_value=f'Team: {task.assigned_to_team.name}')
+        elif not task.assigned_to_user and not task.assigned_to_team and (old_user or old_team):
+            log_activity(task, request.user, TaskActivity.VERB_UNASSIGNED)
 
         # Send mail if new assignee is set
         context = {
@@ -391,9 +424,17 @@ class WatcherAddView(LoginRequiredMixin, View):
         team_id = request.POST.get('team_id')
 
         if user_id:
+            watcher_user = User.objects.get(pk=user_id)
             task.watching_users.add(user_id)
+            # Log activity: watcher added
+            log_activity(task, request.user, TaskActivity.VERB_WATCHER_ADDED,
+                        new_value=watcher_user.full_name)
         elif team_id:
+            watcher_team = Team.objects.get(pk=team_id)
             task.watching_teams.add(team_id)
+            # Log activity: watcher added (team)
+            log_activity(task, request.user, TaskActivity.VERB_WATCHER_ADDED,
+                        new_value=f'Team: {watcher_team.name}')
 
         return render(request, 'tasks/partials/watcher_list.html',
                       self._ctx(request, task))
@@ -427,7 +468,15 @@ class WatcherRemoveView(LoginRequiredMixin, View):
             role = task.project.get_effective_role(request.user)
             if role != 'manager' and not request.user.is_staff:
                 raise PermissionDenied
+
+        # Get user before removing for activity log
+        removed_user = User.objects.get(pk=user_pk)
         task.watching_users.remove(user_pk)
+
+        # Log activity: watcher removed
+        log_activity(task, request.user, TaskActivity.VERB_WATCHER_REMOVED,
+                    new_value=removed_user.full_name)
+
         return render(request, 'tasks/partials/watcher_list.html',
                       WatcherAddView()._ctx(request, task))
 
@@ -435,11 +484,21 @@ class WatcherRemoveView(LoginRequiredMixin, View):
 class WatcherRemoveTeamView(LoginRequiredMixin, View):
     """HTMX — Team als Watcher entfernen."""
     def post(self, request, pk, team_pk):
+        from apps.teams.models import Team
+
         task = get_object_or_404(Task, pk=pk)
         role = task.project.get_effective_role(request.user)
         if role != 'manager' and not request.user.is_staff:
             raise PermissionDenied
+
+        # Get team before removing for activity log
+        removed_team = Team.objects.get(pk=team_pk)
         task.watching_teams.remove(team_pk)
+
+        # Log activity: watcher removed (team)
+        log_activity(task, request.user, TaskActivity.VERB_WATCHER_REMOVED,
+                    new_value=f'Team: {removed_team.name}')
+
         return render(request, 'tasks/partials/watcher_list.html',
                       WatcherAddView()._ctx(request, task))
 
@@ -453,6 +512,9 @@ class TaskCommentView(LoginRequiredMixin, View):
         body = request.POST.get('body', '').strip()
         if body:
             comment = Comment.objects.create(task=task, author=request.user, body=body)
+
+            # Log activity: comment added
+            log_activity(task, request.user, TaskActivity.VERB_COMMENTED)
 
             # Process @mentions
             from apps.tasks.mentions import parse_mentions
@@ -595,6 +657,15 @@ class TaskEditFieldView(LoginRequiredMixin, View):
         if field == 'title' and not value:
             return HttpResponseBadRequest('Title cannot be empty.')
 
+        # Capture old value for activity logging
+        old_value = getattr(task, field, None)
+        if field == 'priority' and old_value is not None:
+            old_value_display = task.get_priority_display()
+        elif field == 'status' and old_value:
+            old_value_display = task.get_status_display()
+        else:
+            old_value_display = str(old_value) if old_value else ''
+
         # Special handling for FK fields
         if field == 'requester':
             from django.contrib.auth import get_user_model
@@ -604,6 +675,25 @@ class TaskEditFieldView(LoginRequiredMixin, View):
         else:
             setattr(task, field, value or None)
             task.save(update_fields=[field])
+
+        # Log activity for specific fields
+        if field == 'title' and value != old_value:
+            log_activity(task, request.user, TaskActivity.VERB_TITLE_CHANGED)
+        elif field == 'priority' and value != str(old_value):
+            new_value_display = task.get_priority_display()
+            log_activity(task, request.user, TaskActivity.VERB_PRIORITY_CHANGED,
+                        old_value=old_value_display, new_value=new_value_display)
+        elif field == 'status' and value != old_value:
+            new_value_display = task.get_status_display()
+            log_activity(task, request.user, TaskActivity.VERB_STATUS_CHANGED,
+                        old_value=old_value_display, new_value=new_value_display)
+        elif field == 'due_date' and value != str(old_value):
+            log_activity(task, request.user, TaskActivity.VERB_DUE_DATE_CHANGED,
+                        new_value=value if value else 'Entfernt')
+        elif field == 'deadline' and value != str(old_value):
+            # This would require a new verb in the model, but the spec uses VERB_DEADLINE_CHANGED
+            log_activity(task, request.user, TaskActivity.VERB_DEADLINE_CHANGED,
+                        new_value=value if value else 'Entfernt')
 
         return render(request, f'tasks/partials/field_{field}.html', {'task': task, 'mode': 'view'})
 
@@ -655,6 +745,23 @@ class TaskDetailFullView(LoginRequiredMixin, View):
                 {'label': task.project.name, 'url': reverse('projects:project-detail', args=[task.project.pk])},
                 {'label': task.title,      'url': None},
             ]
+        })
+
+
+class TaskActivityView(LoginRequiredMixin, View):
+    """
+    HTMX — Task Activity Timeline.
+    Returns activity stream partial showing all task activities.
+    """
+    def get(self, request, pk):
+        task = get_object_or_404(Task, pk=pk)
+        if not task.project.is_member(request.user):
+            raise PermissionDenied
+
+        activities = task.activities.select_related('user').order_by('-created_at')
+        return render(request, 'tasks/partials/activity_stream.html', {
+            'task':       task,
+            'activities': activities,
         })
 
 
@@ -817,6 +924,10 @@ class TaskCloseView(LoginRequiredMixin, View):
         task.status = Task.STATUS_DONE
         task.save(update_fields=['status'])
 
+        # Log activity: task closed
+        log_activity(task, request.user, TaskActivity.VERB_CLOSED,
+                    new_value=f'{hours:.1f}')
+
         # Send Mail
         from apps.mail.dispatcher import dispatch
         from apps.mail.models import MailHook
@@ -941,6 +1052,10 @@ class TaskMoveProjectView(LoginRequiredMixin, View):
             task.client = new_project.client
 
         task.save(update_fields=['project', 'client'])
+
+        # Log activity: project moved
+        log_activity(task, request.user, TaskActivity.VERB_PROJECT_MOVED,
+                    old_value=old_project.name, new_value=new_project.name)
 
         # Move subtasks along with parent task
         task.subtasks.all().update(project=new_project)
